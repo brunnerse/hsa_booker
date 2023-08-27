@@ -1,10 +1,11 @@
 const HSA_LINK = "https://web.archive.org/web/20220810201020/https://anmeldung.sport.uni-augsburg.de"
-//const HSA_LINK = "https://anmeldung.sport.uni-augsburg.de"
+//const HSA_LINK = "https://web.archive.org/web/20220810201020/https://anmeldung.sport.uni-augsburg.de"
 
 var choice = undefined;
 
 var states = {};
 var courses = {};
+var nrToCourse = {};
 
 
 function requestHTML(method, url) {
@@ -47,7 +48,10 @@ function updateStatus(str, style="append") {
             }
             // else do clear
         case "clear":
-            elem.innerHTML = newHTML;
+            if (str.length == 0)
+                elem.innerHTML = "";
+            else
+                elem.innerHTML = newHTML;
             break;
         case "append":
         default:
@@ -83,13 +87,38 @@ async function arm() {
         return;
     }
 
-    setTimeout(() => updateStatus("Armed.", "replace"), 1000);
+    //setTimeout(() => updateStatus("Armed.", "replace"), 1000);
+
+
+
+    const choiceElements = document.getElementById("choice");
+
+    for (let elem of choiceElements.children) {
+        let titleArr = elem.getAttribute("title").split("_");
+        let nr = titleArr[0];
+        let user = titleArr[1];
+        let c = nrToCourse[nr];
+        updateStatus(`Trying to book course [${nr}] ${c} for ${user}...`, "append");
+
+        if(!states[nr] == "ready") {
+
+        } else {
+            updateStatus(`Course [${nr}] ${c} not ready, refreshing...`);
+            refreshSport(c)
+        }
+
+        let form = elem.children[0];
+        form.submit();
+        return;
+    }
+    // TODO retry unsuccessful courses after refresh
 }
 
-function updateEntryInTable(entryHTML, nr, BS_Code) {
+function updateEntryInTable(entryHTML, nr, user, BS_Code) {
+    const title = nr + "_" + user;
     const tableElem = document.getElementById("avail");
     tableElem.getElementsByTagName("TR")[1].innerHTML = entryHTML;
-    tableElem.children[0].setAttribute("title", nr);
+    tableElem.children[0].setAttribute("title", title);
 
     // update BS_Code
     let inputTableBS = tableElem.getElementsByTagName("INPUT")[0];
@@ -99,7 +128,7 @@ function updateEntryInTable(entryHTML, nr, BS_Code) {
     // check if nr is already in table
     let found = false;
     for (let tableEntry of document.getElementById("choice").children) {
-        if (tableEntry.getAttribute("title") == nr) {
+        if (tableEntry.getAttribute("title") == title) {
             found = true;
             tableEntry.innerHTML = tableElem.children[0].innerHTML;
             break;
@@ -111,10 +140,13 @@ function updateEntryInTable(entryHTML, nr, BS_Code) {
 }
 
 async function refreshSport(c) {
+    // for easier error giving
+    let firstUser = Object.keys(choice[c])[0];
+    let firstNr = choice[c][firstUser][0]
+
     if (!courses[c]) {
-        let firstUser = Object.keys(choice[c])[0];
-        let firstNr = choice[c][firstUser][0]
-        updateEntryInTable(getErrorTable(firstNr, c, "Not available"), firstNr, "xx");
+
+        updateEntryInTable(getErrorTable(firstNr, c, "Not available"), firstNr, firstUser, "xx");
         console.log("[%s] Not available ", c);
 
         for (let user of Object.keys(choice[c])) {
@@ -126,11 +158,21 @@ async function refreshSport(c) {
         let idx = courses[c].lastIndexOf("/");
         let link = HSA_LINK + "/angebote/aktueller_zeitraum" + courses[c].substr(idx);
         console.log("[%s] Available -> %s", c, link);
-
-        let doc = await requestHTML("GET", "extern?url=" + link);
+        let doc;
+        try {
+            doc = await requestHTML("GET", "extern?url=" + link);
+        } catch (e) {
+            updateStatus("Course " + c + "HTML request failed");
+            updateEntryInTable(getErrorTable(firstNr, c, "404"), firstNr, firstUser, "xx");
+        }
         let nums = doc.getElementsByClassName("bs_sknr");
         for (let user of Object.keys(choice[c])) {
             for (let nr of choice[c][user]) {
+
+                // update global array
+                nrToCourse[nr] = c;
+
+                // find number in loaded doc
                 let found = false;
                 for (let n of nums) {
                     if (n.innerHTML == nr) {
@@ -148,7 +190,7 @@ async function refreshSport(c) {
                         let inputBS = formElem.getElementsByTagName("INPUT")[0];
                         console.assert(inputBS.name == "BS_Code");
 
-                        updateEntryInTable(n.parentElement.innerHTML, nr, inputBS.value);
+                        updateEntryInTable(n.parentElement.innerHTML, nr, user, inputBS.value);
 
                         // check booking button
                         let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
@@ -168,7 +210,7 @@ async function refreshSport(c) {
                     }
                 }
                 if (!found) {
-                    updateEntryInTable(getErrorTable(nr, c, "Wrong Number"), nr, "xy");
+                    updateEntryInTable(getErrorTable(nr, c, "Wrong Number"), nr, user, "xy");
                     states[nr] = "wrongnumber";
                 }
             }
@@ -261,5 +303,6 @@ document.getElementById("loadcourses").addEventListener("click", ()=>loadCourses
 document.getElementById("loadchoice").addEventListener("click", ()=>loadChoice());
 document.getElementById("refreshchoice").addEventListener("click", ()=>refreshChoice());
 document.getElementById("arm").addEventListener("click", () => arm());
+document.getElementById("clearstatus").addEventListener("click", () => updateStatus("", "clear"));
 
 loadCourses().then(loadChoice)
