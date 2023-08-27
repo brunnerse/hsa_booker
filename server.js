@@ -31,14 +31,6 @@ function isValidURL(str) {
     }
 }
 
-function isHSAPath(str) {
-	indices = ["/index", "/templates", "/images", "/buchsys", "/media", "/SysBilder"]
-	for (ind of indices) {
-		if (str.startsWith(ind))
-			return true;
-	}
-	return false;
-}
 
 // If external server wants to redirect to itself, modify the location
 function modifyLocationInHeader(header) {
@@ -150,7 +142,12 @@ function requestListen(req, res) {
 			respondFile(res, "./main.html");
 			break;
 		default:
-			if (isHSAPath(q.pathname)) {
+			const hsaFolders = ["index", "templates", "images", "buchsys", "media", "SysBilder"]
+			let pathArr = q.pathname.split('/');
+			if (pathArr[1] == 'hsa') {
+				pathArr.splice(1,1);
+				respondExternSecure(res, "https://hsa.sport.uni-augsburg.de" + pathArr.join('/'));
+			} else if(pathArr[1] in hsaFolders) {
 				respondExternSecure(res, "https://anmeldung.sport.uni-augsburg.de" + q.pathname);
 			} else {
 				respondFile(res, "." + q.pathname);
