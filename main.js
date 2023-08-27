@@ -6,9 +6,34 @@ var choice = undefined;
 var states = {};
 
 
-function fun() {
-    document.getElementById("demo").innerHTML = "Paragraph changed.";
+function updateStatus(str, style="append") {
+    const elem = document.getElementById("statustext");
+    const newHTML = "<strong>" + new Date().toLocaleTimeString() + "</strong>:&emsp;&emsp;" + str;
+    switch (style) {
+        case "replace":
+            let text = elem.innerHTML;
+            console.log(text);
+            const tag = "<br>";
+            const idx = text.lastIndexOf(tag);
+            if (idx >= 0) {
+                elem.innerHTML = text.substring(0, idx + tag.length) + newHTML;
+                break;
+            }
+            // else do clear
+        case "clear":
+            elem.innerHTML = newHTML;
+            break;
+        case "append":
+        default:
+            if (elem.innerHTML.length == 0) {
+                elem.innerHTML += newHTML;
+            } else {
+                elem.innerHTML += "<br>" + newHTML;
+            }
+
+    }
 }
+
 
 function requestHTML(method, url) {
     return new Promise(function (resolve, reject) {
@@ -37,7 +62,8 @@ function requestHTML(method, url) {
 
 async function arm() {
     console.log("Arming...");
-
+    updateStatus("Arming...", "append");
+    setTimeout(()=>updateStatus("Armed.", "replace"), 2000);
 }
 
 
@@ -45,14 +71,12 @@ async function arm() {
 async function refreshChoice() {
     console.log("Choice: " + choice);
     if (!choice) {
-
         loadChoice();
         return;
     }
 
     let courses = {}
     rootElem = document.getElementById("courses");
-    console.log(rootElem.innerHTML);
     for (elem of rootElem.getElementsByTagName("A")) {
         courses[elem.innerHTML] = elem.href;
     }
@@ -80,10 +104,10 @@ async function refreshChoice() {
         </th></tr></thead><tbody>"
         `;
         if (!courses[c]) {
-            text += "<tr class=\"bs_odd\">"+c+" not found!</tr>";
-            console.log("not found " + c);
+            text += "<tr class=\"bs_odd\">"+c+" not available!</tr>";
+            console.log("[%s] Not available ", c);
         } else {
-            console.log("found " + c);
+            console.log("[%s] Available ", c);
             let idx = courses[c].lastIndexOf("/");
             let link = HSA_LINK + "/angebote/aktueller_zeitraum" + 
                 courses[c].substr(idx);
@@ -130,14 +154,16 @@ async function refreshChoice() {
 }
 
 function loadChoice() {
+    updateStatus("Loading choice...", "append");
     let xhr = new XMLHttpRequest();
     xhr.onerror = () => {
         document.getElementById("courses").innerHTML = "failed ";
     };
     xhr.onloadend = () => {
-        console.log("Loaded choice.")
         choice = xhr.response;
+        console.log("Loaded choice.")
         console.log(choice);
+        updateStatus("Loaded choice.");
 
         refreshChoice();
     }
@@ -151,8 +177,9 @@ function loadChoice() {
 }
 
 function loadCourses() {
-    const xhr = new XMLHttpRequest();
+    updateStatus("Loading courses...", "append");
 
+    const xhr = new XMLHttpRequest();
     xhr.onerror = () => {
             document.getElementById("courses").innerHTML = "failed ";
         };
@@ -179,6 +206,7 @@ function loadCourses() {
          doc.getElementsByClassName("item-page")[0].innerHTML
          +"</div>"
          ;
+        updateStatus("Loaded courses.", "append");
     }
 
     xhr.open(
