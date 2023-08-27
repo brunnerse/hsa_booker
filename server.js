@@ -147,7 +147,7 @@ function requestListen(req, res) {
 			if (pathArr[1] == 'hsa') {
 				pathArr.splice(1,1);
 				respondExternSecure(res, "https://hsa.sport.uni-augsburg.de" + pathArr.join('/'));
-			} else if(pathArr[1] in hsaFolders) {
+			} else if (hsaFolders.includes(pathArr[1])) {
 				respondExternSecure(res, "https://anmeldung.sport.uni-augsburg.de" + q.pathname);
 			} else {
 				respondFile(res, "." + q.pathname);
