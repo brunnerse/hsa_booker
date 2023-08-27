@@ -1,5 +1,5 @@
-//const HSA_LINK = "https://web.archive.org/web/20220810201020/https://anmeldung.sport.uni-augsburg.de"
-const HSA_LINK = "https://anmeldung.sport.uni-augsburg.de"
+const HSA_LINK = "https://web.archive.org/web/20220810201020/https://anmeldung.sport.uni-augsburg.de"
+//const HSA_LINK = "https://anmeldung.sport.uni-augsburg.de"
 
 var choice = undefined;
 
@@ -12,7 +12,6 @@ function updateStatus(str, style="append") {
     switch (style) {
         case "replace":
             let text = elem.innerHTML;
-            console.log(text);
             const tag = "<br>";
             const idx = text.lastIndexOf(tag);
             if (idx >= 0) {
@@ -60,6 +59,19 @@ function requestHTML(method, url) {
     });
 }
 
+
+function getErrorTable(nr, details, error) {
+    const notAvailElem = document.getElementById("notavail");
+    const notAvailNr = notAvailElem.getElementsByTagName("TBODY")[0].getElementsByClassName("bs_sknr")[0];
+    const notAvailName = notAvailElem.getElementsByTagName("TBODY")[0].getElementsByClassName("bs_sdet")[0];
+    const notAvailMsg = notAvailElem.getElementsByTagName("TBODY")[0].getElementsByClassName("bs_btn_ausgebucht")[0];
+    notAvailNr.innerHTML = nr;
+    notAvailName.innerHTML = details;
+    notAvailMsg.innerHTML = error;
+    return notAvailElem.innerHTML;
+}
+
+
 async function arm() {
     console.log("Arming...");
     updateStatus("Arming...", "append");
@@ -67,8 +79,8 @@ async function arm() {
 }
 
 
-
 async function refreshChoice() {
+    updateStatus("Refreshing choice course status...");
     console.log("Choice: " + choice);
     if (!choice) {
         loadChoice();
@@ -82,30 +94,17 @@ async function refreshChoice() {
     }
     console.log("Available courses: " + Object.keys(courses));
 
-    let text = "<div class=\"col-xs-12 content noPadRight\">";
+
+    const tableElem = document.getElementById("avail");
+    let text = ""; //"<div class=\"col-xs-12 content noPadRight\">";
 
     for (let nr of Object.keys(choice)) {
         let c = choice[nr];
-        text += 
-        `
-        <table class="bs_kurse"><thead><tr><th class="bs_sknr">
-        <span class="bslang_de">Kursnr</span>
-        </th><th class="bs_sdet">
-        <span class="bslang_de">Details</span>
-        </th><th class="bs_stag">
-        <span class="bslang_de">Tag</span></th>
-        <th class="bs_szeit"><span class="bslang_de">Zeit</span></th>
-        <th class="bs_sort"><span class="bslang_de">Ort</span></th>
-        <th class="bs_szr"><span class="bslang_de">Zeitraum</span>
-        <th class="bs_skl">
-        <span class="bslang_de">Leitung</span></th>
-        <th class="bs_spreis"><span class="bslang_de">Preis</span></th>
-        <th class="bs_sbuch"><span class="bslang_de">Buchung</span>
-        </th></tr></thead><tbody>"
-        `;
+        updateStatus(`Refreshing course [${nr}] ${c}...`, "replace");
         if (!courses[c]) {
-            text += "<tr class=\"bs_odd\">"+c+" not available!</tr>";
+            text += getErrorTable(nr, c, "Unavailable");
             console.log("[%s] Not available ", c);
+            states[nr] = "unavailable";
         } else {
             console.log("[%s] Available ", c);
             let idx = courses[c].lastIndexOf("/");
@@ -118,9 +117,9 @@ async function refreshChoice() {
             for (n of nums) {
                 if (n.innerHTML == nr) {
                     found = true;
-                    text += n.parentElement.outerHTML;
-
-                    // get booking button
+                    tableElem.getElementsByTagName("TR")[0].innerHTML = n.parentElement.innerHTML;
+                    text += tableElem.outerHTML;
+                    // check booking button
                     let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
                     let bookButton = bookElem.getElementsByClassName("bs_btn_buchen");
                     if (bookButton.length > 0) {
@@ -134,23 +133,21 @@ async function refreshChoice() {
                             states[nr] = "button_gone"
                         }
                     }
-
-
                     break;
                 }
             }
             if (!found) {
-                text += "</br>Kurs " + c + " Kursnr." + choice[c] + " not found!</br>";
-                states[c] = "error";
+                text += getErrorTable(nr, c, "Wrong Number");
+                states[c] = "wrongnumber";
             }
         }
-        text += "</tbody></table>"
         
     }
 
-    text += "</div>";
+    //text += "</div>";
     document.getElementById("choice").innerHTML = text;
     console.log(states);
+    updateStatus("Refresh of courses complete.", "replace");
 }
 
 function loadChoice() {
@@ -163,7 +160,7 @@ function loadChoice() {
         choice = xhr.response;
         console.log("Loaded choice.")
         console.log(choice);
-        updateStatus("Loaded choice.");
+        updateStatus("Loaded choice.", "replace");
 
         refreshChoice();
     }
@@ -206,7 +203,7 @@ function loadCourses() {
          doc.getElementsByClassName("item-page")[0].innerHTML
          +"</div>"
          ;
-        updateStatus("Loaded courses.", "append");
+        updateStatus("Loaded courses.", "replace");
     }
 
     xhr.open(
@@ -225,3 +222,5 @@ document.getElementById("loadcourses").addEventListener("click", ()=>loadCourses
 document.getElementById("loadchoice").addEventListener("click", ()=>loadChoice());
 document.getElementById("refreshchoice").addEventListener("click", ()=>refreshChoice());
 document.getElementById("arm").addEventListener("click", () => arm());
+
+loadCourses();
