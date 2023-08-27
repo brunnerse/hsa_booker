@@ -3,6 +3,25 @@ var https = require('https');
 var url = require('url');
 var fs = require('fs');
 
+
+function escape(htmlStr) {
+	return htmlStr.replace(/&/g, "&amp;")
+		  .replace(/</g, "&lt;")
+		  .replace(/>/g, "&gt;")
+		  .replace(/"/g, "&quot;")
+		  .replace(/'/g, "&#39;")
+		  .replace(/ /g, "%20");        
+}
+function unEscape(htmlStr) {
+    htmlStr = htmlStr.replace(/&lt;/g , "<");	 
+    htmlStr = htmlStr.replace(/&gt;/g , ">");     
+    htmlStr = htmlStr.replace(/&quot;/g , "\"");  
+    htmlStr = htmlStr.replace(/&#39;/g , "\'");   
+    htmlStr = htmlStr.replace(/&amp;/g , "&");
+	htmlStr = htmlStr.replace(/%20/g, " ");
+    return htmlStr;
+} 
+
 function isValidURL(str) {
     try {
       new url.URL(str);
@@ -25,7 +44,7 @@ function isHSAPath(str) {
 function modifyLocationInHeader(header) {
 	if (header.location) {
 		let u = url.parse(header.location, true);
-		header.location = u.pathname;
+		header.location = "/extern?url="+header.location;
 	}
 }
 
@@ -34,10 +53,12 @@ function respondError(res, message="") {
 	res.writeHead(404, {'Content-Type': 'text/html'});
 	res.end(message);
 }
-
+ 
 function respondFile(res, filename) {
+	filename = unEscape(filename);
 	fs.readFile(filename, function(err, data) {
 		if (err) {
+		  console.log("File " + filename + " not found");
 		  respondError(res, "File " + filename + " not found");
 		  return;
 		}
@@ -82,9 +103,9 @@ function respondExternSecure(res, url) {
 		returnedStatus = response.statusCode;
 		returnedHeaders = response.headers;
 		console.log(returnedStatus);
-		console.log(returnedHeaders);
+		//console.log(returnedHeaders);
 		modifyLocationInHeader(returnedHeaders);
-		console.log(returnedHeaders);
+		//console.log(returnedHeaders);
 		res.writeHead(returnedStatus, returnedHeaders);
 		response.on('data', (chunk) => {
 			res.write(chunk)
@@ -103,12 +124,12 @@ function respondExternSecure(res, url) {
 
 
 function requestListen(req, res) {
-	console.log(req.url)
+	console.log("Got request for " + req.url)
 	var q = url.parse(req.url, true);
 
 	let filename; 
 
-	console.log(q)
+	//console.log(q)
 
 	switch (q.pathname) {
 		case "/extern":

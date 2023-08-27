@@ -19,6 +19,9 @@
 <link href="/buchsys/lib/global/flyout_menu1.css" media="all" rel="stylesheet" type="text/css" />
 <link href="/buchsys/lib/global/angebote.css" media="all" rel="stylesheet" type="text/css" />
 <link href="/SysBilder/resex/bs_style.css" media="all" rel="stylesheet" type="text/css" />
+
+
+
 <body>
 
 
@@ -76,14 +79,16 @@
     </br>
     <button type="button" onclick="document.getElementById('demo').innerHTML = Date()">
         Click me to display Date and Time.</button>
-        </br></br>     
-        <button type="button" onclick="fun()">
-        Click here to remove.
-        </button>
-        </br></br>
+        </br></br> 
         <button type="button" id="loadcourses">
             Load available courses
             </button>
+        </br></br>     
+        <button type="button" id="loadchoices">Load Choices</button>
+        <button type="button" id="refreshchoices">Refresh Choices</button>
+        </br></br>
+        <button type=""button" id="arm">Arm</button>
+
 </div>
 <div class='col-xs-12 col-sm-4'>
 
@@ -98,12 +103,13 @@
 </div>
 
 </br>
-<div class="bs_head" role="heading">List of available courses</div>
+<div class="bs_head" role="heading">Chosen courses status</div>
+<div id="choice"></div>
 
 </br>
-<div id="courses">
-
-</div>
+<div class="bs_head" role="heading">List of available courses</div>
+</br>
+<div id="courses"></div>
 
 
 
