@@ -98,13 +98,16 @@ async function refreshChoice() {
     const tableElem = document.getElementById("avail");
     let text = ""; //"<div class=\"col-xs-12 content noPadRight\">";
 
-    for (let nr of Object.keys(choice)) {
-        let c = choice[nr];
-        updateStatus(`Refreshing course [${nr}] ${c}...`, "replace");
+    for (let c of Object.keys(choice)) {
+        updateStatus(`Refreshing course ${c}...`, "replace");
         if (!courses[c]) {
             text += getErrorTable(nr, c, "Unavailable");
             console.log("[%s] Not available ", c);
-            states[nr] = "unavailable";
+            for (let user of Object.keys(choice[c])) {
+                for (let nr of choice[c][user]) {
+                    states[nr] = "unavailable";
+                }
+            }
         } else {
             console.log("[%s] Available ", c);
             let idx = courses[c].lastIndexOf("/");
@@ -113,32 +116,36 @@ async function refreshChoice() {
             console.log(link);
             let doc = await requestHTML("GET","extern?url="+link);
             let nums = doc.getElementsByClassName("bs_sknr");
-            let found = false;
-            for (n of nums) {
-                if (n.innerHTML == nr) {
-                    found = true;
-                    tableElem.getElementsByTagName("TR")[0].innerHTML = n.parentElement.innerHTML;
-                    text += tableElem.outerHTML;
-                    // check booking button
-                    let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
-                    let bookButton = bookElem.getElementsByClassName("bs_btn_buchen");
-                    if (bookButton.length > 0) {
-                        states[nr] = "ready";
-                    }
-                    else {
-                        bookButton = bookElem.getElementsByClassName("bs_btn_ausgebucht");
-                        if (bookButton.length > 0) {
-                            states[nr] = "full";
-                        } else {
-                            states[nr] = "button_gone"
+            for (user of Object.keys(choice[c])) {
+                for (nr of choice[c][user]) {
+                    let found = false;
+                    for (n of nums) {
+                        if (n.innerHTML == nr) {
+                            found = true;
+                            tableElem.getElementsByTagName("TR")[1].innerHTML = n.parentElement.innerHTML;
+                            text += tableElem.innerHTML;
+                            // check booking button
+                            let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
+                            let bookButton = bookElem.getElementsByClassName("bs_btn_buchen");
+                            if (bookButton.length > 0) {
+                                states[nr] = "ready";
+                            }
+                            else {
+                                bookButton = bookElem.getElementsByClassName("bs_btn_ausgebucht");
+                                if (bookButton.length > 0) {
+                                    states[nr] = "full";
+                                } else {
+                                    states[nr] = "button_gone"
+                                }
+                            }
+                            break;
                         }
                     }
-                    break;
+                    if (!found) {
+                        text += getErrorTable(nr, c, "Wrong Number");
+                        states[nr] = "wrongnumber";
+                    }
                 }
-            }
-            if (!found) {
-                text += getErrorTable(nr, c, "Wrong Number");
-                states[c] = "wrongnumber";
             }
         }
         
