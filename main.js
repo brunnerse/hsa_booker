@@ -1,5 +1,5 @@
-HSA_LINK = "https://web.archive.org/web/20220810201020/https://anmeldung.sport.uni-augsburg.de"
-//HSA_LINK = "https://anmeldung.sport.uni-augsburg.de"
+//const HSA_LINK = "https://web.archive.org/web/20220810201020/https://anmeldung.sport.uni-augsburg.de"
+const HSA_LINK = "https://anmeldung.sport.uni-augsburg.de"
 
 var choice = undefined;
 
@@ -35,9 +35,14 @@ function requestHTML(method, url) {
     });
 }
 
+async function arm() {
+    console.log("Arming...");
+
+}
 
 
-async function refreshChoices() {
+
+async function refreshChoice() {
     console.log("Choice: " + choice);
     if (!choice) {
 
@@ -134,7 +139,7 @@ function loadChoice() {
         choice = xhr.response;
         console.log(choice);
 
-        refreshChoices();
+        refreshChoice();
     }
 
     xhr.open(
@@ -186,39 +191,9 @@ function loadCourses() {
 }
 
 
-function execXML() {
-    console.log("Executing XML...");
-    const xhr = new XMLHttpRequest();
-
-    xhr.onerror = () => {
-            document.getElementById("courses").innerHTML = "failed ";
-        };
-    xhr.onload = () => {
-        console.log("Loaded [Status ${xhr.status}]");
-        //console.log(xhr.response)
-    };
-    xhr.onloadend = () => {
-        console.log("Load end.");
-        document.getElementById("courses").innerHTML = xhr.responseText;
-    }
-
-    xhr.open(
-      "GET",
-      "extern?url="+document.getElementById("requesturl").value,
-    );
-    xhr.send();
-
-}
-
-function callOnEnter(event) {
-    if (event.which == 13) {
-        execXML();
-    }
-}
 
 
 document.getElementById("loadcourses").addEventListener("click", ()=>loadCourses());
-document.getElementById("loadchoices").addEventListener("click", ()=>loadChoice());
-document.getElementById("refreshchoices").addEventListener("click", ()=>refreshChoices());
-document.getElementById("xhr").addEventListener("click", ()=>execXML());
-document.getElementById("requesturl").addEventListener("keyup", callOnEnter);
+document.getElementById("loadchoice").addEventListener("click", ()=>loadChoice());
+document.getElementById("refreshchoice").addEventListener("click", ()=>refreshChoice());
+document.getElementById("arm").addEventListener("click", () => arm());
