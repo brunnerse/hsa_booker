@@ -122,6 +122,11 @@ async function refreshChoice() {
                     for (n of nums) {
                         if (n.innerHTML == nr) {
                             found = true;
+                            let detailStr = n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML;
+                            let idx = detailStr.indexOf('-');
+                            idx = idx >= 0 ? idx : detailStr.length;
+                            detailStr = detailStr.substr(0, idx);
+                            n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML = detailStr + ` - ${c} (${user})`;
                             tableElem.getElementsByTagName("TR")[1].innerHTML = n.parentElement.innerHTML;
                             text += tableElem.innerHTML;
                             // check booking button

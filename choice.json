@@ -5,8 +5,9 @@
    "Badminton" : {
         "Severin": [ "10203" ]
     },
-    "Selbstverteidigung für Frauen": {
-        "Severin": [ "7014" ]
+    "Selbstverteidigung": {
+        "Sara": [ "7015", "7014" ], 
+        "Severin": ["7014" ]
     },
     "Suspensionstraining mit TRX": {
         "Severin": [ "30035" ]
