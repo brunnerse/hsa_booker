@@ -56,7 +56,8 @@
                             <li class="item-161"><a id="refreshchoice" href="javascript:void(0)">Aktualisiere
                                     Auswahl-Status</a></li>
                             <li class="item-162"><a id="arm" href="javascript:void(0)">Scharf schalten</a></li>
-                            <li class="item-162"><a id="clearstatus" href="javascript:void(0)">Statusfenster clearen</a></li>
+                            <li class="item-163"><a id="unarm" href="javascript:void(0)">Entschärfen</a></li>
+                            <li class="item-164"><a id="clearstatus" href="javascript:void(0)">Statusfenster clearen</a></li>
                         </ul>
 
                         <a href="https://www.uni-augsburg.de/"><img src='/hsa/templates/hssport/dist/img/uni_white.png'
@@ -85,9 +86,12 @@
 
         </div>
     </div>
+
+    <iframe title="Anmeldung" name="frame_anmeldung"></iframe> 
+
     <div hidden id="avail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
         <div id="bs_content">
-            <form method="post" target="_blank" action="/cgi/anmeldung.fcgi">
+            <form method="post" target="frame_anmeldung" action="/cgi/anmeldung.fcgi">
                 <input type="hidden" name="BS_Code" value="2ca70363-d94d-11ec-874f-00505600022a">
                 <div class="bs_kursangebot">
                     <table class="bs_kurse">
@@ -113,6 +117,7 @@
                                         class="bslang_en">Cost</span></th>
                                 <th class="bs_sbuch"><span class="bslang_de">Buchung</span><span
                                         class="bslang_en">Booking</span></th>
+                                <th style="text-align:center;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -145,6 +150,7 @@
                                 </td>
                                 <td class="bs_sbuch"><a id="K7014"></a><input type="submit" value="buchen"
                                         title="booking" name="BS_Kursid_10911" class="bs_btn_buchen"></td>
+                                <td class="nr_name" style="height:30px;width:250px;font-weight: bold;text-align:center;"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -168,7 +174,7 @@
                             <th class="bs_skl"><span class="bslang_de">Leitung</span></th>
                             <th class="bs_spreis"><span class="bslang_de">Preis</span></th>
                             <th class="bs_sbuch"><span class="bslang_de">Status</span></th>
-
+                            <th style="text-align:center;">Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -180,87 +186,12 @@
                             <td class="bs_sort"></td>
                             <td class="bs_szr"></td>
                             <td class="bs_skl"></td>
-                            <td class="bs_spreis"></td>
-                            <td class="bs_sbuch" style="fill:red; color: red">Unavailable</div>
-                            </td>
+                            <td class="bs_spreis" ></td>
+                            <td class="bs_sbuch" style="color: red">Unavailable</div></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-
-
-    <div class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
-        <div id="bs_content">
-            <form method="post" target="_blank" action="/cgi/anmeldung.fcgi">
-                <input type="hidden" name="BS_Code" value="2ca70363-d94d-11ec-874f-00505600022a">
-                <div id="bs_lang_switch" class="bs_hidden"></div>
-                <div class="bs_head" role="heading">Selbstverteidigung</div>
-                <div class="bs_verantw">verantwortlich: </div>
-                <div id="T7014" class="bs_angblock">
-                    <div class="bs_kursangebot">
-                        <table class="bs_kurse">
-                            <thead>
-                                <tr>
-                                    <th class="bs_sknr"><span class="bslang_de">Kursnr</span><span
-                                            class="bslang_en">No.</span></th>
-                                    <th class="bs_sdet"><span class="bslang_de">Details</span><span
-                                            class="bslang_en">Detail</span></th>
-                                    <th class="bs_stag"><span class="bslang_de">Tag</span><span
-                                            class="bslang_en">Day</span>
-                                    </th>
-                                    <th class="bs_szeit"><span class="bslang_de">Zeit</span><span
-                                            class="bslang_en">Time</span></th>
-                                    <th class="bs_sort"><span class="bslang_de">Ort</span><span
-                                            class="bslang_en">Location</span></th>
-                                    <th class="bs_szr"><span class="bslang_de">Zeitraum</span><span
-                                            class="bslang_en">Duration</span></th>
-                                    <th class="bs_skl"><span class="bslang_de">Leitung</span><span
-                                            class="bslang_en">Guidance</span></th>
-                                    <th class="bs_spreis"><span class="bslang_de">Preis</span><span
-                                            class="bslang_en">Cost</span></th>
-                                    <th class="bs_sbuch"><span class="bslang_de">Buchung</span><span
-                                            class="bslang_en">Booking</span></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="bs_odd" id="bs_tr591E90A78D">
-                                    <td class="bs_sknr">7014</td>
-                                    <td class="bs_sdet">Frauen</td>
-                                    <td class="bs_stag">Fr</td>
-                                    <td class="bs_szeit">18:30-20:00</td>
-                                    <td class="bs_sort"><a
-                                            href="/web/20220521214003/https://anmeldung.sport.uni-augsburg.de/cgi/webpage.cgi?spid=81f1a4476b674b96513c4638ed490555">DJK
-                                            Augsburg Hochzoll</a></td>
-                                    <td class="bs_szr"><a
-                                            href="/web/20220521214003/https://anmeldung.sport.uni-augsburg.de/cgi/webpage.cgi?kursinfo=591E90A78D">06.05.-<wbr/><wbr>22.07.</a>
-                                    </td>
-                                    <td class="bs_skl"><a
-                                            href="/web/20220521214003/https://anmeldung.sport.uni-augsburg.de/cgi/webpage.cgi?kursid=591E90A78D&amp;klid=4416f39eeb4cac923c65570e76900172">
-                                            Saum Andreas</a></td>
-                                    <td class="bs_spreis">
-                                        <div class="bs_tip">40/ 40/ 45&nbsp;&euro;<div>
-                                                <div class="bs_tt1">40&nbsp;EUR</div>
-                                                <div class="bs_tt2">f&uuml;r Studierende</div><br>
-                                                <div class="bs_tt1">40&nbsp;EUR</div>
-                                                <div class="bs_tt2">f&uuml;r Erm&#228;&#223;igte</div><br>
-                                                <div class="bs_tt1">45&nbsp;EUR</div>
-                                                <div class="bs_tt2">f&uuml;r Mitarbeiter</div><br>
-                                                <div class="bs_tt1">40&nbsp;EUR</div>
-                                                <div class="bs_tt2">f&uuml;r F&#246;rderverein</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="bs_sbuch"><a id="K7014"></a><input type="submit" value="buchen"
-                                            title="booking" name="BS_Kursid_10911" class="bs_btn_buchen"></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </form>
-            <div class="bs_endspace"></div>
         </div>
     </div>
 

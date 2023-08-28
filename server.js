@@ -1,5 +1,6 @@
 var http = require('http');
 var https = require('https');
+var fcgi = require('node-fastcgi');
 var url = require('url');
 var fs = require('fs');
 
@@ -64,15 +65,37 @@ function respondFile(res, filename) {
 	  });
 }
 
-function respondExtern(res, url) {
-	console.log("Executing external call to " + url)
-	http.get(url, response => {
-		//console.log("Got code " + response.statusCode);
+function respondExtern(res, query) {
+	let protocol;
+	let path = query.url;
+	if (path.startsWith("https"))
+		protocol = https;
+	else
+		protocol = http;
+
+	// append other variables in query to path
+	if (Object.keys(query).length > 1) {
+		path += '?';
+		for (let key of Object.keys(query)) {
+			if (key != "url") {
+				path += key+"="+query[key]+"&";
+			}
+		}
+	}	
+
+	options = {
+		method : 'GET',
+		timeout : 5000
+	 }
+	console.log("Executing external call to " + path)
+	const req = protocol.request(path, options, response => {
+		console.log("Got code " + response.statusCode);
 		returnedStatus = response.statusCode;
 		returnedHeaders = response.headers;
 		console.log(returnedStatus);
 		modifyLocationInHeader(returnedHeaders);
 		res.writeHead(returnedStatus, returnedHeaders);
+
 		response.on('data', (chunk) => {
 			res.write(chunk)
 			//console.log("Received chunk of size %d", chunk.length)
@@ -81,58 +104,52 @@ function respondExtern(res, url) {
 			console.log("Finished request.");
 			res.end();
 		});
-		response.on('error', (e) => {
-			console.error(`problem with request: ${e.message}`);
-			res.end();
-		});
+	}).on('error', (e) => {
+		console.error(`problem with request: ${e.message}`);
+		if (!res.headersSent)
+			respondError(res, e.message);
+		else
+			res.end(e.message);
 	});
+
+	// Could write post data here
+	// req.write(postdata);
+	req.end();
 }
 
-function respondExternSecure(res, url) {
-	console.log("Executing external https call to " + url)
-	https.get(url, response => {
-		//console.log("Got code " + response.statusCode);
-		returnedStatus = response.statusCode;
-		returnedHeaders = response.headers;
-		console.log(returnedStatus);
-		//console.log(returnedHeaders);
-		modifyLocationInHeader(returnedHeaders);
-		//console.log(returnedHeaders);
-		res.writeHead(returnedStatus, returnedHeaders);
-		response.on('data', (chunk) => {
-			res.write(chunk)
-			//console.log("Received chunk of size %d", chunk.length)
+
+function respondFCGI(req, res) {
+	if (req.method === 'GET') {
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		res.end("It's working");
+	} else if (req.method === 'POST') {
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		var body = "";
+
+		req.on('data', function (data) { body += data.toString(); });
+		req.on('end', function () {
+			res.end("Received data:\n" + body);
+			console.log("POST data: " + body)
 		});
-		response.on('end', () => {
-			console.log("Finished request.");
-			res.end();
-		});
-		response.on('error', (e) => {
-			console.error(`problem with request: ${e.message}`);
-			res.end();
-		});
-	}).on("error", () => respondError(res, "Connection to " + url + " timed out"));
+	} else {
+		res.writeHead(501);
+		res.end();
+	}
 }
 
 
 function requestListen(req, res) {
-	console.log("Got request for " + req.url)
+	console.log("Received [" + req.method + "] request for " + req.url)
 	var q = url.parse(req.url, true);
 
 	let filename; 
-
-	//console.log(q)
-
 	switch (q.pathname) {
 		case "/extern":
 			if (q.query.url) {
 				if (!isValidURL(q.query.url)) {
 					respondError(res, "URL \"" + q.query.url + "\" invalid!");
 				} else {
-					if (q.query.url.startsWith("https"))
-						respondExternSecure(res, q.query.url);
-					else
-						respondExtern(res, q.query.url);
+					respondExtern(res, q.query);
 				}
 			} else {
 				respondError(res, "Query missing");
@@ -141,15 +158,23 @@ function requestListen(req, res) {
 		case "/":
 			respondFile(res, "./main.html");
 			break;
+		case "/cgi/anmeldung.fcgi":
+			respondFCGI(req, res);
+			break;
 		default:
+			// Client requests file;
+			// check first if file from HSA server is requested
 			const hsaFolders = ["index", "templates", "images", "buchsys", "media", "SysBilder"]
 			let pathArr = q.pathname.split('/');
 			if (pathArr[1] == 'hsa') {
 				pathArr.splice(1,1);
-				respondExternSecure(res, "https://hsa.sport.uni-augsburg.de" + pathArr.join('/'));
+				q.query.url = "https://hsa.sport.uni-augsburg.de" + pathArr.join('/');
+				respondExtern(res, q.query);
 			} else if (hsaFolders.includes(pathArr[1])) {
-				respondExternSecure(res, "https://anmeldung.sport.uni-augsburg.de" + q.pathname);
+				q.query.url = "https://anmeldung.sport.uni-augsburg.de" + pathArr.join('/');
+				respondExtern(res, q.query);
 			} else {
+				// return file from own file system
 				respondFile(res, "." + q.pathname);
 			}
 	}
@@ -157,5 +182,23 @@ function requestListen(req, res) {
 
 
 
-
 http.createServer(requestListen).listen(80);
+
+fcgi.createServer(function (req, res) {
+	console.log("Received FCGI " + req);
+	if (req.method === 'GET') {
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		res.end("It's working");
+	} else if (req.method === 'POST') {
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		var body = "";
+
+		req.on('data', function (data) { body += data.toString(); });
+		req.on('end', function () {
+			res.end("Received data:\n" + body);
+		});
+	} else {
+		res.writeHead(501);
+		res.end();
+	}
+}).listen(81);

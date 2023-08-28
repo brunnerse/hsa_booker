@@ -3,11 +3,11 @@ const HSA_LINK = "https://web.archive.org/web/20220810201020/https://anmeldung.s
 
 var choice = undefined;
 
-var states = {};
+var bookingState = {};
 var courses = {};
-var nrToCourse = {};
+var statusElements = {};
 
-
+// TODO timeout
 function requestHTML(method, url) {
     return new Promise(function (resolve, reject) {
         let xhr = new XMLHttpRequest();
@@ -94,94 +94,117 @@ async function arm() {
     const choiceElements = document.getElementById("choice");
 
     for (let elem of choiceElements.children) {
-        let titleArr = elem.getAttribute("title").split("_");
-        let nr = titleArr[0];
+        let title = elem.getAttribute("title");
+        let titleArr = title.split("_");
+        let sport = titleArr[0]; 
+        let nr = titleArr[1];
         let user = titleArr[1];
-        let c = nrToCourse[nr];
-        updateStatus(`Trying to book course [${nr}] ${c} for ${user}...`, "append");
+        updateStatus(`Trying to book course [${nr}] ${sport} for ${user}...`, "append");
 
-        if(!states[nr] == "ready") {
-
-        } else {
-            updateStatus(`Course [${nr}] ${c} not ready, refreshing...`);
-            refreshSport(c)
-        }
+        if(bookingState[title] != "ready") {
+            updateStatus(`Course [${nr}] ${sport} not ready, refreshing...`);
+            //refreshSport(sport);
+            continue;
+        };
 
         let form = elem.children[0];
         form.submit();
-        return;
+        //return;
     }
     // TODO retry unsuccessful courses after refresh
 }
 
-function updateEntryInTable(entryHTML, nr, user, BS_Code) {
-    const title = nr + "_" + user;
-    const tableElem = document.getElementById("avail");
-    tableElem.getElementsByTagName("TR")[1].innerHTML = entryHTML;
-    tableElem.children[0].setAttribute("title", title);
+function updateEntryStates(sport, state, color="white") {
+    for (let user of Object.keys(choice[sport])) {
+        for (let nr of choice[sport][user]) {
+            updateEntryState(sport, nr, user, state, color);
+        }
+    }
+}
 
-    // update BS_Code
-    let inputTableBS = tableElem.getElementsByTagName("INPUT")[0];
-    console.assert(inputTableBS.name == "BS_Code");
-    inputTableBS.value = BS_Code;
+function updateEntryState(sport, nr, user, state, color="white") {
+    let choiceElem = document.getElementById("choice");
+    const title = `${sport}_${nr}_${user}`;
+    const statusElem = statusElements[title];
+    if (!statusElem) {
+        console.log("[ERROR] updating Status: status element " + title + " missing");
+        return;
+    }
+    let style = "height:30px; width: 250px; font-weight: bold; text-align: center;"
+        + "background-color: " + color + ";"
+    statusElem.setAttribute("style", style);
+    statusElem.innerHTML = state;
+}
 
+function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
+    const title = `${sport}_${nr}_${user}`;
+
+    const availElem = document.getElementById("avail");
+    let entryElem;
     // check if nr is already in table
     let found = false;
     for (let tableEntry of document.getElementById("choice").children) {
         if (tableEntry.getAttribute("title") == title) {
             found = true;
-            tableEntry.innerHTML = tableElem.children[0].innerHTML;
+            tableEntry.innerHTML = availElem.children[0].innerHTML;
+            entryElem = tableEntry.children[0];
             break;
         }
     }
     if (!found) {
-        document.getElementById("choice").innerHTML += tableElem.innerHTML;
+        let choiceElem = document.getElementById("choice");
+        choiceElem.innerHTML += availElem.innerHTML;
+        entryElem = choiceElem.children[choiceElem.children.length-1];
     }
+    entryElem.setAttribute("title", title);
+
+    // append status bar to table row
+    const rowElem = entryElem.getElementsByTagName("TR")[1];
+    const statusElem = entryElem.getElementsByClassName("nr_name")[0];
+    rowElem.innerHTML = entryHTML + statusElem.outerHTML;
+
+    statusElements[title] = rowElem.getElementsByClassName("nr_name")[0];
+
+    // update BS_Code
+    let inputTableBS = entryElem.getElementsByTagName("INPUT")[0];
+    console.assert(inputTableBS.name == "BS_Code");
+    inputTableBS.value = BS_Code;
 }
 
-async function refreshSport(c) {
-    // for easier error giving
-    let firstUser = Object.keys(choice[c])[0];
-    let firstNr = choice[c][firstUser][0]
 
-    if (!courses[c]) {
-
-        updateEntryInTable(getErrorTable(firstNr, c, "Not available"), firstNr, firstUser, "xx");
-        console.log("[%s] Not available ", c);
-
-        for (let user of Object.keys(choice[c])) {
-            for (let nr of choice[c][user]) {
-                states[nr] = "unavailable";
-            }
-        }
+async function refreshSport(sport) {
+    let doc;
+    if (!courses[sport]) {
+        console.log("[%s] Not available ", sport);
     } else {
-        let idx = courses[c].lastIndexOf("/");
-        let link = HSA_LINK + "/angebote/aktueller_zeitraum" + courses[c].substr(idx);
-        console.log("[%s] Available -> %s", c, link);
-        let doc;
+        let idx = courses[sport].lastIndexOf("/");
+        let link = HSA_LINK + "/angebote/aktueller_zeitraum" + courses[sport].substr(idx);
+        console.log("[%s] Available -> %s", sport, link);
         try {
             doc = await requestHTML("GET", "extern?url=" + link);
         } catch (e) {
-            updateStatus("Course " + c + "HTML request failed");
-            updateEntryInTable(getErrorTable(firstNr, c, "404"), firstNr, firstUser, "xx");
+            updateStatus("Course " + sport + "HTML request failed");
         }
-        let nums = doc.getElementsByClassName("bs_sknr");
-        for (let user of Object.keys(choice[c])) {
-            for (let nr of choice[c][user]) {
+    }
 
-                // update global array
-                nrToCourse[nr] = c;
+    for (let user of Object.keys(choice[sport])) {
+        for (let nr of choice[sport][user]) {
+            let entryElem;
+            let title = `${sport}_${nr}_${user}`;
+            let BS_Code = "None";
 
-                // find number in loaded doc
-                let found = false;
+            // find number in loaded doc
+            if (doc) {
+                let nums = doc.getElementsByClassName("bs_sknr");
                 for (let n of nums) {
                     if (n.innerHTML == nr) {
                         found = true;
                         let detailStr = n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML;
+                        //TODO should be unnecessary
                         let idx = detailStr.indexOf('-');
                         idx = idx >= 0 ? idx : detailStr.length;
                         detailStr = detailStr.substr(0, idx);
-                        n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML = detailStr + ` - ${c} (${user})`;
+                        n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML = detailStr + ` - ${sport} (${user})`;
 
                         // get BS_Code
                         let formElem = n.parentElement;
@@ -189,31 +212,44 @@ async function refreshSport(c) {
                             formElem = formElem.parentElement;
                         let inputBS = formElem.getElementsByTagName("INPUT")[0];
                         console.assert(inputBS.name == "BS_Code");
+                        BS_Code = inputBS.value;
 
-                        updateEntryInTable(n.parentElement.innerHTML, nr, user, inputBS.value);
+                        entryElem = n.parentElement.innerHTML;
 
                         // check booking button
                         let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
                         let bookButton = bookElem.getElementsByClassName("bs_btn_buchen");
                         if (bookButton.length > 0) {
-                            states[nr] = "ready";
-                        }
-                        else {
+                            bookingState[title] = "ready";
+                        } else {
                             bookButton = bookElem.getElementsByClassName("bs_btn_ausgebucht");
                             if (bookButton.length > 0) {
-                                states[nr] = "full";
+                                bookingState[title] = "full";
                             } else {
-                                states[nr] = "button_gone"
+                                bookingState[title] = "none"
                             }
                         }
                         break;
                     }
                 }
-                if (!found) {
-                    updateEntryInTable(getErrorTable(nr, c, "Wrong Number"), nr, user, "xy");
-                    states[nr] = "wrongnumber";
+                if (!entryElem) {
+                    entryElem = getErrorTable(nr, sport + ` (${user})`, "Wrong Number");
+                    bookingState[title] = "wrongnumber";
                 }
+            } else {
+                let errorMsg; 
+                if(!courses[sport]) {
+                    errorMsg = "Course missing"
+                    bookingState[title] = "missing";
+                } else {
+                    errorMsg = "Page load failed";
+                    bookingState[title] = "failed";
+                }
+                entryElem = getErrorTable(nr, sport + ` (${user})`, errorMsg)
             }
+
+            updateEntryInTable(entryElem, sport, nr, user, BS_Code);
+            updateEntryState(sport, nr, user, bookingState[title]);
         }
     }
 }
@@ -226,17 +262,29 @@ async function refreshChoice() {
         return;
     }
 
-    for (let c of Object.keys(choice)) {
-        updateStatus(`Refreshing course ${c}...`, "replace");
-        let success = await refreshSport(c);
+    for (let sport of Object.keys(choice)) {
+        //updateStatus(`Refreshing course ${sport}...`, "append");
+        let intervalID = setInterval(
+            () => updateEntryStates(sport, `Refreshing (Timeout in ${Math.round(30 - (Date.now() - startTime)/1000)})`, "#ffff00"), 
+        1000);
+        let startTime = Date.now();
+        updateEntryStates(sport, "Refreshing...", "#ffff00");
+        refreshSport(sport).then(() => {
+            clearInterval(intervalID);
+            for (let user of Object.keys(choice[sport])) {
+                for (let nr of choice[sport][user]) {
+                    let title = `${sport}_${nr}_${user}`;
+                    updateEntryState(sport, nr, user, bookingState[title]);
+                }
+            }
+        });
     }
-    console.log(states);
-    updateStatus("Refresh of courses complete.", "replace");
+    //console.log(bookingState);
+    //updateStatus("Refresh of courses complete.", "replace");
 }
 
 
-
-function loadChoice() {
+async function loadChoice() {
     updateStatus("Loading choice...", "append");
 
     if (courses.length == 0) {
@@ -252,9 +300,20 @@ function loadChoice() {
         choice = xhr.response;
         console.log("Loaded choice.")
         console.log(choice);
+
+        // Create table entry for each choice
+        for (let sport of Object.keys(choice)) {
+            for (let user of Object.keys(choice[sport])) {
+                for (let nr of choice[sport][user]) {
+                    entryElem = getErrorTable(nr, sport + ` (${user})`, "init");
+                    updateEntryInTable(entryElem, sport, nr, user, "");
+                }
+            }
+        }
+
         updateStatus("Loaded choice.", "replace");
 
-        refreshChoice();
+        //refreshChoice();
     }
 
     xhr.open(
@@ -264,6 +323,7 @@ function loadChoice() {
     xhr.send();
 
 }
+
 
 function loadCourses() {
     updateStatus("Loading courses...", "append");
@@ -287,10 +347,10 @@ function loadCourses() {
             console.log("Available courses: " + Object.keys(courses));
 
             updateStatus("Loaded courses.", "replace");
-        }
-    ).catch (
+        },
         (err) => {
-            document.getElementById("courses").innerHTML = "failed ";
+            //  document.getElementById("courses").innerHTML = "failed ";
+            updateStatus("Loading courses failed.", "append");
         }
     );
 
@@ -299,10 +359,11 @@ function loadCourses() {
 
 
 
-document.getElementById("loadcourses").addEventListener("click", ()=>loadCourses());
-document.getElementById("loadchoice").addEventListener("click", ()=>loadChoice());
-document.getElementById("refreshchoice").addEventListener("click", ()=>refreshChoice());
-document.getElementById("arm").addEventListener("click", () => arm());
+document.getElementById("loadcourses").addEventListener("click", loadCourses);
+document.getElementById("loadchoice").addEventListener("click", loadChoice);
+document.getElementById("refreshchoice").addEventListener("click", refreshChoice);
+document.getElementById("arm").addEventListener("click", arm);
 document.getElementById("clearstatus").addEventListener("click", () => updateStatus("", "clear"));
 
-loadCourses().then(loadChoice)
+// Load courses automatically on refresh
+//loadCourses().then(loadChoice)
