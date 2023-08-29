@@ -1,17 +1,13 @@
 {
     "Tennis" : {
-        "Severin" : ["10204", "10205"],
-        "Sarah" : ["10206"]
+        "Severin" : ["1040", "1041"],
+        "Sarah" : ["1041"]
     },   
    "Badminton" : {
-        "Severin": [ "10203" ]
+        "Severin": [ "12011" ]
     },
-    "Selbstverteidigung": {
-        "Sara": [ "7014" ], 
-        "Severin": ["7014" ]
-    },
-    "Suspensionstraining mit TRX": {
-        "Severin": [ "30035" ],
-         "Sara": [ "7012" ]
+    "Volleyball": {
+        "Sara": [ "10140" ], 
+        "Severin": ["1014" ]
     }
 }
