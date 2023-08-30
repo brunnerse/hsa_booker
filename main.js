@@ -5,7 +5,7 @@ var HSA_LINK = HSA_LINK_new;
 
 const refreshInterval_short = 2000;
 const refreshInterval_long = 5000;//30000;
-const timeout_msec = 30000;
+const timeout_msec = 5000;
 
 var choice = undefined;
 
@@ -21,7 +21,6 @@ function sleep(msec) {
     })
 }
 
-// TODO timeout
 function requestHTML(method, url) {
     return new Promise(function (resolve, reject) {
         let xhr = new XMLHttpRequest();
@@ -373,6 +372,18 @@ async function refreshChoice() {
         return;
     }
 
+    let updatedSports = [];
+    let updateCheckerInterval = setInterval(
+        async function() {
+            if (updatedSports.length == Object.keys(choice).length) {
+                clearInterval(updateCheckerInterval);
+                updateStatus("Refreshed choice course status.", "replace");
+            }
+            //console.log("Checking if all courses have been updated...");
+        },
+        500
+    )
+
     for (let sport of Object.keys(choice)) {
         console.log("updated entries of " + sport);
         updateEntryStatesSport(sport, "Refreshing...", "#ffff00");
@@ -384,6 +395,7 @@ async function refreshChoice() {
         1000);
 
         refreshSport(sport).then(() => {
+            updatedSports.push(sport);
             clearInterval(intervalID);
             console.log("updating entries of " + sport);
             for (let user of Object.keys(choice[sport])) {
@@ -477,7 +489,15 @@ document.getElementById("arm").addEventListener("click", arm);
 document.getElementById("unarm").addEventListener("click", unarm);
 document.getElementById("clearstatus").addEventListener("click", () => updateStatus("", "clear"));
 
-document.getElementById("debug").addEventListener("click", () => {HSA_LINK = HSA_LINK_new;}); 
+document.getElementById("debug").addEventListener("click", () => {
+    if (HSA_LINK == HSA_LINK_new) {
+        HSA_LINK = HSA_LINK_old;
+    } else {
+        HSA_LINK = HSA_LINK_new;
+    }
+    console.log("Switched HSA_LINK to " + HSA_LINK);
+});
+
 
 // Load data initially 
 loadChoice().then(loadCourses).then(refreshChoice).catch((error) => console.log("Initial loading failed: " + error.message));
