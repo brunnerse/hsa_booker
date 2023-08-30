@@ -5,7 +5,7 @@ var HSA_LINK = HSA_LINK_new;
 
 const refreshInterval_short = 2000;
 const refreshInterval_long = 5000;//30000;
-const timeout_msec = 5000;
+const timeout_msec = 10000;
 
 var choice = undefined;
 
@@ -303,7 +303,7 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
         if (tableEntry.getAttribute("title") == title) {
             found = true;
             tableEntry.innerHTML = availElem.children[0].innerHTML;
-            entryElem = tableEntry.children[0];
+            entryElem = tableEntry;
             break;
         }
     }
@@ -325,6 +325,22 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     let inputTableBS = entryElem.getElementsByTagName("INPUT")[0];
     console.assert(inputTableBS.name == "BS_Code");
     inputTableBS.value = BS_Code;
+    console.log("BS_Code of " + title + " is " + BS_Code);
+
+    // update form target
+    let formElem = entryElem.children[0];
+    console.assert(formElem.tagName == "FORM");
+    /*
+    for (let form of document.forms) {
+        if (form.parentElement.title == title) {
+            form.target = "frame_"+title;
+           console.log("Updated Form " + form.parentElement.title + " target to " + form.target); 
+           break;
+        }
+    }
+    */
+    formElem.target = "frame_"+title;
+    console.log("Updated target: " + formElem.target);
 }
 
 
@@ -435,7 +451,6 @@ async function refreshChoice() {
     )
 
     for (let sport of Object.keys(choice)) {
-        console.log("updated entries of " + sport);
         updateEntryStatesSport(sport, "Refreshing (Timeout in " + Math.round(timeout_msec/1000) + ")", "#ffff00");
 
         let startTime = Date.now();
@@ -476,14 +491,26 @@ function loadChoice() {
             choice = xhr.response;
             console.log("Loaded choice.")
             console.log(choice);
+            
+            let frameRootElem  = document.getElementById("formframes");
+            frameRootElem.innerHTML = "";
 
             // Remove tables and create table entry for each choice
+            let leftRightCounter = 0;
             document.getElementById("choice").innerHTML = "";
             for (let sport of Object.keys(choice)) {
                 for (let user of Object.keys(choice[sport])) {
                     for (let nr of choice[sport][user]) {
                         entryElem = getErrorTable(nr, sport + ` (${user})`, "init");
                         updateEntryInTable(entryElem, sport, nr, user, "");
+                        
+                        // Create iframe for booking
+                        let title = `${sport}_${nr}_${user}`;
+                        let htmlFrame = 
+                            `<div style="align:center;float:${leftRightCounter++ % 2 == 0 ? "left" : "right"};">`+title+"<br>"+
+                            `<iframe title="Anmeldung ${title}" name="frame_${title}" style="height:500px;width:300px;">
+                            </iframe><div>`;
+                       frameRootElem.innerHTML += htmlFrame; 
                     }
                 }
             }
@@ -496,12 +523,13 @@ function loadChoice() {
                     console.log("bookedcourses file does not exist");
                 } else {
                     let bookedList = xhr_booked.response;
-                    console.log("booked response: " + bookedList);
+                    console.log("booked courses: " + bookedList);
                     let bookedArr = bookedList.split("\n");
-                    console.log("booked courses: " + bookedArr);
                     for (let title of bookedArr) {
-                        bookingState[title] = "booked";
-                        updateEntryStateTitle(title, "Booked", "green");
+                        if (title != "") {
+                            bookingState[title] = "booked";
+                            updateEntryStateTitle(title, "Booked", "green");
+                        }
                     } 
                 }
             }
@@ -531,7 +559,7 @@ function loadCourses() {
                 let rootElems = doc.getElementsByClassName("bs_menu");
                 for (let rootElem of rootElems) {
                     for (let elem of rootElem.getElementsByTagName("A")) {
-                        console.log(`${elem.innerHTML} -> ${elem.href}`);
+                        //console.log(`${elem.innerHTML} -> ${elem.href}`);
                         courses[elem.innerHTML] = elem.href;
                     }
                 }
@@ -541,7 +569,6 @@ function loadCourses() {
                     +"</div>" ;
 
                 console.log("Available courses: " + Object.keys(courses));
-
                 updateStatus("Loaded courses.", "replace");
             },
             (err) => {
