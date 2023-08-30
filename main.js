@@ -9,11 +9,24 @@ const timeout_msec = 5000;
 
 var choice = undefined;
 
-var bookingState = {};
+// Dictionary from course name to link
 var courses = {};
+// Dictionary from title to state (ready, full, none, booked, missing, wrongnumber, failed (to load site))
+var bookingState = {};
+// Dictionary from title to HTML element containing the status of the title
 var statusElements = {};
 
+var ongoingXMLRequests = {};
 var armID = 0;
+
+
+function getColorForBookingState(bookingState) {
+    let colors = {"booked" : "green", "ready" : "aqua", "full": "red", "missing": "maroon",
+        "failed": "gray", "wrongnumber": "orange", "none": "white"};
+    if (colors[bookingState])
+        return colors[bookingState];
+    return "white";
+}
 
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
@@ -24,10 +37,18 @@ function sleep(msec) {
 function requestHTML(method, url) {
     return new Promise(function (resolve, reject) {
         let xhr = new XMLHttpRequest();
+        // abort any ongoing request to the same url
+        if (ongoingXMLRequests[url]) {
+            console.log("Abort ongoing HTML request to " + url);
+            ongoingXMLRequests[url].abort();
+        }
+        ongoingXMLRequests[url] = xhr;
+
         xhr.open(method, url);
         xhr.responseType = "document";
         xhr.timeout = timeout_msec;
         xhr.onloadend = function () {
+            delete ongoingXMLRequests[url];
             if (this.status >= 200 && this.status < 300) {
                 resolve(xhr.response);
             } else {
@@ -38,15 +59,17 @@ function requestHTML(method, url) {
             }
         };
         xhr.onerror = function () {
+            delete ongoingXMLRequests[url];
             reject({
                 status: this.status,
                 statusText: xhr.statusText
             });
         };
         xhr.ontimeout = function () {
+            delete ongoingXMLRequests[url];
             reject({
                 status: this.status,
-                statusText: xhr.statusText
+                statusText: "timeout " + xhr.statusText
             });
         };
         xhr.send();
@@ -99,8 +122,11 @@ function getErrorTable(nr, details, error) {
 async function bookCourse(title) {
     let user = title.split("_")[2];
     console.log("Booking course " + title);
-
-    if (bookingState[title] != "ready") {
+    
+    if (bookingState[title] == "booked") {
+        updateEntryStateTitle(title, "Already booked", "green");
+        return;
+    } else if (bookingState[title] != "ready") {
         updateEntryStateTitle(title, "Booking failed: " + bookingState[title], "red");
         return;
     }
@@ -113,8 +139,23 @@ async function bookCourse(title) {
 
     formElem.submit();
 
-    //updateEntryStateTitle(title, "Booking successful", "green");
-    
+    // TODO actually booked the course
+    await sleep(3000);
+    updateEntryStateTitle(title, "Booking successful", "green");
+    bookingState[title] = "booked"; 
+
+    // let server know that course was booked successful
+    let xhr = new XMLHttpRequest();
+    xhr.onerror = () => {
+        console.log("WARNING: Failed to inform server about successful booking"); 
+    };
+    xhr.onloadend = () => {
+       let bookedCourses = xhr.response;
+       console.log("Successfully informed server about successfull booking.");
+       console.log("Booked courses: " + bookedCourses);
+    }
+    xhr.open("GET","appendFile?file=bookedcourses.txt&text="+title);
+    xhr.send();
 }
 
 async function waitUntilReady(sport, titles, checkAbortFun) {
@@ -122,13 +163,13 @@ async function waitUntilReady(sport, titles, checkAbortFun) {
     let title;
     console.log(sport +"\t" + titles);
     for (let t of titles) {
-        if (bookingState[t] != "missing" && bookingState[t] != "wrongnumber") {
+        if (!["missing", "wrongnumber", "booked"].includes(bookingState[t])) {
             title = t;
             break;
         }
     }
     if (!title) {
-        throw new Error("All bookings for " + sport + "are invalid");
+        throw new Error("All bookings for " + sport + " are invalid");
     }
     // TODO check time when booking is available
     //let buchElem = statusElements[title].parentElement.getElementsByClassName("bs_sbuch")[0];
@@ -148,7 +189,6 @@ async function waitUntilReady(sport, titles, checkAbortFun) {
                     `Refreshing (Timeout in ${Math.round((timeout_msec - (Date.now() - lastRefreshTime)) / 1000)})`, "#ffff00"),
                 1000);
             await refreshSport(sport);
-            // TODO inform if refreshSport failed
             clearInterval(intervalID);
         } else {
             updateEntryStatesSport(sport, `Refreshing in ${Math.round((refreshInterval_short - (Date.now() -lastRefreshTime)) / 1000)}`);
@@ -157,7 +197,7 @@ async function waitUntilReady(sport, titles, checkAbortFun) {
         }
     }
     for (let t of titles) {
-            updateEntryStateTitle(t, bookingState[t]);
+            updateEntryStateTitle(t, bookingState[t], getColorForBookingState(bookingState[t]));
     }         
     throw new Error("aborted");
 
@@ -165,6 +205,7 @@ async function waitUntilReady(sport, titles, checkAbortFun) {
 
 async function arm() {
     console.log("Arming...");
+    console.log("Booking keys: " + Object.keys(bookingState));
     updateStatus("Arming...", "append");
 
     if (courses.length == 0 || !choice) {
@@ -174,7 +215,6 @@ async function arm() {
 
     let currentArmID = armID;
     checkAbortFun = () => {return armID != currentArmID;};
-
 
     const choiceElement = document.getElementById("choice");
 
@@ -198,16 +238,15 @@ async function arm() {
             });
     }
     updateStatus("Armed.", "replace");
+    console.log("Booking keys: " + Object.keys(bookingState));
 
-    // TODO automatically unarm once all courses have been booked
-    let intervalID;
-    intervalID = setInterval(() => {
+    let intervalID = setInterval(() => {
         console.log("Checking if booking is done to unarm automatically...");
         if (checkBookingDone() || checkAbortFun()){
             clearInterval(intervalID); // TODO does this work, i.e. can interval disable itself?
             unarm();
         }
-    }, 5000); 
+    }, 1000); 
 }
 
 async function unarm() {
@@ -215,11 +254,16 @@ async function unarm() {
     updateStatus("Unarmed.", "append");
 }
 
-// TODO implement 
 function checkBookingDone() {
-    return false;
-}
+    for (let title of Object.keys(bookingState)) {
+        if (!["booked", "full", "missing", "wrongnumber"].includes(bookingState[title])) {
+            console.log("Booking not done" + title + " " + bookingState[title]);
+            return false;
 
+        }
+    }
+    return true;
+}
 
 
 function updateEntryStatesSport(sport, state, color="white") {
@@ -286,13 +330,14 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
 
 async function refreshSport(sport) {
     let doc;
+    let stateColor = "white";
     if (courses[sport]) {
         let idx = courses[sport].lastIndexOf("/");
         let link = HSA_LINK + "/angebote/aktueller_zeitraum" + courses[sport].substr(idx);
         try {
             doc = await requestHTML("GET", "extern?url=" + link);
-        } catch (e) {
-            updateStatus("Course " + sport + "HTML request failed");
+        } catch (err) {
+            updateStatus("Course " + sport + "HTML request failed : " + JSON.stringify(err));
         }
     }
 
@@ -301,6 +346,8 @@ async function refreshSport(sport) {
             let entryElem;
             let title = `${sport}_${nr}_${user}`;
             let BS_Code = "None";
+
+            let alreadyBooked = bookingState[title] === "booked";
 
             // find number in loaded doc
             if (doc) {
@@ -335,7 +382,7 @@ async function refreshSport(sport) {
                             if (bookButton.length > 0) {
                                 bookingState[title] = "full";
                             } else {
-                                bookingState[title] = "none"
+                                bookingState[title] = "none";
                             }
                         }
                         break;
@@ -357,8 +404,11 @@ async function refreshSport(sport) {
                 entryElem = getErrorTable(nr, sport + ` (${user})`, errorMsg)
             }
 
+            // reset state to booked again if it was booked before
+            if (alreadyBooked) {
+                bookingState[title] = "booked";
+            }
             updateEntryInTable(entryElem, sport, nr, user, BS_Code);
-            updateEntryState(sport, nr, user, bookingState[title]);
         }
     }
 }
@@ -386,7 +436,7 @@ async function refreshChoice() {
 
     for (let sport of Object.keys(choice)) {
         console.log("updated entries of " + sport);
-        updateEntryStatesSport(sport, "Refreshing...", "#ffff00");
+        updateEntryStatesSport(sport, "Refreshing (Timeout in " + Math.round(timeout_msec/1000) + ")", "#ffff00");
 
         let startTime = Date.now();
         let intervalID = setInterval(
@@ -401,7 +451,7 @@ async function refreshChoice() {
             for (let user of Object.keys(choice[sport])) {
                 for (let nr of choice[sport][user]) {
                     let title = `${sport}_${nr}_${user}`;
-                    updateEntryStateTitle(title, bookingState[title]);
+                    updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
                 }
             }
         });
@@ -419,7 +469,7 @@ function loadChoice() {
         }
         let xhr = new XMLHttpRequest();
         xhr.onerror = () => {
-            document.getElementById("courses").innerHTML = "failed ";
+            document.getElementById("choice").innerHTML = "failed ";
             reject();
         };
         xhr.onloadend = () => {
@@ -438,6 +488,28 @@ function loadChoice() {
                 }
             }
             updateStatus("Loaded choice.", "replace");
+
+            // Get list of already booked courses and set their bookingState
+            let xhr_booked = new XMLHttpRequest();
+            xhr_booked.onloadend = () => {
+                if (xhr_booked.status == 404) {
+                    console.log("bookedcourses file does not exist");
+                } else {
+                    let bookedList = xhr_booked.response;
+                    console.log("booked response: " + bookedList);
+                    let bookedArr = bookedList.split("\n");
+                    console.log("booked courses: " + bookedArr);
+                    for (let title of bookedArr) {
+                        bookingState[title] = "booked";
+                        updateEntryStateTitle(title, "Booked", "green");
+                    } 
+                }
+            }
+            xhr_booked.onerror = () => console.log("ERROR: Request to load bookedcourses.txt list failed");
+
+            xhr_booked.open("GET", "bookedcourses.txt");
+            xhr_booked.send();
+
             resolve();
         }
         xhr.open(
@@ -474,8 +546,7 @@ function loadCourses() {
             },
             (err) => {
                 //  document.getElementById("courses").innerHTML = "failed ";
-                updateStatus("Loading courses failed.", "append");
-                throw new Error("failed");
+                updateStatus("Loading courses failed: " + JSON.stringify(err), "append");
             }
         );
 }

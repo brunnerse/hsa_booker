@@ -4,6 +4,11 @@ var fcgi = require('node-fastcgi');
 var url = require('url');
 var fs = require('fs');
 
+function sleep(msec) {
+    return new Promise(function (resolve, reject) {
+        setTimeout(resolve, msec);
+    })
+}
 
 function escape(htmlStr) {
 	return htmlStr.replace(/&/g, "&amp;")
@@ -46,6 +51,19 @@ function respondError(res, message="") {
 	res.writeHead(404, {'Content-Type': 'text/html'});
 	res.end(message);
 }
+
+function appendFile(query, res) {
+	if (!query.file || !query.text) {
+		respondError(res, "Invalid query " + JSON.stringify(query));
+	} else {
+		console.log("Writing text to file " + query.file + ": " + query.text);
+		fs.appendFile(query.file, query.text + "\n", () =>  {
+			res.writeHead(200);
+			fs.readFile(query.file, (data) => res.end(data));
+		}
+		);
+	}
+}
  
 function respondFile(res, filename) {
 	filename = unEscape(filename);
@@ -62,6 +80,7 @@ function respondFile(res, filename) {
 		}
 		res.write(data);
 		res.end();
+		console.log("Responded with file " + filename);
 	  });
 }
 
@@ -84,8 +103,7 @@ function respondExtern(res, query) {
 	}	
 
 	options = {
-		method : 'GET',
-		timeout : 5000
+		method : 'GET'
 	 }
 	console.log("Executing external call to " + path)
 	const req = protocol.request(path, options, response => {
@@ -100,18 +118,27 @@ function respondExtern(res, query) {
 			res.write(chunk)
 			//console.log("Received chunk of size %d", chunk.length)
 		});
-		response.on('end', () => {
-			console.log("Finished request.");
+		response.on('end', async function()  {
+			console.log("Request finished.");
 			res.end();
 		});
-	}).on('error', (e) => {
-		console.error(`problem with request: ${e.message}`);
+		response.on('timeout', () => {
+			console.log("Request timed out.");
+			throw new Error("external site timeout");
+		})
+	})
+	const errorFun = (e) => {
+		console.error(`problem with request: ${e}`);
 		if (!res.headersSent)
-			respondError(res, e.message);
+			respondError(res, e);
 		else
-			res.end(e.message);
-	});
+			res.end(e);
+	};
 
+	req.on('timeout', () => errorFun("timeout"));
+	req.on('error', (err) => errorFun("error: " + err.message));
+
+	req.setTimeout(5000);
 	// Could write post data here
 	// req.write(postdata);
 	req.end();
@@ -142,6 +169,8 @@ function requestListen(req, res) {
 	console.log("Received [" + req.method + "] request for " + req.url)
 	var q = url.parse(req.url, true);
 
+	req.on("abort", () => console.log("Abort received"));
+
 	let filename; 
 	switch (q.pathname) {
 		case "/extern":
@@ -155,11 +184,14 @@ function requestListen(req, res) {
 				respondError(res, "Query missing");
 			}
 			break;
-		case "/":
-			respondFile(res, "./main.html");
+		case "/appendFile":
+			appendFile(q.query, res);
 			break;
 		case "/cgi/anmeldung.fcgi":
 			respondFCGI(req, res);
+			break;
+		case "/":
+			respondFile(res, "./main.html");
 			break;
 		default:
 			// Client requests file;
