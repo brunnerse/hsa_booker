@@ -48,8 +48,7 @@ function logFile(filename, log) {
 // If external server wants to redirect to itself, modify the location
 function modifyLocationInHeader(header) {
 	if (header.location) {
-		let u = url.parse(header.location, true);
-		header.location = "/extern?url="+header.location;
+		header.location = "/extern/"+header.location;
 	}
 }
 
@@ -91,44 +90,30 @@ function respondFile(res, filename) {
 	  });
 }
 
-function respondExtern(req, res, parsedReq) {
+function respondExtern(req, res, reqUrl) {
 	let protocol;
-	let path = parsedReq.query.url;
+	let parsedReq = url.parse(reqUrl, true);
 
-	if (!path) 
-		return respondError(res, "Query url missing");
-	if (!isValidURL(path)) 
-		return respondError(res, "URL \"" + path + "\" invalid!");
+	if (!isValidURL(reqUrl)) 
+ 		return respondError(res, "URL \"" + reqUrl + "\" invalid!");
 
-	if (path.startsWith("https"))
+	console.log("Executing external call to " + reqUrl);
+
+	if (parsedReq.protocol.includes("https"))
 		protocol = https;
 	else
 		protocol = http;
-
-	// append other variables in query to path
-	if (Object.keys(parsedReq.query).length > 1) {
-		path += '?';
-		for (let key of Object.keys(parsedReq.query)) {
-			if (key != "url") {
-				path += key+"=" + parsedReq.query[key]+"&";
-			}
-		}
-	}	
-
-	let parsedOutReq = url.parse(path, true);
 
 	options = {
 		method : req.method, 
 		headers : req.headers
 	}
 
-	options.headers.host = parsedOutReq.hostname;
+	options.headers.host = parsedReq.hostname;
 	// TODO more elegant solution than just deleting the referer
 	delete options.headers.referer;
-	
 
-	console.log("Executing external call to " + path)
-	const outReq = protocol.request(path, options, response => {
+	const outReq = protocol.request(reqUrl, options, response => {
 		console.log("Got code " + response.statusCode);
 		returnedStatus = response.statusCode;
 		returnedHeaders = response.headers;
@@ -138,33 +123,35 @@ function respondExtern(req, res, parsedReq) {
 		res.writeHead(returnedStatus, returnedHeaders);
 
 		response.on('data', (chunk) => {
-			res.write(chunk)
+			if (!res.finished)
+				res.write(chunk)
 			//console.log("Received chunk of size %d", chunk.length)
 		});
 		response.on('end', async function()  {
-			console.log("Request finished.");
+			console.log("Request finished: " + reqUrl);
 			res.end();
 		});
 		response.on('timeout', () => {
-			console.log("Request timed out.");
+			console.log("Request timed out: " + reqUrl);
 			throw new Error("external site timeout");
 		})
 	});
 
 	const errorFun = (e) => {
-		console.error(`problem with request: ${e}`);
+		console.error(`Problem with external request to ${reqUrl}: ${e}`);
 		if (!res.headersSent)
 			respondError(res, e);
 		else
 			res.end(e);
 	};
 
-	outReq.on('timeout', () => errorFun("timeout"));
+	outReq.on('timeout', () => {
+		errorFun("timeout");});
 	outReq.on('error', (err) => errorFun("error: " + err.message));
 
 	outReq.setTimeout(5000);
 
-	logFile("external.txt", `\n${outReq.method} ${path}\n${JSON.stringify(outReq.getHeaders())}\n`);
+	logFile("external.txt", `\n${outReq.method} ${reqUrl}\n${JSON.stringify(outReq.getHeaders())}`);
 
 	if (req.method == 'POST') {
 		// TODO check if outReq didnt timeout/error before writing/ending it
@@ -173,6 +160,7 @@ function respondExtern(req, res, parsedReq) {
 			outReq.write(data);
 		});
 		req.on('end', () => {
+			console.log("Ending outReq...");
 			outReq.end();
 		});
 	} else {
@@ -202,41 +190,39 @@ function respondFCGI(req, res) {
 
 
 function requestListen(req, res) {
-	console.log("Received [" + req.method + "] request for " + req.url)
-	var q = url.parse(req.url, true);
+	let pathArr = req.url.split('/')
+	console.log("Received [" + req.method + "] request for " + req.url);
 
 	req.on("abort", () => console.log("Abort received"));
-
-	let filename; 
-	switch (q.pathname) {
-		case "/extern":
-			respondExtern(req, res, q);
+	switch (pathArr[1]) {
+		case "extern":
+			pathArr.splice(0,2);
+			respondExtern(req, res, pathArr.join("/"));
 			break;
-		case "/appendFile":
-			appendFile(q.query, res);
+		case "appendFile":
+			appendFile(url.parse(req.url, true).query, res);
 			break;
-		case "/cgi/anmeldung.fcgi":
+		case "cgi":
 			// TODO not necessary, just make external request
 			respondFCGI(req, res);
 			break;
-		case "/":
+		case "":
 			respondFile(res, "./main.html");
+			break;
+		case "hsa":
+			pathArr.splice(1,1);
+			respondExtern(req, res, "https://hsa.sport.uni-augsburg.de" + pathArr.join('/'));
 			break;
 		default:
 			// Client requests file;
 			// check first if file from HSA server is requested
 			const hsaFolders = ["index", "templates", "images", "buchsys", "media", "SysBilder"]
-			let pathArr = q.pathname.split('/');
-			if (pathArr[1] == 'hsa') {
-				pathArr.splice(1,1);
-				q.query.url = "https://hsa.sport.uni-augsburg.de" + pathArr.join('/');
-				respondExtern(req, res, q);
-			} else if (hsaFolders.includes(pathArr[1])) {
-				q.query.url = "https://anmeldung.sport.uni-augsburg.de" + pathArr.join('/');
-				respondExtern(req, res, q);
+			if (hsaFolders.includes(pathArr[1])) {
+				respondExtern(req, res, "https://anmeldung.sport.uni-augsburg.de" + pathArr.join('/'));
 			} else {
 				// return file from own file system
-				respondFile(res, "." + q.pathname);
+				var filename = url.parse(req.url, true).pathname;
+				respondFile(res, "." + filename);
 			}
 	}
 }
