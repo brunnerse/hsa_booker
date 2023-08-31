@@ -53,10 +53,12 @@
                         <ul class="nav menu mod-list">
                             <li class="item-109"><a id="loadcourses" href="javascript:void(0)">Load course list</a></li>
                             <li class="item-160"><a id="loadchoice" href="javascript:void(0)">Load choice</a></li>
-                            <li class="item-161"><a id="refreshchoice" href="javascript:void(0)">Refresh choice status</a></li>
+                            <li class="item-161"><a id="refreshchoice" href="javascript:void(0)">Refresh choice
+                                    status</a></li>
                             <li class="item-162"><a id="arm" href="javascript:void(0)">Arm</a></li>
                             <li class="item-163"><a id="unarm" href="javascript:void(0)">Unarm</a></li>
-                            <li class="item-164"><a id="clearstatus" href="javascript:void(0)">Clear status window</a></li>
+                            <li class="item-164"><a id="clearstatus" href="javascript:void(0)">Clear status window</a>
+                            </li>
                             <li class="item-165"><a id="debug" href="javascript:void(0)">Debug</a></li>
                         </ul>
 
@@ -66,10 +68,12 @@
                 </div>
             </div>
             <div class='col-xs-12 col-sm-9 col-md-9 col-lg-10 noPad'>
-                <div class="custom darkred">
-                    <p style="text-align: center;"> <strong>Status<br /></strong></p>
-                    <hr />
-                    <p id="statustext"></p>
+                <div class="custom darkred" style="text-align: center;">
+                    <strong>Status<br /></strong>
+                    <hr/>
+                    <div style="text-align:left;height:200px;overflow:auto;display:flex;flex-direction:column-reverse">
+                        <p id="statustext"></p>
+                    </div>
                 </div>
             </div>
 
@@ -81,12 +85,12 @@
         </div>
     </div>
 
-    <div class="col-sm-9" id="formframes"> 
+    <div class="col-sm-9" id="formframes">
     </div>
 
     <div class="col-sm-9">
-    <div class="bs_head_small">List of available courses</div>
-    <div id="courses"></div>
+        <div class="bs_head_small">List of available courses</div>
+        <div id="courses"></div>
     </div>
 
 
@@ -151,7 +155,8 @@
                                 </td>
                                 <td class="bs_sbuch"><a id="K7014"></a><input type="submit" value="buchen"
                                         title="booking" name="BS_Kursid_10911" class="bs_btn_buchen"></td>
-                                <td class="nr_name" style="height:30px;width:250px;font-weight: bold;text-align:center;"></td>
+                                <td class="nr_name"
+                                    style="height:30px;width:250px;font-weight: bold;text-align:center;"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -187,13 +192,15 @@
                             <td class="bs_sort"></td>
                             <td class="bs_szr"></td>
                             <td class="bs_skl"></td>
-                            <td class="bs_spreis" ></td>
-                            <td class="bs_sbuch" style="color: red">Unavailable</div></td>
-                        </tr>
-                    </tbody>
-                </table>
+                            <td class="bs_spreis"></td>
+                            <td class="bs_sbuch" style="color: red">Unavailable
             </div>
+            </td>
+            </tr>
+            </tbody>
+            </table>
         </div>
+    </div>
     </div>
 
 
