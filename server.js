@@ -1,3 +1,6 @@
+#!/usr/bin/env node
+
+
 var http = require('http');
 var https = require('https');
 var fcgi = require('node-fastcgi');
@@ -84,29 +87,36 @@ function respondFile(res, filename) {
 	  });
 }
 
-function respondExtern(res, query) {
+function respondExtern(req, res, parsedReq) {
 	let protocol;
-	let path = query.url;
+	let path = parsedReq.query.url;
+
+	if (!path) 
+		return respondError(res, "Query url missing");
+	if (!isValidURL(path)) 
+		return respondError(res, "URL \"" + path + "\" invalid!");
+
 	if (path.startsWith("https"))
 		protocol = https;
 	else
 		protocol = http;
 
 	// append other variables in query to path
-	if (Object.keys(query).length > 1) {
+	if (Object.keys(parsedReq.query).length > 1) {
 		path += '?';
-		for (let key of Object.keys(query)) {
+		for (let key of Object.keys(parsedReq.query)) {
 			if (key != "url") {
-				path += key+"="+query[key]+"&";
+				path += key+"=" + parsedReq.query[key]+"&";
 			}
 		}
 	}	
 
 	options = {
-		method : 'GET'
+		method : req.method 
+		// TODO transfer headers of req + other stuff of req
 	 }
 	console.log("Executing external call to " + path)
-	const req = protocol.request(path, options, response => {
+	const outReq = protocol.request(path, options, response => {
 		console.log("Got code " + response.statusCode);
 		returnedStatus = response.statusCode;
 		returnedHeaders = response.headers;
@@ -126,7 +136,8 @@ function respondExtern(res, query) {
 			console.log("Request timed out.");
 			throw new Error("external site timeout");
 		})
-	})
+	});
+
 	const errorFun = (e) => {
 		console.error(`problem with request: ${e}`);
 		if (!res.headersSent)
@@ -135,13 +146,17 @@ function respondExtern(res, query) {
 			res.end(e);
 	};
 
-	req.on('timeout', () => errorFun("timeout"));
-	req.on('error', (err) => errorFun("error: " + err.message));
+	outReq.on('timeout', () => errorFun("timeout"));
+	outReq.on('error', (err) => errorFun("error: " + err.message));
 
-	req.setTimeout(5000);
-	// Could write post data here
-	// req.write(postdata);
-	req.end();
+	outReq.setTimeout(5000);
+	if (req.method == 'POST') {
+		// TODO check if outReq didnt timeout/error before writing/ending it
+		req.on('data', (data) => outReq.write(postdata));
+		req.on('end', () => outReq.end());
+	} else {
+		outReq.end();
+	}
 }
 
 
@@ -174,15 +189,7 @@ function requestListen(req, res) {
 	let filename; 
 	switch (q.pathname) {
 		case "/extern":
-			if (q.query.url) {
-				if (!isValidURL(q.query.url)) {
-					respondError(res, "URL \"" + q.query.url + "\" invalid!");
-				} else {
-					respondExtern(res, q.query);
-				}
-			} else {
-				respondError(res, "Query missing");
-			}
+			respondExtern(req, res, q);
 			break;
 		case "/appendFile":
 			appendFile(q.query, res);
@@ -201,10 +208,10 @@ function requestListen(req, res) {
 			if (pathArr[1] == 'hsa') {
 				pathArr.splice(1,1);
 				q.query.url = "https://hsa.sport.uni-augsburg.de" + pathArr.join('/');
-				respondExtern(res, q.query);
+				respondExtern(req, res, q);
 			} else if (hsaFolders.includes(pathArr[1])) {
 				q.query.url = "https://anmeldung.sport.uni-augsburg.de" + pathArr.join('/');
-				respondExtern(res, q.query);
+				respondExtern(req, res, q);
 			} else {
 				// return file from own file system
 				respondFile(res, "." + q.pathname);

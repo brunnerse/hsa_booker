@@ -311,16 +311,17 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
         let choiceElem = document.getElementById("choice");
         choiceElem.innerHTML += availElem.innerHTML;
         entryElem = choiceElem.children[choiceElem.children.length-1];
+        entryElem.setAttribute("title", title);
     }
-    entryElem.setAttribute("title", title);
 
-    // append status bar to table row
+    // replace tableRow with entryHTML input appended with the old status bar 
     const rowElem = entryElem.getElementsByTagName("TR")[1];
     const statusElem = entryElem.getElementsByClassName("nr_name")[0];
     rowElem.innerHTML = entryHTML + statusElem.outerHTML;
 
     statusElements[title] = rowElem.getElementsByClassName("nr_name")[0];
 
+    // update form:
     // update BS_Code
     let inputTableBS = entryElem.getElementsByTagName("INPUT")[0];
     console.assert(inputTableBS.name == "BS_Code");
@@ -330,17 +331,8 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     // update form target
     let formElem = entryElem.children[0];
     console.assert(formElem.tagName == "FORM");
-    /*
-    for (let form of document.forms) {
-        if (form.parentElement.title == title) {
-            form.target = "frame_"+title;
-           console.log("Updated Form " + form.parentElement.title + " target to " + form.target); 
-           break;
-        }
-    }
-    */
     formElem.target = "frame_"+title;
-    console.log("Updated target: " + formElem.target);
+    console.log("Updated target of form to: " + formElem.target);
 }
 
 
