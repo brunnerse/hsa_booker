@@ -120,8 +120,6 @@ function getErrorTable(nr, details, error) {
 }
 
 async function bookCourse(title) {
-    let user = title.split("_")[2];
-
     console.log("bookCourse " + title + bookingState[title]);
     
     if (bookingState[title] == "booked") {
@@ -134,32 +132,47 @@ async function bookCourse(title) {
 
     console.log("Booking course " + title);
     updateEntryStateTitle(title, "Started booking", "blue");
+    
+    // find iframe for course
+    let iFrameElem = document.getElementById("frame_"+title);
+    iFrameElem.onload = 
+    async function (event) { 
+
+        let frameDoc = iFrameElem.contentDocument;
+        console.log(title + " iFrame content:")
+        console.log(frameDoc);
+        
+        let user = title.split("_")[2];
+
+
+        // TODO fill form and submit 
+        await sleep(3000);
+
+
+        updateEntryStateTitle(title, "Booking successful", "green");
+        bookingState[title] = "booked"; 
+
+        // let server know that course was booked successful
+        let xhr = new XMLHttpRequest();
+        xhr.onerror = () => {
+            console.log("WARNING: Failed to inform server about successful booking"); 
+        };
+        xhr.onloadend = () => {
+            let bookedCourses = xhr.response;
+            console.log("Successfully informed server about successfull booking.");
+            console.log("Booked courses: " + bookedCourses);
+        };
+        xhr.responseType = "text";
+        xhr.open("GET","/appendFile/?file=bookedcourses.txt&text="+title);
+        xhr.send();
+    };
 
     // find form element for course
     let formElem = statusElements[title].parentElement;
     while (formElem.tagName != "FORM") 
         formElem = formElem.parentElement;
+    formElem.submit(); // TODO requestSubmit()?
 
-    formElem.submit();
-
-    // TODO actually booked the course
-    await sleep(3000);
-    updateEntryStateTitle(title, "Booking successful", "green");
-    bookingState[title] = "booked"; 
-
-    // let server know that course was booked successful
-    let xhr = new XMLHttpRequest();
-    xhr.onerror = () => {
-        console.log("WARNING: Failed to inform server about successful booking"); 
-    };
-    xhr.onloadend = () => {
-       let bookedCourses = xhr.response;
-       console.log("Successfully informed server about successfull booking.");
-       console.log("Booked courses: " + bookedCourses);
-    }
-    xhr.responseType = "text";
-    xhr.open("GET","/appendFile/?file=bookedcourses.txt&text="+title);
-    xhr.send();
 }
 
 async function waitUntilReadyAndBook(sport, titles, checkAbortFun) {
@@ -212,8 +225,6 @@ async function waitUntilReadyAndBook(sport, titles, checkAbortFun) {
 }
 
 async function arm() {
-    console.log("Arming...");
-    console.log("Booking keys: " + Object.keys(bookingState));
     updateStatus("Arming...", "append");
 
     if (courses.length == 0 || !choice) {
@@ -243,11 +254,14 @@ async function arm() {
     updateStatus("Armed.", "replace");
 
     let intervalID = setInterval(() => {
-        if (checkBookingDone() || checkAbortFun()){
-            clearInterval(intervalID); 
+        //console.log("Checking if booking is done to unarm automatically...");
+        let bookingDone = checkBookingDone();
+        // if checkAbortfun is true, unarm has already been called
+        if (bookingDone && !checkAbortFun())
             unarm();
-        }
-    }, 1000); 
+        if (bookingDone || checkAbortFun())
+            clearInterval(intervalID); 
+    }, 500); 
 }
 
 async function unarm() {
@@ -258,7 +272,7 @@ async function unarm() {
 function checkBookingDone() {
     for (let title of Object.keys(bookingState)) {
         if (!["booked", "full", "missing", "wrongnumber"].includes(bookingState[title])) {
-            console.log("Booking not done: " + title + " state " + bookingState[title]);
+            //console.log("Booking not done: " + title + " " + bookingState[title]);
             return false;
         }
     }
@@ -333,7 +347,6 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     let formElem = entryElem.children[0];
     console.assert(formElem.tagName == "FORM");
     formElem.target = "frame_"+title;
-    console.log("Updated target of form to: " + formElem.target);
 }
 
 
