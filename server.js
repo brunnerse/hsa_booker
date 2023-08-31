@@ -40,6 +40,10 @@ function isValidURL(str) {
     }
 }
 
+function logFile(filename, log) {
+	fs.appendFile(filename, log + "\n", (err) => {if (err) console.log("[LOG] Error: " + err);});
+}
+
 
 // If external server wants to redirect to itself, modify the location
 function modifyLocationInHeader(header) {
@@ -111,16 +115,25 @@ function respondExtern(req, res, parsedReq) {
 		}
 	}	
 
+	let parsedOutReq = url.parse(path, true);
+
 	options = {
-		method : req.method 
-		// TODO transfer headers of req + other stuff of req
-	 }
+		method : req.method, 
+		headers : req.headers
+	}
+
+	options.headers.host = parsedOutReq.hostname;
+	// TODO more elegant solution than just deleting the referer
+	delete options.headers.referer;
+	
+
 	console.log("Executing external call to " + path)
 	const outReq = protocol.request(path, options, response => {
 		console.log("Got code " + response.statusCode);
 		returnedStatus = response.statusCode;
 		returnedHeaders = response.headers;
 		console.log(returnedStatus);
+		logFile("external.txt", `Response ${returnedStatus} ${JSON.stringify(returnedHeaders)}`);
 		modifyLocationInHeader(returnedHeaders);
 		res.writeHead(returnedStatus, returnedHeaders);
 
@@ -150,10 +163,18 @@ function respondExtern(req, res, parsedReq) {
 	outReq.on('error', (err) => errorFun("error: " + err.message));
 
 	outReq.setTimeout(5000);
+
+	logFile("external.txt", `\n${outReq.method} ${path}\n${JSON.stringify(outReq.getHeaders())}\n`);
+
 	if (req.method == 'POST') {
 		// TODO check if outReq didnt timeout/error before writing/ending it
-		req.on('data', (data) => outReq.write(postdata));
-		req.on('end', () => outReq.end());
+		req.on('data', (data) => {
+			logFile("external.txt", "Post:\n"+data);
+			outReq.write(data);
+		});
+		req.on('end', () => {
+			outReq.end();
+		});
 	} else {
 		outReq.end();
 	}
@@ -195,6 +216,7 @@ function requestListen(req, res) {
 			appendFile(q.query, res);
 			break;
 		case "/cgi/anmeldung.fcgi":
+			// TODO not necessary, just make external request
 			respondFCGI(req, res);
 			break;
 		case "/":
