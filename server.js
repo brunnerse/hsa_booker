@@ -73,7 +73,8 @@ function appendFile(query, res) {
  
 function respondFile(res, filename) {
 	filename = unEscape(filename);
-	fs.readFile(filename, function(err, data) {
+	// using setTimeout to include artificial delay
+	fs.readFile(filename, (err,data) => setTimeout(function() {
 		if (err) {
 		  console.log("File " + filename + " not found");
 		  respondError(res, "File " + filename + " not found");
@@ -87,7 +88,7 @@ function respondFile(res, filename) {
 		res.write(data);
 		res.end();
 		console.log("Responded with file " + filename);
-	  });
+	  }, 500)); //TODO set timeout to 0 in final version
 }
 
 function respondExtern(req, res, reqUrl) {
@@ -207,7 +208,10 @@ function requestListen(req, res) {
 			respondFCGI(req, res);
 			break;
 		case "":
-			respondFile(res, "./main.html");
+			if (pathArr.length == 2)
+				respondFile(res, "./main.html");
+			else
+				respondError("Invalid URL " + req.url);
 			break;
 		case "hsa":
 			pathArr.splice(1,1);
