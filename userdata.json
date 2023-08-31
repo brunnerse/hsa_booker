@@ -1,0 +1,18 @@
+{
+    "Severin" : {
+        "Status" : "Mitarbeiter",
+        "Name" : "Brunner",
+        "Vorname" : "Severin",
+        "Matrikelnr" : "1483163", 
+        "IBAN" : "DE08733699200000825638",
+        "Kontoinhaber" : "Severin Brunner"
+    },   
+    "Sara": {
+        "Status" : "Student",
+        "Name" : "Ahmed",
+        "Vorname" : "Sara",
+        "Matrikelnr" : "2000000", 
+        "IBAN" : "DE08533699200000825638",
+        "Kontoinhaber" : "Sara Ahmed"
+    }
+}

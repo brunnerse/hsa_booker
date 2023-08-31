@@ -1,13 +1,12 @@
 {
     "Tennis" : {
         "Severin" : ["1040", "1041"],
-        "Sarah" : ["1041"]
+        "Sarah" : ["1042"]
     },   
    "Badminton" : {
-        "Severin": [ "12011" ]
+        "Severin": [ "12012" ]
     },
-    "Volleyball": {
-        "Sara": [ "10140" ], 
-        "Severin": ["1014" ]
+    "Förderverein": {
+        "Severin": [ "01111" ]
     }
 }
