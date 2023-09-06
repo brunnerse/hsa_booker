@@ -414,6 +414,8 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     let formElem = entryElem.children[0];
     console.assert(formElem.tagName == "FORM");
     formElem.target = "frame_"+title;
+    // update action
+    formElem.action += `?referer=${HSA_LINK+courses[sport]}`; 
 }
 
 
@@ -421,8 +423,7 @@ async function refreshSport(sport, updateTitles=[]) {
     let doc;
     let stateColor = "white";
     if (courses[sport]) {
-        let idx = courses[sport].lastIndexOf("/");
-        let link = HSA_LINK + courses[sport].substr(idx+1);
+        let link = HSA_LINK + courses[sport];
         try {
             doc = await requestHTML("GET", "extern/" + link);
             updateStatus("Fetched HTML site for " + sport);
@@ -672,7 +673,8 @@ function loadCourses() {
                 for (let rootElem of rootElems) {
                     for (let elem of rootElem.getElementsByTagName("A")) {
                         //console.log(`${elem.innerHTML} -> ${elem.href}`);
-                        courses[elem.innerHTML] = elem.href;
+                        let idx = elem.href.lastIndexOf("/");
+                        courses[elem.innerHTML] = elem.href.substr(idx+1);
                     }
                 }
                 document.getElementById("courses").innerHTML = 
