@@ -111,16 +111,29 @@ function respondExtern(req, res, reqUrl) {
 	}
 
 	options.headers.host = parsedReq.hostname;
-	// TODO more elegant solution than just deleting the referer
-	delete options.headers.referer;
+	console.log(parsedReq);
+	if (parsedReq.query["origin"])
+		options.headers.origin = parsedReq.query["origin"];
+	else
+		delete options.headers.origin;
+	if (parsedReq.query["referer"])
+		options.headers.referer = parsedReq.query["referer"];
+	else
+		delete options.headers.referer;
+
+	// remove variables from URL  TODO preserve variables except custom ones
+	reqUrl = reqUrl.split("?")[0];
 
 	const outReq = protocol.request(reqUrl, options, response => {
 		console.log("Got code " + response.statusCode);
 		returnedStatus = response.statusCode;
 		returnedHeaders = response.headers;
-		console.log(returnedStatus);
 		logFile("external.txt", `Response ${returnedStatus} ${JSON.stringify(returnedHeaders)}`);
+
+		// Modify header: remove content security policy and modify location (for 304 codes) 
+		delete returnedHeaders["content-security-policy"];
 		modifyLocationInHeader(returnedHeaders);
+
 		res.writeHead(returnedStatus, returnedHeaders);
 
 		response.on('data', (chunk) => {
