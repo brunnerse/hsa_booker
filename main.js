@@ -5,8 +5,11 @@ var HSA_LINK = HSA_LINK_new;
 
 
 const refreshInterval_short = 2000;
-const refreshInterval_long = 5000;//30000;
+const refreshInterval_mid = 5000;
+const refreshInterval_long = 30000;
 const timeout_msec = 10000;
+
+var statusInterval;
 
 var choice = undefined;
 var userdata = undefined;
@@ -15,6 +18,8 @@ var userdata = undefined;
 var courses = {};
 // Dictionary from title to state (ready, full, none, booked, booking, missing, wrongnumber, failed (to load site))
 var bookingState = {};
+// Dictionary from title to start time
+var bookingTime = {};
 // Dictionary from title to HTML element containing the status of the title
 var statusElements = {};
 
@@ -35,6 +40,33 @@ function sleep(msec) {
     return new Promise(function (resolve, reject) {
         setTimeout(resolve, msec);
     })
+}
+
+function getRemainingTimeString(timeStr) {
+    timeStr = timeStr.replace("ab ", "");
+    let arr = timeStr.split(",");
+    let day = arr[0].split(".")[0];
+    let month = arr[0].split(".")[1];
+    let year = new Date(Date.now()).getUTCFullYear();
+    let bookDate = new Date(`${year}-${month}-${day}T${arr[1].replace(" ", "")}`);
+
+    let remainMS = bookDate - new Date(Date.now());
+
+    let remDays = Math.floor(remainMS / (1000 * 60 * 60 * 24));
+    remainMS -= remDays * (1000 * 60 * 60 * 24);
+    let remHours = Math.floor(remainMS / (1000 * 60 * 60));
+    remainMS -= remHours * (1000 * 60 * 60);
+    let remMins = Math.floor(remainMS / (1000 * 60));
+    remainMS -= remMins * (1000 * 60);
+    let remSecs = Math.floor(remainMS / (1000));
+
+    s = ""
+    if (remDays > 0)
+        s += remDays + "d ";
+    if (remHours > 0)
+        s += remHours + "h ";
+    s += remMins + "m " + remSecs + "s";
+    return s;
 }
 
 function requestHTML(method, url) {
@@ -213,8 +245,6 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
 
     console.log("Waiting until ready for " + sport +"\t" + titles);
 
-    // TODO check time when booking is available for one title
-    //let buchElem = statusElements[titles[0]].parentElement.getElementsByClassName("bs_sbuch")[0];
 
     // set refreshtime so it immediately updates in the first loop
     let lastRefreshTime = Date.now() - refreshInterval_short;
@@ -226,9 +256,13 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             throw new Error("aborted waitUntilReady(" + sport + ")");
         }
 
+        // TODO use different interval depending on time left
+
         if (Date.now() - lastRefreshTime >= refreshInterval_short) {
             lastRefreshTime = Date.now();
-            let intervalID = setInterval(
+            if (statusInterval)
+                clearInterval(statusInterval);
+            statusInterval = setInterval(
                  () => {
                     for (let t of titles) {
                         updateTitleWithTime(t, timeout_msec - (Date.now() - lastRefreshTime), 
@@ -237,7 +271,8 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                 },
                 250);
             await refreshSport(sport, titles);
-            clearInterval(intervalID);
+            clearInterval(statusInterval);
+            statusInterval = undefined;
             // call book for any ready titles
             let newTitles = [];
             for (let t of titles) {
@@ -438,6 +473,12 @@ async function refreshSport(sport, updateTitles=[]) {
                                 bookingState[title] = "full";
                             } else {
                                 bookingState[title] = "none";
+                                let bookTimeElems = bookElem.getElementsByClassName("bs_btn_autostart");
+                                if (bookTimeElems.length > 0) {
+                                    bookingTime[title] = bookTimeElems[0].innerHTML;
+                                } else {
+                                    delete bookingTime[title];
+                                }
                             }
                         }
                         break;
@@ -489,7 +530,6 @@ async function refreshChoice() {
     )
 
     for (let sport of Object.keys(choice)) {
-
         let startTime = Date.now();
         let intervalID = setInterval(
             () => { 
@@ -502,6 +542,21 @@ async function refreshChoice() {
         refreshSport(sport).then(() => {
             updatedSports.push(sport);
             clearInterval(intervalID);
+        
+            if (statusInterval)
+                clearInterval(statusInterval);
+            statusInterval = setInterval(
+                () => { 
+                    for (let sport of Object.keys(choice)) {
+                        for (let user of Object.keys(choice[sport])) {
+                            for (let nr of choice[sport][user]) { 
+                                let title =  `${sport}_${nr}_${user}`;
+                                if (bookingTime[title]) 
+                                    updateEntryStateTitle(title, getRemainingTimeString(bookingTime[title]));
+                            }
+                        }
+                    }
+                }, 1000);
         });
     }
 }
