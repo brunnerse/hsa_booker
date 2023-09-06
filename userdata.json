@@ -1,18 +1,37 @@
 {
     "Severin" : {
-        "Status" : "Mitarbeiter",
-        "Name" : "Brunner",
-        "Vorname" : "Severin",
-        "Matrikelnr" : "1483163", 
-        "IBAN" : "DE08733699200000825638",
-        "Kontoinhaber" : "Severin Brunner"
+        "sex" : "M",
+        "vorname" : "Severin",
+        "name" : "Brunner",
+        "strasse" : "Lilienthalstr. 14",
+        "ort" : "86159 Augsburg",
+        "matnr" : "",
+         "statusorig" : "B-UNIA",
+        "mitnr" : "08215982374",
+        "email" : "severin.brunner@outlook.de",
+        "telefon" : "017698242310",
+        "newsletter" : "",
+        "iban" : "DE08733699200000825638",
+        "bic" : "GENODEF1SFO",
+        "kontoinh" : "",
+        "tnbed" : "1"
+
     },   
     "Sara": {
-        "Status" : "Student",
-        "Name" : "Ahmed",
-        "Vorname" : "Sara",
-        "Matrikelnr" : "2000000", 
-        "IBAN" : "DE08533699200000825638",
-        "Kontoinhaber" : "Sara Ahmed"
+        "sex" : "M",
+        "vorname" : "Severin",
+        "name" : "Brunner",
+        "strasse" : "Lilienthalstr. 14",
+        "ort" : "86159 Augsburg",
+        "matnr" : "14383163",
+         "statusorig" : "S-UNIA",
+        "mitnr" : ""
+        "email" : "severin.brunner@outlook.de",
+        "telefon" : "017698242310",
+        "newsletter" : "",
+        "iban" : "DE08733699200000825638",
+        "bic" : "GENODEF1SFO",
+        "kontoinh" : "",
+        "tnbed" : "1"
     }
 }
