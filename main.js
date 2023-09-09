@@ -188,42 +188,6 @@ async function bookCourse(title) {
         }
     }
     console.assert(iFrameElem);
-    iFrameElem.onload = 
-    async function (event) { 
-
-        let frameDoc = iFrameElem.contentDocument;
-        console.log(title + " iFrame content:")
-        console.log(frameDoc);
-
-        let user = title.split("_")[2];
-        let data = userdata[user];
-        if (!data){
-            throw new Error("ERROR: userdata for " + user + " not found!");
-        }
-
-        // TODO fill form and submit 
-        await sleep(3000);
-
-
-        updatedStatus("[SUCCESS] Booked course " + title);
-        updateEntryStateTitle(title, "Booking successful", "green");
-        bookingState[title] = "booked"; 
-
-        // let server know that course was booked successful
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = () => {
-            console.log("WARNING: Failed to inform server about successful booking"); 
-        };
-        xhr.onloadend = () => {
-            let bookedCourses = xhr.response;
-            console.log("Successfully informed server about successful booking.");
-            console.log("Booked courses: " + bookedCourses);
-        };
-        xhr.responseType = "text";
-        xhr.open("GET","/appendFile/?file=bookedcourses.txt&text="+title);
-        xhr.send();
-    };
-
     // find form element for course
     let formElem = statusElements[title].parentElement;
     while (formElem.tagName != "FORM") 
@@ -231,8 +195,100 @@ async function bookCourse(title) {
     // find input element for button
     let submitElem = formElem.getElementsByTagName("INPUT")[1];
     console.assert(submitElem.type == "submit");
-    formElem.requestSubmit(submitElem); 
 
+    //TODO for testing; remove later
+    iFrameElem.onload = (event) => console.log("Onload test function: " + event);
+    iFrameElem.onload = 
+        async function (event) { 
+            console.log("Onload actual function");
+            let frameDoc = iFrameElem.contentDocument;
+            console.log(title + " iFrame content:")
+            console.log(frameDoc);
+
+            let user = title.split("_")[2];
+            console.log(userdata);
+            let data = userdata[user];
+            if (!data){
+                throw new Error("ERROR: userdata for " + user + " not found!");
+            }
+
+            //TODO this is only necessary if frame can have more than one onload listener
+//            iFrameElem.removeEvenListener("onload", iFrameElem.onload); 
+
+            // Fill form and submit
+            let form = frameDoc.getElementsByTagName("FORM")[0];
+            // make form target external
+            form.action = "/extern/" + form.action + "?referer=https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi";
+            // Set status select option
+            let selectElem = form.getElementsByTagName("SELECT")[0];
+            console.assert(form.getElementsByTagName("SELECT").length == 1);
+            let ok = false;
+            for (let i = 0; i < selectElem.options.length; i++) {
+                if (selectElem.options[i].value == data.statusorig) {
+                    selectElem.options[i].selected = true;
+                    selectElem.selectedIndex = i;
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok)
+                throw new Error("Didn't find status element for " + data.statusorig);
+
+            // Set form input elements
+            let inputElems = form.getElementsByTagName("INPUT");
+            for (let inputElem of inputElems) {
+                // set sex radio button
+                if (inputElem["name"] == "sex" && inputElem.value == data["sex"])
+                    inputElem.checked = true; 
+                // set accept conditions button
+                else if (inputElem["name"] == "tnbed")
+                    inputElem.checked = true;
+                else {
+                    if (data[inputElem["name"]])
+                        inputElem.value = data[inputElem["name"]];
+                }
+            }
+
+            let submitButton = frameDoc.getElementById("bs_submit");
+            console.assert(submitButton);
+
+            iFrameElem.onload = async function(event) {
+                console.log("Onload called inner");
+                let frameDoc = iFrameElem.contentDocument; 
+                let form = frameDoc.getElementsByTagName("FORM")[0];
+                // make form target external
+                form.action = "/extern/" + form.action + "?referer=https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi";
+
+                let inputElems = form.getElementsByTagName("INPUT");
+                let submitButton; 
+                for (let inputElem of inputElems) {
+                    if (inputElem.title == "fee-based order") {
+                        submitButton = inputElem;
+                        break;
+                    }
+                }
+                if (!submitButton)
+                    throw new Error("Submit Button on second screen not found!");
+                iFrameElem.onload = async function(event) {
+                    console.log("Onload called second inner");
+                    //TODO check if success screen appeared
+                    if (false)
+                        throw new Error();
+                    updatedStatus("[SUCCESS] Booked course " + title);
+                    updateEntryStateTitle(title, "Booking successful", "green");
+                    bookingState[title] = "booked"; 
+                };
+                //form.requestSubmit(submitButton);
+            };
+            //await sleep(7500);
+            // lever out countdown by changing submitButton class
+            submitButton.className = "sub";
+            // Alternatively wait until submitButton.className changed to sub to avoid attraction attention
+            form.requestSubmit(submitButton);
+            console.log("Submitted...");
+        };
+
+    formElem.requestSubmit(submitElem); 
 }
 
 async function waitUntilReadyAndBook(sport, checkAbortFun) {
@@ -438,7 +494,7 @@ async function refreshSport(sport, updateTitles=[]) {
             let title = `${sport}_${nr}_${user}`;
             let BS_Code = "None";
 
-            let alreadyBooked = bookingState[title] === "booked";
+            let alreadyBooked = bookingState[title] == "booked";
 
             // find number in loaded doc
             if (doc) {
