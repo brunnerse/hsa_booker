@@ -28,8 +28,8 @@ var armID = 0;
 
 
 function getColorForBookingState(bookingState) {
-    let colors = {"booked" : "green", "booking" : "blue", "ready" : "aqua", 
-        "full": "red", "missing": "maroon",
+    let colors = {"booked" : "#00ff00", "booking" : "blue", "ready" : "aqua", 
+        "full": "#ff0000", "missing": "maroon",
         "failed": "gray", "wrongnumber": "orange", "none": "white"};
     if (colors[bookingState])
         return colors[bookingState];
@@ -42,7 +42,7 @@ function sleep(msec) {
     })
 }
 
-function getRemainingTimeString(timeStr) {
+function getRemainingTimeMS(timeStr) {
     timeStr = timeStr.replace("ab ", "");
     let arr = timeStr.split(",");
     let day = arr[0].split(".")[0];
@@ -50,8 +50,11 @@ function getRemainingTimeString(timeStr) {
     let year = new Date(Date.now()).getUTCFullYear();
     let bookDate = new Date(`${year}-${month}-${day}T${arr[1].replace(" ", "")}`);
 
-    let remainMS = bookDate - new Date(Date.now());
+    return bookDate - new Date(Date.now());
+}
 
+function getRemainingTimeString(timeStr) {
+    let remainMS = getRemainingTimeMS(timeStr);
     let remDays = Math.floor(remainMS / (1000 * 60 * 60 * 24));
     remainMS -= remDays * (1000 * 60 * 60 * 24);
     let remHours = Math.floor(remainMS / (1000 * 60 * 60));
@@ -165,7 +168,7 @@ async function bookCourse(title) {
     console.log("bookCourse " + title + " state " + bookingState[title]);
     
     if (bookingState[title] == "booked") {
-        updateEntryStateTitle(title, "Already booked", "green");
+        updateEntryStateTitle(title, "Already booked", "#00ff00");
         return;
     } else if (bookingState[title] != "ready") {
         console.log("Booking failed: " + bookingState[title]);
@@ -304,6 +307,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
 
     // set refreshtime so it immediately updates in the first loop
     let lastRefreshTime = Date.now() - refreshInterval_short;
+    let refreshInterval = refreshInterval_short;
     while (titles.length > 0) {
         if (checkAbortFun()) {
             for (let t of titles) {
@@ -312,9 +316,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             throw new Error("aborted waitUntilReady(" + sport + ")");
         }
 
-        // TODO use different interval depending on time left
-
-        if (Date.now() - lastRefreshTime >= refreshInterval_short) {
+        if (Date.now() - lastRefreshTime >= refreshInterval) {
             lastRefreshTime = Date.now();
             if (statusInterval)
                 clearInterval(statusInterval);
@@ -333,19 +335,29 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             let newTitles = [];
             for (let t of titles) {
                 if (["ready", "full", "booked"].includes(bookingState[t])) {
-                    console.log(Date.now() + " Calling book for " + t + " " + titles.indexOf(t));
                     bookCourse(t);
                 } else if (!["missing", "wrongnumber"].includes(bookingState[t])) {
                     newTitles.push(t);
-                }
+                    // adapt interval depending on how long until the course becomes ready 
+                    // TODO only for last title, not for all? Shouldn't make difference, just wasting performance
+                    if (bookingTime[t] && getRemainingTimeMS(bookingTime[t]) > 30 * 1000) {
+                        if (getRemainingTimeMS(bookingTime[t]) > 5*60*1000) 
+                            refreshInterval = refreshInterval_long;
+                        else
+                            refreshInterval = refreshInterval_mid;
+                    } else {
+                        refreshInterval = refreshInterval_short;
+                    }
+                } 
             }
             titles = newTitles;
         } else {
             for (let t of titles) {
+                let statusStr = bookingTime[t] ? getRemainingTimeString(bookingTime[t]) + "<br>" : ""; 
                 updateTitleWithTime(t, refreshInterval_short - (Date.now() - lastRefreshTime), 
-                            "Refreshing in ", "...");
+                            statusStr + "Refreshing in ", "...");
             }         
-            // sleep for a  second
+            // sleep for a quarter second
             await sleep(250); 
         }
     }
@@ -395,7 +407,7 @@ async function unarm() {
 
 function checkBookingDone() {
     for (let title of Object.keys(bookingState)) {
-        if (!["booked", "full", "missing", "wrongnumber"].includes(bookingState[title])) {
+        if (!["booked", "full", "missing", "wrongnumber", "error"].includes(bookingState[title])) {
             //console.log("Booking not done: " + title + " " + bookingState[title]);
             return false;
         }
@@ -403,6 +415,10 @@ function checkBookingDone() {
     return true;
 }
 
+function updateEntryStateTitleErr(title, err) {
+    updateEntryStateTitle(title, "ERROR: " + err, "darkorange");
+    updateStatus("[ERROR] booking " + title + ": " + err);
+}
 
 function updateEntryStatesSport(sport, state, color="white") {
     for (let user of Object.keys(choice[sport])) {
@@ -521,14 +537,16 @@ async function refreshSport(sport, updateTitles=[]) {
 
                         // check booking button
                         let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
-                        let bookButton = bookElem.getElementsByClassName("bs_btn_buchen");
-                        if (bookButton.length > 0) {
-                            bookingState[title] = "ready";
-                        } else {
-                            bookButton = bookElem.getElementsByClassName("bs_btn_ausgebucht");
-                            if (bookButton.length > 0) {
+                        let bookButton = bookElem.getElementsByTagName("INPUT")[0];
+                        switch (bookButton ? bookButton.className : "") {
+                            case "bs_btn_buchen":
+                                bookingState[title] = "ready";
+                                break;
+                            case "bs_btn_ausgebucht":
+                            case "bs_btn_warteliste":
                                 bookingState[title] = "full";
-                            } else {
+                                break;
+                            default:
                                 bookingState[title] = "none";
                                 let bookTimeElems = bookElem.getElementsByClassName("bs_btn_autostart");
                                 if (bookTimeElems.length > 0) {
@@ -536,9 +554,7 @@ async function refreshSport(sport, updateTitles=[]) {
                                 } else {
                                     delete bookingTime[title];
                                 }
-                            }
                         }
-                        break;
                     }
                 }
                 if (!entryElem) {
@@ -673,13 +689,14 @@ function loadChoice() {
                     for (let title of bookedArr) {
                         if (title != "") {
                             bookingState[title] = "booked";
-                            updateEntryStateTitle(title, "Booked", "green");
+                            updateEntryStateTitle(title, "Booked", "#00ff00");
                         }
                     } 
                 }
             }
             xhr_booked.onerror = () => console.log("ERROR: Request to load bookedcourses.txt list failed");
 
+            xhr_booked.responseType = "text";
             xhr_booked.open("GET", "bookedcourses.txt");
             xhr_booked.send();
 
