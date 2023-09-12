@@ -18,18 +18,18 @@
 
     },   
     "Sara": {
-        "sex" : "M",
-        "vorname" : "Severin",
-        "name" : "Brunner",
+        "sex" : "W",
+        "vorname" : "Sara",
+        "name" : "Ahmed",
         "strasse" : "Lilienthalstr. 14",
         "ort" : "86159 Augsburg",
         "matnr" : "14383163",
-         "statusorig" : "S-UNIA",
-        "mitnr" : ""
+        "statusorig" : "S-UNIA",
+        "mitnr" : "",
         "email" : "severin.brunner@outlook.de",
         "telefon" : "017698242310",
         "newsletter" : "",
-        "iban" : "DE08733699200000825638",
+        "iban" : "DE09733699200000825638",
         "bic" : "GENODEF1SFO",
         "kontoinh" : "",
         "tnbed" : "1"
