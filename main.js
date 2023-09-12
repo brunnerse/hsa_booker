@@ -199,11 +199,9 @@ async function bookCourse(title) {
     let submitElem = formElem.getElementsByTagName("INPUT")[1];
     console.assert(submitElem.type == "submit");
 
-    //TODO for testing; remove later
-    iFrameElem.onload = (event) => console.log("Onload test function: " + event);
     iFrameElem.onload = 
         async function (event) { 
-            console.log("Onload actual function");
+            console.log("First onload function");
             let frameDoc = iFrameElem.contentDocument;
             console.log(title + " iFrame content:")
             console.log(frameDoc);
@@ -212,11 +210,10 @@ async function bookCourse(title) {
             console.log(userdata);
             let data = userdata[user];
             if (!data){
+                updateEntryStateTitleErr(title, "userdata for " + user + " not found");
+                bookingState[title] = "error";
                 throw new Error("ERROR: userdata for " + user + " not found!");
             }
-
-            //TODO this is only necessary if frame can have more than one onload listener
-//            iFrameElem.removeEvenListener("onload", iFrameElem.onload); 
 
             // Fill form and submit
             let form = frameDoc.getElementsByTagName("FORM")[0];
@@ -225,17 +222,23 @@ async function bookCourse(title) {
             // Set status select option
             let selectElem = form.getElementsByTagName("SELECT")[0];
             console.assert(form.getElementsByTagName("SELECT").length == 1);
+            await sleep(1000);
             let ok = false;
             for (let i = 0; i < selectElem.options.length; i++) {
                 if (selectElem.options[i].value == data.statusorig) {
-                    selectElem.options[i].selected = true;
                     selectElem.selectedIndex = i;
+                    selectElem.dispatchEvent(new Event("change"));
                     ok = true;
                     break;
                 }
             }
-            if (!ok)
+            // Make event change or call fun manually
+            if (!ok) {
+                updateEntryStateTitleErr(title, "Didn't find status element for " + data.statusorig);
+                bookingState[title] = "error";
                 throw new Error("Didn't find status element for " + data.statusorig);
+            } 
+
 
             // Set form input elements
             let inputElems = form.getElementsByTagName("INPUT");
@@ -247,6 +250,7 @@ async function bookCourse(title) {
                 else if (inputElem["name"] == "tnbed")
                     inputElem.checked = true;
                 else {
+                    // fill form data
                     if (data[inputElem["name"]])
                         inputElem.value = data[inputElem["name"]];
                 }
@@ -270,25 +274,58 @@ async function bookCourse(title) {
                         break;
                     }
                 }
-                if (!submitButton)
-                    throw new Error("Submit Button on second screen not found!");
+                if (!submitButton) {
+                    updateEntryStateTitleErr(title, "Submit button not found");
+                    bookingState[title] = "error";
+                    throw new Error("Submit button on second screen not found!");
+                }
                 iFrameElem.onload = async function(event) {
                     console.log("Onload called second inner");
                     //TODO check if success screen appeared
                     if (false)
                         throw new Error();
-                    updatedStatus("[SUCCESS] Booked course " + title);
-                    updateEntryStateTitle(title, "Booking successful", "green");
+                    updateStatus("[SUCCESS] Booked course " + title);
+                    updateEntryStateTitle(title, "Booking successful", "#00ff00");
                     bookingState[title] = "booked"; 
+                    // let server know that course was booked successfully
+                    let xhr = new XMLHttpRequest();
+                    xhr.onerror = () => {
+                        console.log("WARNING: Failed to inform server about successful booking"); 
+                    };
+                    xhr.onloadend = () => {
+                    let bookedCourses = xhr.response;
+                        console.log("Successfully informed server about successful booking.");
+                        console.log("Booked courses: " + bookedCourses);
+                    };
+                    xhr.responseType = "text";
+                    xhr.open("GET","bookedcourses.txt?append="+title);
+                    xhr.send();
                 };
+
+                if (checkAbortFun()) {
+                    bookingstate[title] = "ready";
+                    updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
+                    throw new Error ("Aborted booking for " + title);
+                }
+                //TODO this button iff sure!!!
+                submitButton.setAttribute("inert", "");
+                submitButton.setAttribute("hidden", "");
                 //form.requestSubmit(submitButton);
             };
-            //await sleep(7500);
-            // lever out countdown by changing submitButton class
-            submitButton.className = "sub";
+            // lever out countdown 
+            iFrameElem.contentWindow.btime = -1; 
             // Alternatively wait until submitButton.className changed to sub to avoid attraction attention
+            //await sleep(7200);
+            // TODO remove sleep
+            await sleep(2000);
+            // Check if should abort
+            if (checkAbortFun()) {
+                bookingState[title] = "ready";
+                updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
+                throw new Error ("Aborted booking for " + title);
+            }
             form.requestSubmit(submitButton);
-            console.log("Submitted...");
+            console.log("Submitted " + title + "...");
         };
 
     formElem.requestSubmit(submitElem); 
@@ -298,7 +335,12 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
     let titles = [];
     for (let user of Object.keys(choice[sport])) {
         for (let nr of choice[sport][user]) {
-            titles.push(`${sport}_${nr}_${user}`);
+            let t = `${sport}_${nr}_${user}`;
+            // Check first if title is already ready or if function should wait for title
+            if (["ready", "full", "booked"].includes(bookingState[t]))
+                bookCourse(t);
+            else 
+                titles.push(t);
         }
     }
 
