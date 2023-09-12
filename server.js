@@ -58,37 +58,37 @@ function respondError(res, message="") {
 	res.end(message);
 }
 
-function appendFile(query, res) {
-	if (!query.file || !query.text) {
-		respondError(res, "Invalid query " + JSON.stringify(query));
-	} else {
-		console.log("Writing text to file " + query.file + ": " + query.text);
-		fs.appendFile(query.file, query.text + "\n", () =>  {
-			res.writeHead(200);
-			fs.readFile(query.file, (data) => res.end(data));
-		}
-		);
-	}
-}
- 
-function respondFile(res, filename) {
+function respondFile(req, res) {
+	let q = url.parse(req.url, true);
+	var filename = "." + q.pathname;
 	filename = unEscape(filename);
-	// using setTimeout to include artificial delay
-	fs.readFile(filename, (err,data) => setTimeout(function() {
-		if (err) {
-		  console.log("File " + filename + " not found");
-		  respondError(res, "File " + filename + " not found");
-		  return;
-		}
-		if (filename.endsWith(".js")) {
-		  res.writeHead(200, {'Content-Type': 'text/javascript'});
-		} else {
-		  res.writeHead(200, {'Content-Type': 'text/html'});
-		}
-		res.write(data);
-		res.end();
-		console.log("Responded with file " + filename);
-	  }, 500)); //TODO set timeout to 0 in final version
+	if (filename == "./")
+		filename = "./main.html";
+	if (q.query.append != undefined) {
+		console.log("Writing text to file " + filename + ": " + q.query.append);
+		fs.appendFile(filename, q.query.append + "\n", () =>  {
+			res.writeHead(200);
+			fs.readFile(filename, (err,data) => res.end(data));
+		});
+	} else {
+		// using setTimeout to include artificial delay
+		fs.readFile(filename, (err,data) => setTimeout(function() {
+			if (err) {
+				console.log("File " + filename + " not found");
+				respondError(res, "File " + filename + " not found");
+				return;
+			}
+			if (filename.endsWith(".js")) {
+				res.writeHead(200, {'Content-Type': 'text/javascript'});
+			} else if (filename.endsWith(".http")) {
+				res.writeHead(200, {'Content-Type': 'text/html'});
+			} else {
+				res.writeHead(200);
+			}
+			res.end(data);
+			console.log("Responded with file " + filename);
+		}, 100)); //TODO set timeout to 0 in final version
+	}
 }
 
 function respondExtern(req, res, reqUrl) {
@@ -183,26 +183,6 @@ function respondExtern(req, res, reqUrl) {
 }
 
 
-function respondFCGI(req, res) {
-	if (req.method === 'GET') {
-		res.writeHead(200, { 'Content-Type': 'text/plain' });
-		res.end("It's working");
-	} else if (req.method === 'POST') {
-		res.writeHead(200, { 'Content-Type': 'text/plain' });
-		var body = "";
-
-		req.on('data', function (data) { body += data.toString(); });
-		req.on('end', function () {
-			res.end("Received data:\n" + body);
-			console.log("POST data: " + body)
-		});
-	} else {
-		res.writeHead(501);
-		res.end();
-	}
-}
-
-
 function requestListen(req, res) {
 	let pathArr = req.url.split('/')
 	console.log("Received [" + req.method + "] request for " + req.url);
@@ -212,19 +192,6 @@ function requestListen(req, res) {
 		case "extern":
 			pathArr.splice(0,2);
 			respondExtern(req, res, pathArr.join("/"));
-			break;
-		case "appendFile":
-			appendFile(url.parse(req.url, true).query, res);
-			break;
-		case "cgi":
-			// TODO not necessary, just make external request
-			respondFCGI(req, res);
-			break;
-		case "":
-			if (pathArr.length == 2)
-				respondFile(res, "./main.html");
-			else
-				respondError("Invalid URL " + req.url);
 			break;
 		case "hsa":
 			pathArr.splice(1,1);
@@ -238,8 +205,7 @@ function requestListen(req, res) {
 				respondExtern(req, res, "https://anmeldung.sport.uni-augsburg.de" + pathArr.join('/'));
 			} else {
 				// return file from own file system
-				var filename = url.parse(req.url, true).pathname;
-				respondFile(res, "." + filename);
+				respondFile(req, res);
 			}
 	}
 }
