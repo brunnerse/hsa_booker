@@ -370,9 +370,15 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                     }
                 },
                 250);
-            await refreshSport(sport, titles);
-            clearInterval(statusInterval);
-            statusInterval = undefined;
+            try {
+                await refreshSport(sport, titles);
+            } catch {
+                // refresh again the next loop iteration by resetting the lastRefreshTime
+                lastRefreshTime -= refreshInterval;
+            } finally {
+                clearInterval(statusInterval);
+                statusInterval = undefined;
+            }
             // call book for any ready titles
             let newTitles = [];
             for (let t of titles) {
