@@ -535,7 +535,6 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
 
 async function refreshSport(sport, updateTitles=[]) {
     let doc;
-    let stateColor = "white";
     if (courses[sport]) {
         let link = HSA_LINK + courses[sport];
         try {
@@ -543,7 +542,30 @@ async function refreshSport(sport, updateTitles=[]) {
             updateStatus("Fetched HTML site for " + sport);
         } catch (err) {
             updateStatus("[ERROR] Course " + sport + " HTML request failed : " + JSON.stringify(err));
+            for (let user of Object.keys(choice[sport])) {
+                for (let nr of choice[sport][user])  {
+                    let title = `${sport}_${nr}_${user}`;
+                    if (bookingState[title] != "booked") {
+                        bookingState[title] = "failed";
+                    }
+                    entryElem = getErrorTable(nr, sport + ` (${user})`, "Page load failed");
+                    updateEntryInTable(entryElem, sport, nr, user, "None"); 
+                }
+            }
+            throw err;
         }
+    } else {
+        for (let user of Object.keys(choice[sport])) {
+            for (let nr of choice[sport][user])  {
+                let title = `${sport}_${nr}_${user}`;
+                if (bookingState[title] != "booked") {
+                    bookingState[title] = "missing";
+                }
+                entryElem = getErrorTable(nr, sport + ` (${user})`, "Course missing");
+                updateEntryInTable(entryElem, sport, nr, user, "None");
+            }
+        }
+        throw new Error("Course " + sport + " missing");
     }
 
     for (let user of Object.keys(choice[sport])) {
@@ -555,69 +577,58 @@ async function refreshSport(sport, updateTitles=[]) {
             let alreadyBooked = bookingState[title] == "booked";
 
             // find number in loaded doc
-            if (doc) {
-                let nums = doc.getElementsByClassName("bs_sknr");
-                for (let n of nums) {
-                    if (n.innerHTML == nr) {
-                        found = true;
-                        let detailStr = n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML;
-                        //TODO should be unnecessary
-                        let idx = detailStr.indexOf('-');
-                        idx = idx >= 0 ? idx : detailStr.length;
-                        detailStr = detailStr.substr(0, idx);
-                        n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML = detailStr + ` - ${sport} (${user})`;
+            let nums = doc.getElementsByClassName("bs_sknr");
+            let n = undefined;
+            console.log(typeof(nums));
+            for (let item of nums) 
+                if (item.innerHTML == nr) {
+                    n = item;
+                    break;
+                }
 
-                        // get BS_Code
-                        let formElem = n.parentElement;
-                        while (formElem.tagName != "FORM")
-                            formElem = formElem.parentElement;
-                        let inputBS = formElem.getElementsByTagName("INPUT")[0];
-                        console.assert(inputBS.name == "BS_Code");
-                        BS_Code = inputBS.value;
+            if (!n) {
+                entryElem = getErrorTable(nr, sport + ` (${user})`, "Wrong Number");
+                bookingState[title] = "wrongnumber";
+            } else {
+                let detailStr = n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML;
+                //TODO should be unnecessary
+                let idx = detailStr.indexOf('-');
+                idx = idx >= 0 ? idx : detailStr.length;
+                detailStr = detailStr.substr(0, idx);
+                n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML = detailStr + ` - ${sport} (${user})`;
 
-                        entryElem = n.parentElement.innerHTML;
+                // get BS_Code
+                let formElem = n.parentElement;
+                while (formElem.tagName != "FORM")
+                    formElem = formElem.parentElement;
+                let inputBS = formElem.getElementsByTagName("INPUT")[0];
+                console.assert(inputBS.name == "BS_Code");
+                BS_Code = inputBS.value;
 
-                        // check booking button
-                        let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
-                        let bookButton = bookElem.getElementsByTagName("INPUT")[0];
-                        switch (bookButton ? bookButton.className : "") {
-                            case "bs_btn_buchen":
-                                bookingState[title] = "ready";
-                                break;
-                            case "bs_btn_ausgebucht":
-                            case "bs_btn_warteliste":
-                                bookingState[title] = "full";
-                                break;
-                            default:
-                                bookingState[title] = "none";
-                                let bookTimeElems = bookElem.getElementsByClassName("bs_btn_autostart");
-                                if (bookTimeElems.length > 0) {
-                                    bookingTime[title] = bookTimeElems[0].innerHTML;
-                                } else {
-                                    delete bookingTime[title];
-                                }
-                        }
+                entryElem = n.parentElement.innerHTML;
+
+                // check booking button if not already booked
+                if (bookingState[title] != "booked") {
+                    let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
+                    let bookButton = bookElem.getElementsByTagName("INPUT")[0];
+                    switch (bookButton ? bookButton.className : "") {
+                        case "bs_btn_buchen":
+                            bookingState[title] = "ready";
+                            break;
+                        case "bs_btn_ausgebucht":
+                        case "bs_btn_warteliste":
+                            bookingState[title] = "full";
+                            break;
+                        default:
+                            bookingState[title] = "none";
+                            let bookTimeElems = bookElem.getElementsByClassName("bs_btn_autostart");
+                            if (bookTimeElems.length > 0) {
+                                bookingTime[title] = bookTimeElems[0].innerHTML;
+                            } else {
+                                delete bookingTime[title];
+                            }
                     }
                 }
-                if (!entryElem) {
-                    entryElem = getErrorTable(nr, sport + ` (${user})`, "Wrong Number");
-                    bookingState[title] = "wrongnumber";
-                }
-            } else {
-                let errorMsg; 
-                if(!courses[sport]) {
-                    errorMsg = "Course missing"
-                    bookingState[title] = "missing";
-                } else {
-                    errorMsg = "Page load failed";
-                    bookingState[title] = "failed";
-                }
-                entryElem = getErrorTable(nr, sport + ` (${user})`, errorMsg)
-            }
-
-            // reset state to booked again if it was booked before
-            if (alreadyBooked) {
-                bookingState[title] = "booked";
             }
             if (updateTitles.length == 0 || updateTitles.includes(title))
                 updateEntryInTable(entryElem, sport, nr, user, BS_Code);
@@ -654,7 +665,9 @@ async function refreshChoice() {
                              "Refresh (Timeout in ", ")");
             }, 100);
 
-        refreshSport(sport).then(() => {
+        refreshSport(sport).finally(() => {
+            console.log(statusElements);
+            console.log("Sport " + sport);
             updatedSports.push(sport);
             clearInterval(intervalID);
         
@@ -834,10 +847,10 @@ document.getElementById("debug").addEventListener("click", () => {
 
 
 // Load data initially 
-loadChoice().then(setTimeout( 
-        () => loadCourses().then(refreshChoice).catch((error) => console.log("Initial loading failed: " + error.message)), 500));
+loadChoice().then( 
+        loadCourses().then(refreshChoice).catch((error) => console.log("Initial loading failed: " + error.message)));
 
 // Load user data initially
 const userDataInterval = setInterval( async () => {
     try {await loadUserData(); clearInterval(userDataInterval);} catch (e) {}
-}, 2000);
+}, 1000);
