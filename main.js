@@ -147,7 +147,7 @@ function updateStatus(str, style="append") {
 
 
 function getErrorTable(nr, details, error) {
-    const notAvailElem = document.getElementById("notavail");
+    const notAvailElem = document.getElementById("notavail").cloneNode(true);
     const notAvailNr = notAvailElem.getElementsByClassName("bs_sknr")[1];
     const notAvailName = notAvailElem.getElementsByClassName("bs_sdet")[1];
     const notAvailMsg = notAvailElem.getElementsByClassName("bs_sbuch")[1];
@@ -222,7 +222,8 @@ async function bookCourse(title) {
             // Set status select option
             let selectElem = form.getElementsByTagName("SELECT")[0];
             console.assert(form.getElementsByTagName("SELECT").length == 1);
-            await sleep(1000);
+            //TODO check if this sleep can be removed
+//            await sleep(1000);
             let ok = false;
             for (let i = 0; i < selectElem.options.length; i++) {
                 if (selectElem.options[i].value == data.statusorig) {
@@ -232,7 +233,6 @@ async function bookCourse(title) {
                     break;
                 }
             }
-            // Make event change or call fun manually
             if (!ok) {
                 updateEntryStateTitleErr(title, "Didn't find status element for " + data.statusorig);
                 bookingState[title] = "error";
@@ -313,18 +313,22 @@ async function bookCourse(title) {
                 //form.requestSubmit(submitButton);
             };
             // lever out countdown 
-            iFrameElem.contentWindow.btime = -1; 
-            // Alternatively wait until submitButton.className changed to sub to avoid attraction attention
+            // fastest way:
+            iFrameElem.contentWindow.send = 1;
+            submitButton.className = "sub";
+            // other way:
+            //iFrameElem.contentWindow.btime = -1; 
+            //await sleep(1000);
+            // Alternatively wait until submitButton.className changed to sub to avoid attracting attention
             //await sleep(7200);
-            // TODO remove sleep
-            await sleep(2000);
+
             // Check if should abort
             if (checkAbortFun()) {
                 bookingState[title] = "ready";
                 updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
                 throw new Error ("Aborted booking for " + title);
             }
-            form.requestSubmit(submitButton);
+            //form.requestSubmit(submitButton);
             console.log("Submitted " + title + "...");
         };
 
@@ -387,7 +391,6 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                 } else if (!["missing", "wrongnumber"].includes(bookingState[t])) {
                     newTitles.push(t);
                     // adapt interval depending on how long until the course becomes ready 
-                    // TODO only for last title, not for all? Shouldn't make difference, just wasting performance
                     if (bookingTime[t] && getRemainingTimeMS(bookingTime[t]) > 30 * 1000) {
                         if (getRemainingTimeMS(bookingTime[t]) > 5*60*1000) 
                             refreshInterval = refreshInterval_long;
@@ -511,7 +514,7 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     }
     if (!found) {
         let choiceElem = document.getElementById("choice");
-        choiceElem.innerHTML += availElem.innerHTML;
+        choiceElem.appendChild(availElem.children[0].cloneNode(true));
         entryElem = choiceElem.children[choiceElem.children.length-1];
         entryElem.setAttribute("title", title);
     }
@@ -554,7 +557,7 @@ async function refreshSport(sport, updateTitles=[]) {
                     if (bookingState[title] != "booked") {
                         bookingState[title] = "failed";
                     }
-                    entryElem = getErrorTable(nr, sport + ` (${user})`, "Page load failed");
+                    entryElem = getErrorTable(nr, `[${nr}] ${sport} (${user})`, "Page load failed");
                     updateEntryInTable(entryElem, sport, nr, user, "None"); 
                 }
             }
@@ -567,7 +570,7 @@ async function refreshSport(sport, updateTitles=[]) {
                 if (bookingState[title] != "booked") {
                     bookingState[title] = "missing";
                 }
-                entryElem = getErrorTable(nr, sport + ` (${user})`, "Course missing");
+                entryElem = getErrorTable(nr, `[${nr}] ${sport} (${user})`, "Course missing");
                 updateEntryInTable(entryElem, sport, nr, user, "None");
             }
         }
@@ -580,12 +583,9 @@ async function refreshSport(sport, updateTitles=[]) {
             let title = `${sport}_${nr}_${user}`;
             let BS_Code = "None";
 
-            let alreadyBooked = bookingState[title] == "booked";
-
             // find number in loaded doc
             let nums = doc.getElementsByClassName("bs_sknr");
             let n = undefined;
-            console.log(typeof(nums));
             for (let item of nums) 
                 if (item.innerHTML == nr) {
                     n = item;
@@ -597,10 +597,6 @@ async function refreshSport(sport, updateTitles=[]) {
                 bookingState[title] = "wrongnumber";
             } else {
                 let detailStr = n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML;
-                //TODO should be unnecessary
-                let idx = detailStr.indexOf('-');
-                idx = idx >= 0 ? idx : detailStr.length;
-                detailStr = detailStr.substr(0, idx);
                 n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML = detailStr + ` - ${sport} (${user})`;
 
                 // get BS_Code
@@ -671,9 +667,7 @@ async function refreshChoice() {
                              "Refresh (Timeout in ", ")");
             }, 100);
 
-        refreshSport(sport).finally(() => {
-            console.log(statusElements);
-            console.log("Sport " + sport);
+        refreshSport(sport).catch((err) => {console.log(err)}).finally(() => {
             updatedSports.push(sport);
             clearInterval(intervalID);
         
@@ -711,8 +705,6 @@ function loadChoice() {
         };
         xhr.onloadend = () => {
             choice = xhr.response;
-            console.log("Loaded choice.")
-            console.log(choice);
             
             let frameRootElem  = document.getElementById("formframes");
             frameRootElem.innerHTML = "";
@@ -723,11 +715,12 @@ function loadChoice() {
             for (let sport of Object.keys(choice)) {
                 for (let user of Object.keys(choice[sport])) {
                     for (let nr of choice[sport][user]) {
-                        entryElem = getErrorTable(nr, sport + ` (${user})`, "init");
-                        updateEntryInTable(entryElem, sport, nr, user, "");
-
-                        // Create iframe for booking
                         let title = `${sport}_${nr}_${user}`;
+                        let entryElem = getErrorTable(nr, title, "init");
+                        updateEntryInTable(entryElem, sport, nr, user, "None"); 
+                        console.log(statusElements[title]);
+
+                        // Create iframe for booking; one one the left side, the next on the right side
                         let htmlFrame = 
                             `<div style="align:center;float:${leftRightCounter++ % 2 == 0 ? "left" : "right"};">`+title+"<br>"+
                             `<iframe width="600" height="600" title="Anmeldung ${title}" name="frame_${title}" style="overflow:scroll;">
@@ -736,16 +729,15 @@ function loadChoice() {
                     }
                 }
             }
-            updateStatus("Loaded choice.", "replace");
 
             // Get list of already booked courses and set their bookingState
             let xhr_booked = new XMLHttpRequest();
             xhr_booked.onloadend = () => {
                 if (xhr_booked.status == 404) {
-                    console.log("bookedcourses file does not exist");
+                    console.log("[INFO] bookedcourses file does not exist");
                 } else {
                     let bookedList = xhr_booked.response;
-                    console.log("booked courses: " + bookedList);
+                    console.log("[INFO] booked courses: " + bookedList);
                     let bookedArr = bookedList.split("\n");
                     for (let title of bookedArr) {
                         if (title != "") {
@@ -755,12 +747,15 @@ function loadChoice() {
                     } 
                 }
             }
-            xhr_booked.onerror = () => console.log("ERROR: Request to load bookedcourses.txt list failed");
+            xhr_booked.onerror = () => {
+                console.log("ERROR: Request to load bookedcourses.txt list failed");
+            }
 
             xhr_booked.responseType = "text";
             xhr_booked.open("GET", "bookedcourses.txt");
             xhr_booked.send();
-
+        
+            updateStatus("Loaded choice.", "replace");
             resolve();
         }
         xhr.open("GET","choice.json");
@@ -778,7 +773,6 @@ function loadUserData() {
             reject(err);
         };
         xhr.onloadend = () => {
-            console.log(xhr.status);
             if (xhr.status == "404")
                 throw new Error("404: userdata.json not found on server");
             updateStatus("Loaded user data.");
@@ -854,7 +848,7 @@ document.getElementById("debug").addEventListener("click", () => {
 
 // Load data initially 
 loadChoice().then( 
-        loadCourses().then(refreshChoice).catch((error) => console.log("Initial loading failed: " + error.message)));
+       loadCourses().then(refreshChoice).catch((error) => console.log("Initial loading failed: " + error.message)));
 
 // Load user data initially
 const userDataInterval = setInterval( async () => {

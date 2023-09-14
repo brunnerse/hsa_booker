@@ -13,8 +13,7 @@
         "newsletter" : "",
         "iban" : "DE08733699200000825638",
         "bic" : "GENODEF1SFO",
-        "kontoinh" : "",
-        "tnbed" : "1"
+        "kontoinh" : "Severin Brunner"
 
     },   
     "Sara": {
@@ -31,7 +30,6 @@
         "newsletter" : "",
         "iban" : "DE09733699200000825638",
         "bic" : "GENODEF1SFO",
-        "kontoinh" : "",
-        "tnbed" : "1"
+        "kontoinh" : "Severin Brunner"
     }
 }
