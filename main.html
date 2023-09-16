@@ -51,14 +51,13 @@
                         <div class="biggerLink"><strong>Steuerung</strong></div>
                         <hr />
                         <ul class="nav menu mod-list">
-                            <li class="item-109"><a id="loadcourses" href="javascript:void(0)">Load course list</a></li>
-                            <li class="item-160"><a id="loadchoice" href="javascript:void(0)">Load choice</a></li>
-                            <li class="item-161"><a id="refreshchoice" href="javascript:void(0)">Refresh choice
-                                    status</a></li>
+                            <li class="item-109"><a id="loadcourses" href="javascript:void(0)">Reload course list</a></li>
+                            <li class="item-160"><a id="loadchoice" href="javascript:void(0)">Reload choice and user data</a></li>
+                            <li class="item-161"><a id="refreshchoice" href="javascript:void(0)">Refresh choice status</a></li>
                             <li class="item-162"><a id="arm" href="javascript:void(0)">Arm</a></li>
                             <li class="item-163"><a id="unarm" href="javascript:void(0)">Unarm</a></li>
-                            <li class="item-164"><a id="clearstatus" href="javascript:void(0)">Clear status window</a>
-                            </li>
+                            <li class="item-164"><a id="clearstatus" href="javascript:void(0)">Clear status window</a></li>
+                            <li class="item-164"><a id="chkuserdata" href="CheckUser.html">Edit User Data</a></li>
                             <li class="item-165"><a id="debug" href="javascript:void(0)">Debug</a></li>
                         </ul>
 
@@ -94,7 +93,7 @@
     </div>
 
 
-    <div hidden id="avail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
+    <div id="avail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
         <div id="bs_content">
             <form method="post" target="frame_anmeldung"
                 action="extern/https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi">
@@ -166,7 +165,7 @@
         </div>
     </div>
 
-    <div hidden id="notavail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
+    <div id="notavail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
         <div id="bs_content">
             <div class="bs_kursangebot">
                 <table class="bs_kurse">

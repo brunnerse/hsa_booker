@@ -30,7 +30,7 @@ var armID = 0;
 function getColorForBookingState(bookingState) {
     let colors = {"booked" : "#00ff00", "booking" : "blue", "ready" : "aqua", 
         "full": "#ff0000", "missing": "maroon",
-        "failed": "gray", "wrongnumber": "orange", "none": "white"};
+        "failed": "gray", "wrongnumber": "orange", "wronguser" : "darkorange", "none": "white"};
     if (colors[bookingState])
         return colors[bookingState];
     return "white";
@@ -168,7 +168,7 @@ async function bookCourse(title) {
     console.log("bookCourse " + title + " state " + bookingState[title]);
     
     if (bookingState[title] == "booked") {
-        updateEntryStateTitle(title, "Already booked", "#00ff00");
+        updateEntryStateTitle(title, "Already booked", getColorForBookingState(bookingState[title]));
         return;
     } else if (bookingState[title] != "ready") {
         console.log("Booking failed: " + bookingState[title]);
@@ -203,11 +203,8 @@ async function bookCourse(title) {
         async function (event) { 
             console.log("First onload function");
             let frameDoc = iFrameElem.contentDocument;
-            console.log(title + " iFrame content:")
-            console.log(frameDoc);
 
             let user = title.split("_")[2];
-            console.log(userdata);
             let data = userdata[user];
             if (!data){
                 updateEntryStateTitleErr(title, "userdata for " + user + " not found");
@@ -386,7 +383,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             // call book for any ready titles
             let newTitles = [];
             for (let t of titles) {
-                if (["ready", "full", "booked"].includes(bookingState[t])) {
+                if (["ready", "full", "booked", "wronguser"].includes(bookingState[t])) {
                     bookCourse(t);
                 } else if (!["missing", "wrongnumber"].includes(bookingState[t])) {
                     newTitles.push(t);
@@ -428,7 +425,18 @@ async function arm() {
     let currentArmID = armID;
     checkAbortFun = () => {return armID != currentArmID;};
 
-    const choiceElement = document.getElementById("choice");
+
+    // check if all elements are valid
+    for (let sport of Object.keys(choice)) {
+        for (let user of Object.keys(choice[sport])) {
+            for (let nr of choice[sport][user]) {
+                const title = `${sport}_${nr}_${user}`;
+                if (!userdata[user]) {
+                    updateEntryStateTitleErr(title, "No Userdata. Cannot book course");
+                }
+            }
+        }
+    } 
 
     for (let sport of Object.keys(choice)) {
         waitUntilReadyAndBook(sport, checkAbortFun)
@@ -597,6 +605,7 @@ async function refreshSport(sport, updateTitles=[]) {
                 bookingState[title] = "wrongnumber";
             } else {
                 let detailStr = n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML;
+                detailStr = detailStr.indexOf("-") >= 0 ? detailStr.substr(0, detailStr.indexOf("-") - 1): detailStr;
                 n.parentElement.getElementsByClassName("bs_sdet")[0].innerHTML = detailStr + ` - ${sport} (${user})`;
 
                 // get BS_Code
@@ -630,8 +639,12 @@ async function refreshSport(sport, updateTitles=[]) {
                                 delete bookingTime[title];
                             }
                     }
-                }
-            }
+                    if (!userdata[user]){
+                        updateStatus("ERROR: userdata for " + user + " not found");
+                        bookingState[title] = "wronguser";
+                    }
+                        }
+                    }
             if (updateTitles.length == 0 || updateTitles.includes(title))
                 updateEntryInTable(entryElem, sport, nr, user, BS_Code);
         }
@@ -642,8 +655,7 @@ async function refreshChoice() {
     updateStatus("Refreshing choice course status...");
 
     if (!choice) {
-        loadChoice();
-        return;
+        await loadChoice();
     }
 
     let updatedSports = [];
@@ -691,9 +703,9 @@ async function refreshChoice() {
 
 
 function loadChoice() {
-    updateStatus("Loading choice...", "append");
+    updateStatus("Loading choice and user data...", "append");
 
-    return new Promise(function (resolve, reject) {
+    return new Promise(async function (resolve, reject) {
         if (courses.length == 0) {
             updateStatus("Loading choice failed: List of courses not loaded", "replace");
             reject();
@@ -718,7 +730,6 @@ function loadChoice() {
                         let title = `${sport}_${nr}_${user}`;
                         let entryElem = getErrorTable(nr, title, "init");
                         updateEntryInTable(entryElem, sport, nr, user, "None"); 
-                        console.log(statusElements[title]);
 
                         // Create iframe for booking; one one the left side, the next on the right side
                         let htmlFrame = 
@@ -742,7 +753,7 @@ function loadChoice() {
                     for (let title of bookedArr) {
                         if (title != "") {
                             bookingState[title] = "booked";
-                            updateEntryStateTitle(title, "Booked", "#00ff00");
+                            updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
                         }
                     } 
                 }
@@ -756,6 +767,12 @@ function loadChoice() {
             xhr_booked.send();
         
             updateStatus("Loaded choice.", "replace");
+            try {
+                loadUserData().then( () =>  updatedStatus("Loaded user data."));
+             } catch (err) {
+               updateStatus("[ERROR : Failed to load user data");
+               reject();
+            }
             resolve();
         }
         xhr.open("GET","choice.json");
@@ -810,8 +827,7 @@ function loadCourses() {
                     doc.getElementsByClassName("item-page")[0].innerHTML
                     +"</div>" ;
 
-                console.log("Available courses: " + Object.keys(courses));
-                updateStatus("Loaded courses.", "replace");
+                updateStatus("Loaded courses.");
             },
             (err) => {
                 //  document.getElementById("courses").innerHTML = "failed ";
@@ -849,8 +865,3 @@ document.getElementById("debug").addEventListener("click", () => {
 // Load data initially 
 loadChoice().then( 
        loadCourses().then(refreshChoice).catch((error) => console.log("Initial loading failed: " + error.message)));
-
-// Load user data initially
-const userDataInterval = setInterval( async () => {
-    try {await loadUserData(); clearInterval(userDataInterval);} catch (e) {}
-}, 1000);
