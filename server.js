@@ -64,15 +64,17 @@ function respondFile(req, res) {
 	filename = unEscape(filename);
 	if (filename == "./")
 		filename = "./main.html";
+	let fsfun = (filename, text, cb) => cb();
+	let text; 
 	if (q.query.append != undefined) {
-		console.log("Writing text to file " + filename + ": " + q.query.append);
-		fs.appendFile(filename, q.query.append + "\n", () =>  {
-			res.writeHead(200);
-			fs.readFile(filename, (err,data) => res.end(data));
-		});
-	} else {
-		// using setTimeout to include artificial delay
-		fs.readFile(filename, (err,data) => setTimeout(function() {
+		fsfun = fs.appendFile;
+		text  = q.query.append + "\n";
+	} else if (q.query.write != undefined) {
+		fsfun = fs.writeFile;
+		text  = q.query.write;
+	}
+	fsfun(filename, text, () =>  {
+		fs.readFile(filename, (err,data) => {
 			if (err) {
 				console.log("File " + filename + " not found");
 				respondError(res, "File " + filename + " not found");
@@ -87,8 +89,8 @@ function respondFile(req, res) {
 			}
 			res.end(data);
 			console.log("Responded with file " + filename);
-		}, 100)); //TODO set timeout to 0 in final version
-	}
+		});
+	});
 }
 
 function respondExtern(req, res, reqUrl) {
