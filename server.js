@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
-
 var http = require('http');
 var https = require('https');
-var fcgi = require('node-fastcgi');
 var url = require('url');
 var fs = require('fs');
 
@@ -107,13 +105,12 @@ function respondExtern(req, res, reqUrl) {
 	else
 		protocol = http;
 
-	options = {
+	let options = {
 		method : req.method, 
 		headers : req.headers
 	}
 
 	options.headers.host = parsedReq.hostname;
-	console.log(parsedReq);
 	if (parsedReq.query["origin"])
 		options.headers.origin = parsedReq.query["origin"];
 	else
@@ -216,21 +213,9 @@ function requestListen(req, res) {
 
 http.createServer(requestListen).listen(80);
 
-fcgi.createServer(function (req, res) {
-	console.log("Received FCGI " + req);
-	if (req.method === 'GET') {
-		res.writeHead(200, { 'Content-Type': 'text/plain' });
-		res.end("It's working");
-	} else if (req.method === 'POST') {
-		res.writeHead(200, { 'Content-Type': 'text/plain' });
-		var body = "";
 
-		req.on('data', function (data) { body += data.toString(); });
-		req.on('end', function () {
-			res.end("Received data:\n" + body);
-		});
-	} else {
-		res.writeHead(501);
-		res.end();
-	}
-}).listen(81);
+const options = {
+  key: fs.readFileSync('keys/server.key'),
+  cert: fs.readFileSync('keys/server.cert'),
+};
+https.createServer(options, requestListen).listen(443);
