@@ -56,7 +56,28 @@ function respondError(res, message="") {
 	res.end(message);
 }
 
-function respondFile(req, res) {
+
+function getText(req, variable) {
+	console.log(req.method);
+	return new Promise((resolve, reject) => {
+		if (req.method == "GET") {
+			let q = url.parse(req.url, true);
+			resolve(q.query[variable]);
+		} else if (req.method == "POST") {
+			let text = "";
+			req.on('data', (data) => {
+				text += data;
+			});
+			req.on('end', () => {
+				resolve(text);
+			});
+		} else {
+			reject("Data not given");
+		}
+	});
+}
+
+async function respondFile(req, res) {
 	let q = url.parse(req.url, true);
 	var filename = "." + q.pathname;
 	filename = unEscape(filename);
@@ -64,12 +85,17 @@ function respondFile(req, res) {
 		filename = "./main.html";
 	let fsfun = (filename, text, cb) => cb();
 	let text; 
-	if (q.query.append != undefined) {
-		fsfun = fs.appendFile;
-		text  = q.query.append + "\n";
-	} else if (q.query.write != undefined) {
-		fsfun = fs.writeFile;
-		text  = q.query.write;
+	try {
+		if (q.query.append != undefined) {
+			fsfun = fs.appendFile;
+			text = await getText(req, "append") + "\n";
+		} else if (q.query.write != undefined) {
+			fsfun = fs.writeFile;
+			text = await getText(req, "write");
+			console.log("Writing " + text + "to " + filename);
+		}
+	} catch (err) {
+		return respondError(res, "Data to be written are undefined");
 	}
 	fsfun(filename, text, () =>  {
 		fs.readFile(filename, (err,data) => {
