@@ -108,29 +108,137 @@ async function updateUserSelect() {
         let elem = document.createElement("OPTION");
         elem.value = user;
         elem.innerHTML = user; 
-        selectElem.appendChild(elem);
+        userSelectElem.appendChild(elem);
     }
 }
 
-function deleteUser(user) {
-    delete userdata[user];
-    return new Promise(function (resolve, reject) {
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
-            console.log("[ERROR] : failed writing to file!");
-            reject(err);
-        };
-        xhr.onloadend = () => {
-            if (xhr.status == "404")
-                throw new Error("404: FILE " + FILE + " not found on server");
-            userdata = xhr.response;
-            updateUserSelect();
-            resolve();
+function checkForm() {
+    let selectElem = formElem.getElementsByTagName("SELECT")[0];
+    let inputElems = formElem.getElementsByTagName("INPUT");
+
+    for (let e of inputElems) {
+        if (e.getAttribute("disabled") == "disabled")
+            continue;
+        var f = e.className.match(/\bbs_fval_(.+?)\b/);
+        if (!chk_input(e, f ? f[1] : "")) {
+            // g is row
+            g.className += " warn"; e.focus(); 
+            return false;
         }
-        xhr.open("POST", FILE + "?write");
-        xhr.responseType = "json";
-        xhr.send(getJSONFileString(userdata));
-    });
+    }
+    return true;
+}
+
+// a is input elem, b is input elem class: bs_fval_[b]
+function chk_input(a, b) {
+    let F = {elements : formElem.getElementsByTagName("INPUT")};
+    //TODO formdata var
+    if (a) {
+        // c is for select: the value of the selected elem
+        // c is for radio buttons: 1 if (at least) one is checked, "" if none is checked
+        // else:  value.trim() of a 
+        var c = "select-one" == a.type ? 
+            a.options[a.selectedIndex].value 
+            : "radio" == a.type ?
+                 F.elements[a.name][0].checked || F.elements[a.name][1].checked || F.elements[a.name][2] && F.elements[a.name][2].checked || F.elements[a.name][3] && F.elements[a.name][3].checked ?
+                     1 
+                     : "" 
+                : a.value.trim();
+        
+        // If bs_fval_name, then remove Dr|Prof
+        // if bs_fval_iban or bs_fval_bic, transform to upper case and remove A-Z 0-9 
+        // else if a.type is textarea, remove invalid characters ;: etc
+       "name" == b ? 
+            c = c.replace(/(Dr|Prof)\.\s?/g, "") 
+            : "iban" == b || "bic" == b ?
+                c = c.toUpperCase().replace(/[^A-Z0-9]/g, "") 
+                : "textarea" == a.type && (c = c.replace(/[";:\-\(\)']/g, ""));
+        
+        // check which type f input it is according to b, then check if regex pattern matchesjj
+        if ("" == b && "" != c && !EOK(c) 
+            || "req" == b && !EOK(c) 
+            || "name" == b && (!EOK(c) 
+            || !grossklein(c) 
+            || -1 < c.indexOf(".") 
+            || c.match(/\d/)) 
+            || !("ort" != b 
+            || c.match(/^[A-Z\-]{0,3}\s?\d{4,7}[A-Z]{0,2}\s.{2,}$/) && EOK(c)) 
+            || "date" == b && !c.match(/^[0-3]?\d\.[01]?\d\.(19|20)?\d{2}$/) 
+            || "iban" == b && !c.match(/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/) 
+            || "bic" == b && !c.match(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/) 
+            || "kih" == b && "" != c && (!grossklein(c) || -1 < c.indexOf(".") 
+            || c.match(/\d/)) || "num" == b && !c.match(/^\d+$/) 
+            || "num2" == b && !c.match(/^\d\d?$/) 
+            || "email" == b && ("" != c 
+                                || 2 == formdata.ep 
+                                || D.getElementById("bs_lastschrift") && 1 == formdata.ep && endpreis) && !isEmail(c) 
+                                || "tel" == b && "" != c && !c.match(/^[0-9 -\\/()]+$/)
+        )
+           return !1
+    } 
+    return !0
+}
+
+// check input helper functions
+function EOK(a) { 
+    // check sth??
+    a = String(a).replace(/;/g, ",").replace(/\r|\n/g, " ");
+    return !a || a.match(/^\s*$/) ?
+         !1 
+         : !a.match(/[\^\*"<>\[\]%{}`'\$]|[^\u0020-\u00ff]/) 
+} 
+function isEmail(a) { 
+    // check email regex pattern
+    return /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(a)
+}
+function grossklein(a) {
+    // Zähle in b die Anzahl der Kleinbuchstaben und in c die Anzahl der Großbuchstaben
+    for (var b = 0, c = 0, d = a.length, h = 0; h < d; h++) {
+        var k = a.charAt(h);
+        k == k.toLowerCase() ? b++ : c++ 
+    } 
+    // Gibt true zurück, wenn sowohl Klein- als auch Großbuchstaben sowie mehr Klein- als Großbuchstaben in a vorkommen
+    return 1 > c || 1 > b || c > b ? !1 : !0 
+}
+
+async function addUser(user) {
+    if (!checkForm()) {
+        setStatus("Form invalid", "red");
+        return;
+    }
+    // get data from form
+    let data = {};
+
+    let formElem = document.getElementById("bs_form_main");
+    // Get status select option
+    let selectElem = formElem.getElementsByTagName("SELECT")[0];
+    console.assert(formElem.getElementsByTagName("SELECT").length == 1);
+    data.statusorig = selectElem.options[selectElem.selectedIndex].value;
+
+    let inputElems = formElem.getElementsByTagName("INPUT");
+    for (let inputElem of inputElems) {
+        // Get sex radio button
+        if (inputElem["name"] == "sex") {
+            if (inputElem.checked)
+                data.sex = inputElem.value; 
+        } else {
+            if (true && inputElem.getAttribute("disabled") != "disabled")
+                // get form data
+                data[inputElem["name"]] = inputElem.value;
+        }
+    }
+
+    return downloadUserData().then(() => {
+        userdata[user] = data;
+    }).then(uploadUserData)
+        .then(() => setStatus("Added user " + user + ".", "green"));
+}
+
+async function deleteUser(user) {
+    return downloadUserData().then(() => {
+        delete userdata[user];
+    }).then(uploadUserData)
+        .then(() => setStatus("Deleted user " + user + ".", "green"));
 }
 
 
