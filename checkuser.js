@@ -217,31 +217,86 @@ function getSelectedUser() {
     return selectElem.options[selectElem.selectedIndex].value; 
 }
 
+function setStatus(status, color="white") {
+    let style = "text-align:center;height:20px;font-weight:bold;background-color: " + color + ";"
+    statusElem.setAttribute("style", style);
+    statusElem.innerHTML = status;
+}
+
+function toggleInert() {
+    document.getElementById("btn_cancel").toggleAttribute("inert");
+    document.getElementById("bs_submit").toggleAttribute("inert");
+    document.getElementById("userselect").toggleAttribute("inert");
+    //TODO inert input elems
+}
 
 
 document.getElementById("userselect").onchange = onSelectChange; 
 
 document.getElementById("bs_submit").onclick = () => {
-
-    loadUserData().then(updateUserSelect); 
+    toggleInert();
+    let selectedUser = getSelectedUser();
+    if (selectedUser == "" || selectedUser == "NEW")
+        selectedUser = prompt("Enter the User ID", "");
+    if (!selectedUser) {
+        setStatus("User ID is invalid", "red");
+    } else {
+       addUser(selectedUser).then(() => setSelectedUser(selectedUser)).finally(toggleInert);
+    }
 };
 
 document.getElementById("btn_cancel").onclick = () => {
+    toggleInert();
     let selectedUser = getSelectedUser();
     if (selectedUser == "")
-        clearForm();
+        clearForm().finally(toggleInert);
     else if (selectedUser == "NEW")
-        clearForm();
+        clearForm().finally(toggleInert);
     else {
         if (confirm("Delete user " + selectedUser + "?")) {
-            deleteUser(selectedUser).then(() => setSelectedUser(""));
+            deleteUser(selectedUser).then(() => setSelectedUser("")).finally(toggleInert);
         };
     }
 };
 
 
-clearForm();
-loadUserData().then(updateUserSelect);
 
 
 // TODO prevent refresh if user data are modified
+
+// enable/disable certain input elements when statusorig changes
+const statusorig = formElem.getElementsByTagName("SELECT")[0];
+statusorig.addEventListener("change", () => {
+    console.log("CHANGED");
+    let regex = /\bbs_fval_status(\d)(\d)\b/;
+    let inputElems = formElem.getElementsByTagName("INPUT");
+    const stdata = "0011112111323240";
+    const zsf = [0,0,0];
+    for (var c = 1; 3 > c; c++) {
+        // d: Indizes in stdata für Förderverein, Student etc
+        var d = stdata.substr(2 * statusorig.selectedIndex, 2).split("");
+        // d[0] ist für Endpreis relevant, welcher hir nicht vorkommt
+        d = [parseInt(d[0]), parseInt(d[1])];
+        zsf[c] = d && d[1] ? d[1] : 0;
+    }
+    console.log(zsf);
+    for (let e of inputElems) {
+        let g = e.parentElement.parentElement;
+        console.log("Checking element " + e.name + " class " + e.className);
+        // if input element has classname bs_fval_status[xx], f = xx 
+        if (f = e.className.match(regex)) {
+            console.log(f);
+            // set display style to block if zsf fits, otherwise set style to none and set attribute disabled
+            g.style.display = zsf[f[1]] == f[2] ? "block" : "none"; 
+            zsf[f[1]] == f[2] ? e.removeAttribute("disabled") : e.setAttribute("disabled", "disabled"); 
+            try { e.focus() } catch (q) { } 
+        }
+    }
+});
+
+
+clearForm()
+    .then(toggleInert)
+    .then(downloadUserData)
+    .then(updateUserSelect)
+    .then(toggleInert);
