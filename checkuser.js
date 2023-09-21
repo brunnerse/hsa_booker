@@ -1,6 +1,11 @@
 const FILE = "users.json";
 let userdata;
 
+const userSelectElem = document.getElementById("userselect");
+const formElem = document.getElementById("bs_form_main");
+const statusElem = document.getElementById("statustext");
+
+
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
         setTimeout(resolve, msec);
@@ -36,39 +41,65 @@ function getJSONFileString(obj) {
     return str;
 }
 
-function loadUserData() {
+function downloadUserData() {
+    setStatus("Fetching user data...");
     return new Promise(function (resolve, reject) {
         let xhr = new XMLHttpRequest();
         xhr.onerror = (err) => {
             console.log("[ERROR] : failed loading user data");
+            setStatus("Failed to load user data", "red");
             reject(err);
         };
-        xhr.onloadend = () => {
+        xhr.onloadend = async () => {
             if (xhr.status == "404")
                 throw new Error("404: userdata.json not found on server");
             userdata = xhr.response;
+            // TODO remove sleep
+            await sleep(2000);
+            setStatus("Fetched user data.")
             resolve(userdata);
         }
         xhr.open("GET", "userdata.json"); //TODO change to  FILE
         xhr.responseType = "json";
         xhr.send();
     });
+}
 
+function uploadUserData() {
+    setStatus("Updating user data...");
+    return new Promise(function (resolve, reject) {
+        let xhr = new XMLHttpRequest();
+        xhr.onerror = (err) => {
+            console.log("[ERROR] : failed writing to file!");
+            setStatus("Failed to update user data", "red");
+            reject(err);
+        };
+        xhr.onloadend = () => {
+            if (xhr.status == "404")
+                throw new Error("404: FILE " + FILE + " not found on server");
+            userdata = xhr.response;
+            updateUserSelect();
+            setStatus("Successfully updated user data.");
+            resolve();
+        }
+        xhr.open("POST", FILE + "?write");
+        xhr.responseType = "json";
+        xhr.send(getJSONFileString(userdata));
+    });
 }
 
 async function updateUserSelect() {
     console.log("Updating user selection to:")
     console.log(userdata);
 
-    let selectElem = document.getElementById("userselect");
 
     let childrenToRemove = [];
-    for (let child of selectElem) {
+    for (let child of userSelectElem) {
         if (!["", "NEW"].includes(child.value)) {
             childrenToRemove.push(child);
         }
     }
-    childrenToRemove.forEach((child) => selectElem.removeChild(child));
+    childrenToRemove.forEach((child) => userSelectElem.removeChild(child));
 
     // TODO remove sleep
     await sleep(2000);
@@ -162,20 +193,22 @@ async function clearForm() {
             inputElem.value = ""; 
         }
     }
+    let selectElem = formElem.getElementsByTagName("SELECT")[0];
+    selectElem.selectedIndex = 0;
+    selectElem.dispatchEvent(new Event("change"));
 }
 
 function setSelectedUser(user) {
-    let selectElem = document.getElementById("userselect");
     let idx = -1, i = 0;
-    for (let i = 0; i < selectElem.options.length; i++) {
-        if (selectElem.options[i].value == user) {
+    for (let i = 0; i < userSelectElem.options.length; i++) {
+        if (userSelectElem.options[i].value == user) {
             idx = i;
             break;
         }
     }
     console.assert(idx != -1);
-    selectElem.selectedIndex = idx;
-    selectElem.dispatchEvent(new Event("change"));
+    userSelectElem.selectedIndex = idx;
+    userSelectElem.dispatchEvent(new Event("change"));
 
 }
 
