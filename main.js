@@ -18,6 +18,7 @@ var userdata = undefined;
 var courses = {};
 // Dictionary from title to state (ready, full, none, booked, booking, missing, wrongnumber, failed (to load site))
 var bookingState = {};
+
 // Dictionary from title to start time
 var bookingTime = {};
 // Dictionary from title to HTML element containing the status of the title
@@ -219,8 +220,6 @@ async function bookCourse(title) {
             // Set status select option
             let selectElem = form.getElementsByTagName("SELECT")[0];
             console.assert(form.getElementsByTagName("SELECT").length == 1);
-            //TODO check if this sleep can be removed
-//            await sleep(1000);
             let ok = false;
             for (let i = 0; i < selectElem.options.length; i++) {
                 if (selectElem.options[i].value == data.statusorig) {
@@ -235,7 +234,6 @@ async function bookCourse(title) {
                 bookingState[title] = "error";
                 throw new Error("Didn't find status element for " + data.statusorig);
             } 
-
 
             // Set form input elements
             let inputElems = form.getElementsByTagName("INPUT");
@@ -325,7 +323,9 @@ async function bookCourse(title) {
                 updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
                 throw new Error ("Aborted booking for " + title);
             }
-            //form.requestSubmit(submitButton);
+            //TODO this sleep was just for debug; remove
+            await sleep(5000);
+            form.requestSubmit(submitButton);
             console.log("Submitted " + title + "...");
         };
 
@@ -466,7 +466,7 @@ async function unarm() {
 
 function checkBookingDone() {
     for (let title of Object.keys(bookingState)) {
-        if (!["booked", "full", "missing", "wrongnumber", "error"].includes(bookingState[title])) {
+        if (!["booked", "full", "missing", "wrongnumber", "wronguser", "error"].includes(bookingState[title])) {
             //console.log("Booking not done: " + title + " " + bookingState[title]);
             return false;
         }
@@ -734,7 +734,7 @@ function loadChoice() {
                         // Create iframe for booking; one one the left side, the next on the right side
                         let htmlFrame = 
                             `<div style="align:center;float:${leftRightCounter++ % 2 == 0 ? "left" : "right"};">`+title+"<br>"+
-                            `<iframe width="600" height="600" title="Anmeldung ${title}" name="frame_${title}" style="overflow:scroll;">
+                            `<iframe width="600" height="600" title="Anmeldung ${title}" name="frame_${title}" style="overflow:scroll;" referrerpolicy="no-referrer">
                             </iframe><div>`;
                        frameRootElem.innerHTML += htmlFrame; 
                     }
@@ -768,7 +768,7 @@ function loadChoice() {
         
             updateStatus("Loaded choice.", "replace");
             try {
-                loadUserData().then( () =>  updatedStatus("Loaded user data."));
+                loadUserData().then( () =>  updateStatus("Loaded user data."));
              } catch (err) {
                updateStatus("[ERROR : Failed to load user data");
                reject();
