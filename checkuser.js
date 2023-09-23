@@ -116,7 +116,10 @@ function checkForm() {
     let inputElems = formElem.getElementsByTagName("INPUT");
 
     for (let e of inputElems) {
-        if (e.getAttribute("disabled") == "disabled")
+        let g = e.parentElement.parentElement;
+        removeClass(g, "warn");
+
+        if (e.getAttribute("disabled") == "disabled" || g.className.split(" ").includes("hide"))
             continue;
         var f = e.className.match(/\bbs_fval_(.+?)\b/);
         if (!chk_input(e, f ? f[1] : "")) {
@@ -130,9 +133,8 @@ function checkForm() {
 
 // a is input elem, b is input elem class: bs_fval_[b]
 function chk_input(a, b) {
-    //TODO fix
-    return true;
-    let F = {elements : formElem.getElementsByTagName("INPUT")};
+    let F = formElem.parentElement; 
+//    let F = {elements : formElem.getElementsByTagName("INPUT")};
     //TODO formdata var
     if (a) {
         // c is for select: the value of the selected elem
@@ -172,7 +174,7 @@ function chk_input(a, b) {
             || "num2" == b && !c.match(/^\d\d?$/) 
             || "email" == b && ("" != c 
                                 || 2 == formdata.ep 
-                                || D.getElementById("bs_lastschrift") && 1 == formdata.ep && endpreis) && !isEmail(c) 
+                                || document.getElementById("bs_lastschrift") && 1 == formdata.ep && endpreis) && !isEmail(c) 
                                 || "tel" == b && "" != c && !c.match(/^[0-9 -\\/()]+$/)
         )
            return !1
@@ -202,11 +204,11 @@ function grossklein(a) {
     return 1 > c || 1 > b || c > b ? !1 : !0 
 }
 
+function removeClass(a, b) { 
+    a.className = a.className.replace(new RegExp("\\b" + b + "\\b"), " ");
+}
+
 async function addUser(user) {
-    if (!checkForm()) {
-        setStatus("Form invalid", "red");
-        return;
-    }
     // get data from form
     let data = {};
 
@@ -310,6 +312,8 @@ function setSelectedUser(user) {
             break;
         }
     }
+    console.log(`Found ${user} in list: ${idx}`);
+    console.log(userSelectElem.options);
     console.assert(idx != -1);
     userSelectElem.selectedIndex = idx;
     userSelectElem.dispatchEvent(new Event("change"));
@@ -339,6 +343,10 @@ function toggleInert() {
 document.getElementById("userselect").onchange = onSelectChange; 
 
 document.getElementById("bs_submit").onclick = () => {
+    if (!checkForm()) {
+        setStatus("Form invalid", "red");
+        return;
+    }
     toggleInert();
     let selectedUser = getSelectedUser();
     if (selectedUser == "")
@@ -412,6 +420,7 @@ window.onbeforeunload = function(e) {
         e.returnValue = "The changes to the user will be lost";
     }
 }
+
 
 clearForm()
     .then(toggleInert)
