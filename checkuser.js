@@ -1,4 +1,4 @@
-const FILE = "users.json";
+const FILE = "userdata.json";
 let userdata;
 
 const userSelectElem = document.getElementById("userselect");
@@ -55,7 +55,7 @@ function downloadUserData() {
                 throw new Error("404: userdata.json not found on server");
             userdata = xhr.response;
             // TODO remove sleep
-            await sleep(2000);
+            await sleep(1000);
             setStatus("Fetched user data.")
             resolve(userdata);
         }
@@ -100,9 +100,6 @@ async function updateUserSelect() {
         }
     }
     childrenToRemove.forEach((child) => userSelectElem.removeChild(child));
-
-    // TODO remove sleep
-    await sleep(1000);
 
     for (let user of Object.keys(userdata)) {
         let elem = document.createElement("OPTION");
