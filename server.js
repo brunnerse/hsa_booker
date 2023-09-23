@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const USE_COOKIES_FOR_FILES = true;
+
 var http = require('http');
 var https = require('https');
 var url = require('url');
@@ -85,6 +87,7 @@ async function respondFile(req, res) {
 		filename = "./main.html";
 	let fsfun = (filename, text, cb) => cb();
 	let text; 
+	let isWriting = true;
 	try {
 		if (q.query.append != undefined) {
 			fsfun = fs.appendFile;
@@ -92,12 +95,40 @@ async function respondFile(req, res) {
 		} else if (q.query.write != undefined) {
 			fsfun = fs.writeFile;
 			text = await getText(req, "write");
-			console.log("Writing " + text + "to " + filename);
+		} else {
+			isWriting = false;
 		}
 	} catch (err) {
 		return respondError(res, "Data to be written are undefined");
 	}
-	fsfun(filename, text, () =>  {
+
+	let folder = ".";
+	if (USE_COOKIES_FOR_FILES) {
+		let cookie =  req.headers["cookie"];
+		if (cookie) {
+			// extract folder cookie
+			cookie.split(";").forEach((c) => {
+				let [name, ...rest] = c.split("=");
+				if (name.trim() == "folder")
+					folder =  rest.join();
+			})
+		} else if (isWriting) {
+			// if writing and no cookie yet, generate new folder and set the cookie 
+			folder = Math.floor(Math.random() * 1e8).toString(16);	
+			while (fs.existsSync(folder))
+				folder = Math.floor(Math.random() * 1e8).toString(16);	
+			res.setHeader("Set-Cookie", ["folder="+folder]); //TODO let expire?
+			fs.mkdirSync("Cookies/"+folder);
+		}
+		folder = folder == "." ? folder : "Cookies/" + folder;
+		if (isWriting)
+			console.log("Writing to file " + folder+"/"+filename);
+	}
+	const fullpath = folder + "/" + filename;
+
+	fsfun(fullpath, text, () =>  {
+		if (fs.existsSync(fullpath))
+			filename = fullpath; 
 		fs.readFile(filename, (err,data) => {
 			if (err) {
 				console.log("File " + filename + " not found");
@@ -199,7 +230,6 @@ function respondExtern(req, res, reqUrl) {
 			outReq.write(data);
 		});
 		req.on('end', () => {
-			console.log("Ending outReq...");
 			outReq.end();
 		});
 	} else {
