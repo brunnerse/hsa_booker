@@ -59,7 +59,7 @@ function downloadUserData() {
             setStatus("Fetched user data.")
             resolve(userdata);
         }
-        xhr.open("GET", "userdata.json"); //TODO change to  FILE
+        xhr.open("GET", FILE); 
         xhr.responseType = "json";
         xhr.send();
     });
@@ -74,11 +74,12 @@ function uploadUserData() {
             setStatus("Failed to update user data", "red");
             reject(err);
         };
-        xhr.onloadend = () => {
+        xhr.onloadend = async () => {
             if (xhr.status == "404")
                 throw new Error("404: FILE " + FILE + " not found on server");
+            // update userdata with response
             userdata = xhr.response;
-            updateUserSelect();
+            await updateUserSelect();
             setStatus("Successfully updated user data.");
             resolve();
         }
@@ -92,17 +93,16 @@ async function updateUserSelect() {
     console.log("Updating user selection to:")
     console.log(userdata);
 
-
     let childrenToRemove = [];
     for (let child of userSelectElem) {
-        if (!["", "NEW"].includes(child.value)) {
+        if (child.value != "") {
             childrenToRemove.push(child);
         }
     }
     childrenToRemove.forEach((child) => userSelectElem.removeChild(child));
 
     // TODO remove sleep
-    await sleep(2000);
+    await sleep(1000);
 
     for (let user of Object.keys(userdata)) {
         let elem = document.createElement("OPTION");
@@ -113,7 +113,6 @@ async function updateUserSelect() {
 }
 
 function checkForm() {
-    let selectElem = formElem.getElementsByTagName("SELECT")[0];
     let inputElems = formElem.getElementsByTagName("INPUT");
 
     for (let e of inputElems) {
@@ -131,6 +130,8 @@ function checkForm() {
 
 // a is input elem, b is input elem class: bs_fval_[b]
 function chk_input(a, b) {
+    //TODO fix
+    return true;
     let F = {elements : formElem.getElementsByTagName("INPUT")};
     //TODO formdata var
     if (a) {
@@ -209,7 +210,6 @@ async function addUser(user) {
     // get data from form
     let data = {};
 
-    let formElem = document.getElementById("bs_form_main");
     // Get status select option
     let selectElem = formElem.getElementsByTagName("SELECT")[0];
     console.assert(formElem.getElementsByTagName("SELECT").length == 1);
@@ -222,7 +222,7 @@ async function addUser(user) {
             if (inputElem.checked)
                 data.sex = inputElem.value; 
         } else {
-            if (true && inputElem.getAttribute("disabled") != "disabled")
+            if (inputElem.getAttribute("disabled") != "disabled" && inputElem["name"] != "bic")
                 // get form data
                 data[inputElem["name"]] = inputElem.value;
         }
@@ -231,7 +231,7 @@ async function addUser(user) {
     return downloadUserData().then(() => {
         userdata[user] = data;
     }).then(uploadUserData)
-        .then(() => setStatus("Added user " + user + ".", "green"));
+      .then(() => setStatus("Added user " + user + ".", "green"));
 }
 
 async function deleteUser(user) {
@@ -245,8 +245,8 @@ async function deleteUser(user) {
 // Updates form according to selected user
 async function onSelectChange() {
     let selectedUser = getSelectedUser(); 
-    if (selectedUser == "" || selectedUser == "NEW") {
-        clearForm();
+    if (selectedUser == "") {
+        clearForm(); 
     } else {
         let data = userdata[selectedUser];
         let formElem = document.getElementById("bs_form_main");
@@ -276,13 +276,9 @@ async function onSelectChange() {
                     inputElem.checked = false;
                 } 
                 inputElem.dispatchEvent(new Event("change"));
-            } 
-            // set accept conditions button
-            else if (inputElem["name"] == "tnbed")
-                inputElem.checked = true;
-            else {
+            } else {
                 // fill form data
-                if (data[inputElem["name"]])
+                if (data[inputElem["name"]] != undefined)
                     inputElem.value = data[inputElem["name"]];
             }
         }
@@ -307,7 +303,7 @@ async function clearForm() {
 }
 
 function setSelectedUser(user) {
-    let idx = -1, i = 0;
+    let idx = -1;
     for (let i = 0; i < userSelectElem.options.length; i++) {
         if (userSelectElem.options[i].value == user) {
             idx = i;
@@ -332,6 +328,7 @@ function setStatus(status, color="white") {
 }
 
 function toggleInert() {
+    console.log("toggling inert...");
     document.getElementById("btn_cancel").toggleAttribute("inert");
     document.getElementById("bs_submit").toggleAttribute("inert");
     document.getElementById("userselect").toggleAttribute("inert");
@@ -344,10 +341,10 @@ document.getElementById("userselect").onchange = onSelectChange;
 document.getElementById("bs_submit").onclick = () => {
     toggleInert();
     let selectedUser = getSelectedUser();
-    if (selectedUser == "" || selectedUser == "NEW")
-        selectedUser = prompt("Enter the User ID", "");
+    if (selectedUser == "")
+        selectedUser = prompt("Enter the User ID for the new user", "");
     if (!selectedUser) {
-        setStatus("User ID is invalid", "red");
+        setStatus("Entered User ID is invalid", "red");
     } else {
        addUser(selectedUser).then(() => setSelectedUser(selectedUser)).finally(toggleInert);
     }
@@ -358,8 +355,6 @@ document.getElementById("btn_cancel").onclick = () => {
     let selectedUser = getSelectedUser();
     if (selectedUser == "")
         clearForm().finally(toggleInert);
-    else if (selectedUser == "NEW")
-        clearForm().finally(toggleInert);
     else {
         if (confirm("Delete user " + selectedUser + "?")) {
             deleteUser(selectedUser).then(() => setSelectedUser("")).finally(toggleInert);
@@ -369,13 +364,9 @@ document.getElementById("btn_cancel").onclick = () => {
 
 
 
-
-// TODO prevent refresh if user data are modified
-
 // enable/disable certain input elements when statusorig changes
 const statusorig = formElem.getElementsByTagName("SELECT")[0];
 statusorig.addEventListener("change", () => {
-    console.log("CHANGED");
     let regex = /\bbs_fval_status(\d)(\d)\b/;
     let inputElems = formElem.getElementsByTagName("INPUT");
     const stdata = "0011112111323240";
@@ -387,13 +378,10 @@ statusorig.addEventListener("change", () => {
         d = [parseInt(d[0]), parseInt(d[1])];
         zsf[c] = d && d[1] ? d[1] : 0;
     }
-    console.log(zsf);
     for (let e of inputElems) {
         let g = e.parentElement.parentElement;
-        console.log("Checking element " + e.name + " class " + e.className);
         // if input element has classname bs_fval_status[xx], f = xx 
         if (f = e.className.match(regex)) {
-            console.log(f);
             // set display style to block if zsf fits, otherwise set style to none and set attribute disabled
             g.style.display = zsf[f[1]] == f[2] ? "block" : "none"; 
             zsf[f[1]] == f[2] ? e.removeAttribute("disabled") : e.setAttribute("disabled", "disabled"); 
@@ -402,6 +390,28 @@ statusorig.addEventListener("change", () => {
     }
 });
 
+
+
+function isFormModified() {
+    let inputElems = formElem.getElementsByTagName("INPUT");
+    let selectedUser = getSelectedUser();
+    for (let inputElem of inputElems) {
+        // Get sex radio button
+        if (inputElem["type"] == "text" && inputElem.getAttribute("disabled") != "disabled" && inputElem["value"])
+            if (selectedUser == "" || inputElem.value != userdata[selectedUser][inputElem.name])
+                return true;
+        // TODO also return true if user is saved and radio button / statusorig is different
+    }
+    return false;
+}
+
+// prevent refresh if user data are modified
+window.onbeforeunload = function(e) {
+    if (isFormModified()) {
+        e.preventDefault();
+        e.returnValue = "The changes to the user will be lost";
+    }
+}
 
 clearForm()
     .then(toggleInert)
