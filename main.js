@@ -37,12 +37,6 @@ function getColorForBookingState(bookingState) {
     return "white";
 }
 
-function sleep(msec) {
-    return new Promise(function (resolve, reject) {
-        setTimeout(resolve, msec);
-    })
-}
-
 function getRemainingTimeMS(timeStr) {
     timeStr = timeStr.replace("ab ", "");
     let arr = timeStr.split(",");
