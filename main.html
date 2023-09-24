@@ -24,6 +24,11 @@
     <link href="/buchsys/lib/global/angebote.css" media="all" rel="stylesheet" type="text/css" />
     <link href="/SysBilder/resex/bs_style.css" media="all" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="/hsa/templates/hssport/dist/css/bootstrap.min.css" type="text/css" />
+    <style>
+        .closebutton:hover {
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 
@@ -93,13 +98,13 @@
     </div>
 
 
-    <div id="avail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
+    <div hidden id="avail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
         <div id="bs_content">
             <form method="post" target="frame_anmeldung"
                 action="extern/https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi">
                 <input type="hidden" name="BS_Code" value="2ca70363-d94d-11ec-874f-00505600022a">
                 <div class="bs_kursangebot">
-                    <table class="bs_kurse">
+                    <table class="bs_kurse" style="border-style: none">
                         <thead>
                             <tr>
                                 <th class="bs_sknr"><span class="bslang_de">Kursnr</span><span
@@ -123,6 +128,7 @@
                                 <th class="bs_sbuch"><span class="bslang_de">Buchung</span><span
                                         class="bslang_en">Booking</span></th>
                                 <th style="text-align:center;">Status</th>
+                                <th class="closebutton" style="text-align:center;background-color:red;" onclick="onCloseButton(this)">x</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -156,7 +162,8 @@
                                 <td class="bs_sbuch"><a id="K7014"></a><input type="submit" value="buchen"
                                         title="booking" name="BS_Kursid_10911" class="bs_btn_buchen"></td>
                                 <td class="nr_name"
-                                    style="height:30px;width:250px;font-weight: bold;text-align:center;"></td>
+                                    style="height:30px;width:250px;font-weight: bold;text-align:center;">
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -165,10 +172,10 @@
         </div>
     </div>
 
-    <div id="notavail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
+    <div hidden id="notavail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
         <div id="bs_content">
             <div class="bs_kursangebot">
-                <table class="bs_kurse">
+                <table class="bs_kurse" style="border-style: none">
                     <thead>
                         <tr>
                             <th class="bs_sknr"><span class="bslang_de">Kursnr</span></th>
@@ -181,6 +188,7 @@
                             <th class="bs_spreis"><span class="bslang_de">Preis</span></th>
                             <th class="bs_sbuch"><span class="bslang_de">Status</span></th>
                             <th style="text-align:center;">Status</th>
+                            <th class="closebutton" style="text-align:center;background-color:red;" onclick="onCloseButton(this)">x</th>
                         </tr>
                     </thead>
                     <tbody>

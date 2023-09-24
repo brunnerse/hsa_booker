@@ -830,6 +830,52 @@ function loadCourses() {
         );
 }
 
+function onCloseButton(button) {
+    let parent = button.parentElement;
+    while (parent && parent.id != "bs_content") {
+        parent = parent.parentElement;
+    }
+    let title = parent.title;
+    let [sport, nr, user] = title.split("_");
+    let longTitle = `${sport} - ${nr} (${user})`;
+
+    if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr) && confirm(`Remove course ${longTitle}?`)) {
+        delete bookingState[title];
+        choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
+        if (choice[sport][user].length == 0) {
+            delete choice[sport][user];
+            console.log(choice[sport]);
+            if (Object.keys(choice[sport]).length == 0)
+                delete choice[sport];
+        }
+        let xhr = new XMLHttpRequest();
+        xhr.onerror = (err) => {
+            console.log("[ERROR] : failed to remove " + longTitle);
+            updateStatus("Failed to remove chosen course" + longTitle);
+        };
+        xhr.onloadend = () => {
+            if (xhr.status == "404")
+                throw new Error("404: userdata.json not found on server");
+            choice = xhr.response;
+            if (!choice[title]) {
+                parent.parentElement.removeChild(parent);
+                updateStatus("Successfully removed course " + longTitle);
+            } else {
+                updateStatus("Failed to remove course " + longTitle);
+
+            }
+            console.log("New choice:")
+            console.log(choice);
+        }
+        //TODO choice instead of choice2 in final version
+        xhr.open("POST","choice2.json?write");
+        xhr.responseType = "json";
+        xhr.send(getJSONFileString(choice));
+    }
+
+    return false;
+}
+
 function toggleButtonsInert(buttonIDs, inert) {
     for (let id of buttonIDs) {
         document.getElementById(id).toggleAttribute("inert");
