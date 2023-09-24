@@ -60,7 +60,6 @@ function respondError(res, message="") {
 
 
 function getText(req, variable) {
-	console.log(req.method);
 	return new Promise((resolve, reject) => {
 		if (req.method == "GET") {
 			let q = url.parse(req.url, true);
@@ -81,7 +80,7 @@ function getText(req, variable) {
 
 async function respondFile(req, res) {
 	let q = url.parse(req.url, true);
-	var filename = "." + q.pathname;
+	let filename = "." + q.pathname;
 	filename = unEscape(filename);
 	if (filename == "./")
 		filename = "./main.html";
@@ -102,7 +101,7 @@ async function respondFile(req, res) {
 		return respondError(res, "Data to be written are undefined");
 	}
 
-	let folder = ".";
+	let folder = "";
 	if (USE_COOKIES_FOR_FILES) {
 		let cookie =  req.headers["cookie"];
 		if (cookie) {
@@ -110,25 +109,31 @@ async function respondFile(req, res) {
 			cookie.split(";").forEach((c) => {
 				let [name, ...rest] = c.split("=");
 				if (name.trim() == "folder")
-					folder =  rest.join();
+					folder =  "Cookies/" + rest.join() + "/";
 			})
+			console.log("Received cookie " + cookie + "; folder is " + folder);
 		} else if (isWriting) {
 			// if writing and no cookie yet, generate new folder and set the cookie 
-			folder = Math.floor(Math.random() * 1e8).toString(16);	
-			while (fs.existsSync(folder))
-				folder = Math.floor(Math.random() * 1e8).toString(16);	
-			res.setHeader("Set-Cookie", ["folder="+folder]); //TODO let expire?
-			fs.mkdirSync("Cookies/"+folder);
+			let randName;
+			do {
+				randName = Math.floor(Math.random() * 1e8).toString(16);	
+				folder = "./Cookies/" + randName + "/";
+			} while (fs.existsSync(folder)); 
+			let expireDate = new Date(Date.now() + 1000*60*60*24*500); // Expire in 500 days
+			res.setHeader("Set-Cookie", ["folder="+ randName + ";Expires="+expireDate.toUTCString()]); 
+			if (!fs.existsSync("Cookies"))
+				fs.mkdirSync("Cookies");
+			fs.mkdirSync(folder);
+			console.log("Created new folder " + folder)
 		}
-		folder = folder == "." ? folder : "Cookies/" + folder;
 		if (isWriting)
-			console.log("Writing to file " + folder+"/"+filename);
+			console.log("Writing to file " + folder + filename);
 	}
-	const fullpath = folder + "/" + filename;
 
-	fsfun(fullpath, text, () =>  {
-		if (fs.existsSync(fullpath))
-			filename = fullpath; 
+	fsfun(folder + filename, text, () =>  {
+		console.log(folder + filename + " File exists: " + fs.existsSync(folder+filename));
+		if (fs.existsSync(folder + filename))
+			filename = folder + filename; 
 		fs.readFile(filename, (err,data) => {
 			if (err) {
 				console.log("File " + filename + " not found");
