@@ -1,79 +1,9 @@
-const FILE = "userdata.json";
 let userdata;
 
 const userSelectElem = document.getElementById("userselect");
 const formElem = document.getElementById("bs_form_main");
 const statusElem = document.getElementById("statustext");
 
-
-
-function downloadUserData() {
-    setStatus("Fetching user data...");
-    return new Promise(function (resolve, reject) {
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
-            console.log("[ERROR] : failed loading user data");
-            setStatus("Failed to load user data", "red");
-            reject(err);
-        };
-        xhr.onloadend = async () => {
-            if (xhr.status == "404")
-                throw new Error("404: userdata.json not found on server");
-            userdata = xhr.response;
-            // TODO remove sleep
-            await sleep(1000);
-            setStatus("Fetched user data.")
-            resolve(userdata);
-        }
-        xhr.open("GET", FILE); 
-        xhr.responseType = "json";
-        xhr.send();
-    });
-}
-
-function uploadUserData() {
-    setStatus("Updating user data...");
-    return new Promise(function (resolve, reject) {
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
-            console.log("[ERROR] : failed writing to file!");
-            setStatus("Failed to update user data", "red");
-            reject(err);
-        };
-        xhr.onloadend = async () => {
-            if (xhr.status == "404")
-                throw new Error("404: FILE " + FILE + " not found on server");
-            // update userdata with response
-            userdata = xhr.response;
-            await updateUserSelect();
-            setStatus("Successfully updated user data.");
-            resolve();
-        }
-        xhr.open("POST", FILE + "?write");
-        xhr.responseType = "json";
-        xhr.send(getJSONFileString(userdata));
-    });
-}
-
-async function updateUserSelect() {
-    console.log("Updating user selection to:")
-    console.log(userdata);
-
-    let childrenToRemove = [];
-    for (let child of userSelectElem) {
-        if (child.value != "") {
-            childrenToRemove.push(child);
-        }
-    }
-    childrenToRemove.forEach((child) => userSelectElem.removeChild(child));
-
-    for (let user of Object.keys(userdata)) {
-        let elem = document.createElement("OPTION");
-        elem.value = user;
-        elem.innerHTML = user; 
-        userSelectElem.appendChild(elem);
-    }
-}
 
 function checkForm() {
     let inputElems = formElem.getElementsByTagName("INPUT");
@@ -193,23 +123,35 @@ async function addUser(user) {
         }
     }
 
-    return downloadUserData().then(() => {
+    setStatus("Fetching most recent user data...");
+    return downloadUserData().then((d) => {
+        userdata = d;
         userdata[user] = data;
-    }).then(uploadUserData)
-      .then(() => setStatus("Added user " + user + ".", "green"));
+        setStatus("Updating user data...");
+    }).then(() => uploadUserData(userdata))
+    .then((d) => userdata = d) 
+    .then(() => updateUserSelect(userSelectElem, userdata))
+    .then( () => {setStatus("Added user " + user + ".", "green")})
+    .catch( (err) => setStatus("Failed to delete user " + user + ": Error " + err, "red"));
 }
 
 async function deleteUser(user) {
-    return downloadUserData().then(() => {
+    setStatus("Fetching most recent user data...");
+    return downloadUserData().then((d) => {
+        userdata = d;
         delete userdata[user];
-    }).then(uploadUserData)
-        .then(() => setStatus("Deleted user " + user + ".", "green"));
+        setStatus("Updating user data...");
+    }).then(() => uploadUserData(userdata))
+    .then((d) => userdata = d) 
+    .then(() => updateUserSelect(userSelectElem, userdata))
+    .then(() => setStatus("Deleted user " + user + ".", "green"))
+    .catch( (err) => setStatus("Failed to delete user " + user + ": Error " + err, "red"));
 }
 
 
 // Updates form according to selected user
 async function onSelectChange() {
-    let selectedUser = getSelectedUser(); 
+    let selectedUser = getSelectedUser(userSelectElem); 
     if (selectedUser == "") {
         clearForm(); 
     } else {
@@ -267,26 +209,6 @@ async function clearForm() {
     selectElem.dispatchEvent(new Event("change"));
 }
 
-function setSelectedUser(user) {
-    let idx = -1;
-    for (let i = 0; i < userSelectElem.options.length; i++) {
-        if (userSelectElem.options[i].value == user) {
-            idx = i;
-            break;
-        }
-    }
-    console.log(`Found ${user} in list: ${idx}`);
-    console.log(userSelectElem.options);
-    console.assert(idx != -1);
-    userSelectElem.selectedIndex = idx;
-    userSelectElem.dispatchEvent(new Event("change"));
-
-}
-
-function getSelectedUser() {
-    const selectElem = document.getElementById("userselect");
-    return selectElem.options[selectElem.selectedIndex].value; 
-}
 
 function setStatus(status, color="white") {
     let style = "text-align:center;height:20px;font-weight:bold;background-color: " + color + ";"
@@ -310,26 +232,28 @@ document.getElementById("bs_submit").onclick = () => {
         setStatus("Form invalid", "red");
         return;
     }
-    toggleInert();
-    let selectedUser = getSelectedUser();
+    let selectedUser = getSelectedUser(userSelectElem);
     if (selectedUser == "")
         selectedUser = prompt("Enter the User ID for the new user", "");
     if (!selectedUser) {
         setStatus("Entered User ID is invalid", "red");
     } else {
-       addUser(selectedUser).then(() => setSelectedUser(selectedUser)).finally(toggleInert);
+       toggleInert();
+       addUser(selectedUser).then(() => setSelectedUser(userSelectElem, selectedUser)).finally(toggleInert);
     }
 };
 
 document.getElementById("btn_cancel").onclick = () => {
-    toggleInert();
-    let selectedUser = getSelectedUser();
+    let selectedUser = getSelectedUser(userSelectElem);
     if (selectedUser == "")
-        clearForm().finally(toggleInert);
+        clearForm();
     else {
         if (confirm("Delete user " + selectedUser + "?")) {
-            deleteUser(selectedUser).then(() => setSelectedUser("")).finally(toggleInert);
-        };
+            toggleInert(); 
+            deleteUser(selectedUser).then(() => setSelectedUser(userSelectElem, "")).finally(toggleInert);
+        } {
+
+        }
     }
 };
 
@@ -365,7 +289,7 @@ statusorig.addEventListener("change", () => {
 
 function isFormModified() {
     let inputElems = formElem.getElementsByTagName("INPUT");
-    let selectedUser = getSelectedUser();
+    let selectedUser = getSelectedUser(userSelectElem);
     for (let inputElem of inputElems) {
         // Get sex radio button
         if (inputElem["type"] == "text" && inputElem.getAttribute("disabled") != "disabled" && inputElem["value"])
@@ -387,6 +311,9 @@ window.onbeforeunload = function(e) {
 
 clearForm()
     .then(toggleInert)
+    .then(() => setStatus("Fetching userdata..."))
     .then(downloadUserData)
-    .then(updateUserSelect)
-    .then(toggleInert);
+    .then((d) => {userdata = d;})
+    .then(() => updateUserSelect(userSelectElem, userdata))
+    .then(() => setStatus("Fetched userdata."))
+    .finally(toggleInert);
