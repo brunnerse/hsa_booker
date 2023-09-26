@@ -1,7 +1,10 @@
 const FILE = "choice.json";
+
 let userdata;
+let courses = {};
 
 const statusElem = document.getElementById("statustext");
+const userSelectElem = document.getElementById("userselect"); 
 const iFrame = document.getElementById("iframe");
 
 
@@ -58,24 +61,6 @@ async function addCourse(user) {
     // get data from form
     let data = {};
 
-    // Get status select option
-    let selectElem = formElem.getElementsByTagName("SELECT")[0];
-    console.assert(formElem.getElementsByTagName("SELECT").length == 1);
-    data.statusorig = selectElem.options[selectElem.selectedIndex].value;
-
-    let inputElems = formElem.getElementsByTagName("INPUT");
-    for (let inputElem of inputElems) {
-        // Get sex radio button
-        if (inputElem["name"] == "sex") {
-            if (inputElem.checked)
-                data.sex = inputElem.value; 
-        } else {
-            if (inputElem.getAttribute("disabled") != "disabled" && inputElem["name"] != "bic")
-                // get form data
-                data[inputElem["name"]] = inputElem.value;
-        }
-    }
-
     return downloadUserData().then(() => {
         userdata[user] = data;
     }).then(uploadUserData)
@@ -88,18 +73,41 @@ function setStatus(status, color="white") {
     statusElem.innerHTML = status;
 }
 
-function toggleInert() {
-    console.log("toggling inert...");
-//    document.getElementById("btn_cancel").toggleAttribute("inert");
+async function onSelectChange(userSelectElem) {
+    let selectedUser = getSelectedUser(userSelectElem);
+    if (selectedUser == "") {
+        if (userSelectElem.options[userSelectElem.selectedIndex].title == "adder") {
+            // open user edit page in new tab
+            window.open("/Users.html", '_blank').focus();
+            // reset selection to the first blank one
+            setSelectedUser(userSelectElem, "");
+        }
+        return;
+    }
 }
 
+async function onAdd(button) {
+    console.log("Add:");
+    console.log(button);
+    let user = getSelectedUser(userSelectElem);
+    if (!user) {
+        alert("Select a user to add the course for in the top left corner first.")
+        return;
+    }
+    //TODO
+
+//       addUser(selectedUser).then(() => setSelectedUser(selectedUser)).finally(toggleInert);
+}
 
 iFrame.onload =  
 () => {
     let url = iFrame.contentWindow.location.href;
-    console.log("Loaded new frame: " + url);
+    // remove possible anchor from url
+    url = url.split('#')[0];
+    console.log("Loaded new frame:\n" + url);
     // replace all external links with localhost extern links
-    aElems = iFrame.contentDocument.getElementsByTagName("A");
+    let docFrame = iFrame.contentDocument;
+    aElems = docFrame.getElementsByTagName("A");
     for (let a of aElems) {
         let href = a.getAttribute("href");
         if (href && href.startsWith("http")) {
@@ -107,13 +115,55 @@ iFrame.onload =
         } 
     }
 
-    // TODO check if URL is a course (or check contentDocument for that)
-    if (false) {
-
-        setStatus("Choose course to add", "white")
-    } else {
-        setStatus("Current Page is not a Course page", "white")
-        // TODO modify page
+    // check if URL is course overview; if it is, add all links to courses
+    if (url == iFrame.src) {
+        setStatus("Course overview");
+        let rootElems = docFrame.getElementsByClassName("bs_menu");
+        for (let rootElem of rootElems) {
+            for (let elem of rootElem.getElementsByTagName("A")) {
+                courses[elem.href] = elem.innerHTML;
+            }
+        }
+    } 
+    else {
+        // TODO check if URL is a course (or check contentDocument for that)
+        if (Object.keys(courses).includes(url)) {
+            setStatus("Choose " + courses[url] + " course to add", "white")
+            // modify page
+            // prevent all forms from submitting 
+            for (let formElem of docFrame.forms) {
+                formElem.onsubmit = () => false;
+            }
+            // insert buttons into book table cell
+            for (let bookElem of docFrame.getElementsByClassName("bs_sbuch")) {
+                if (bookElem.tagName != "TD")
+                    continue;
+                // check book button, remove it and save its color
+                let className = "";
+                let inputElems = bookElem.getElementsByTagName("INPUT");
+                if (inputElems.length > 0) {
+                    inputElems[0].type="text";
+                    className = inputElems[0].className;
+                }
+                while (bookElem.lastChild)
+                    bookElem.removeChild(bookElem.lastChild);
+                let button = document.createElement("BUTTON");
+                button.innerHTML = "ADD"; // TODO or remove if already added for that user
+                button.className = className;
+                button.style = "width:95%; height:25px;border-radius:5px;"
+                bookElem.appendChild(button);
+                button.onclick = () => onAdd(button);
+            }
+        } else {
+            setStatus("Current Page is not a Course page", "white")
+        }
     }
-//       addUser(selectedUser).then(() => setSelectedUser(selectedUser)).finally(toggleInert);
 };
+
+
+// fetch userdata and initialize user bar
+setStatus("Fetching userdata...");
+downloadUserData()
+.then((d) => {userdata = d;})
+.then(() => updateUserSelect(userSelectElem, userdata))
+.then(() => setStatus("Fetched userdata."))
