@@ -204,7 +204,9 @@ async function bookCourse(title) {
             if (!data){
                 updateEntryStateTitleErr(title, "userdata for " + user + " not found");
                 bookingState[title] = "error";
-                throw new Error("ERROR: userdata for " + user + " not found!");
+                console.log("Error during booking of " + title + ": " + 
+                    "ERROR: userdata for " + user + " not found!");
+                return;
             }
 
             // Fill form and submit
@@ -266,7 +268,9 @@ async function bookCourse(title) {
                 if (!submitButton) {
                     updateEntryStateTitleErr(title, "Submit button not found");
                     bookingState[title] = "error";
-                    throw new Error("Submit button on second screen not found!");
+                    console.log("Error during booking of " + title + ": " + 
+                        "Submit button on second screen not found!");
+                    return;
                 }
                 iFrameElem.onload = async function(event) {
                     console.log("Onload called second inner");
@@ -277,29 +281,28 @@ async function bookCourse(title) {
                     updateEntryStateTitle(title, "Booking successful", "#00ff00");
                     bookingState[title] = "booked"; 
                     // let server know that course was booked successfully
-                    let xhr = new XMLHttpRequest();
-                    xhr.onerror = () => {
-                        console.log("WARNING: Failed to inform server about successful booking"); 
-                    };
-                    xhr.onloadend = () => {
-                    let bookedCourses = xhr.response;
+                    download("bookedcourses.txt?append="+title)
+                    .then((bookedCourses) => {
                         console.log("Successfully informed server about successful booking.");
                         console.log("Booked courses: " + bookedCourses);
-                    };
-                    xhr.responseType = "text";
-                    xhr.open("GET","bookedcourses.txt?append="+title);
-                    xhr.send();
+                    })
+                    .catch((err) => {
+                        console.log("WARNING: Failed to inform server about successful booking"); 
+                    })
                 };
 
                 if (checkAbortFun()) {
-                    bookingstate[title] = "ready";
+                    bookingState[title] = "ready";
                     updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
-                    throw new Error ("Aborted booking for " + title);
+                    console.log("Aborted booking for " + title);
+                    return;
                 }
                 //TODO this button iff sure!!!
                 submitButton.setAttribute("inert", "");
                 submitButton.setAttribute("hidden", "");
                 //form.requestSubmit(submitButton);
+                bookingState[title] = "error";
+                updateEntryStateTitle(title, "Booking medium", "#00ff00");
             };
             // lever out countdown 
             // fastest way:
@@ -315,7 +318,8 @@ async function bookCourse(title) {
             if (checkAbortFun()) {
                 bookingState[title] = "ready";
                 updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
-                throw new Error ("Aborted booking for " + title);
+                console.log("Aborted booking for " + title);
+                return;
             }
             //TODO this sleep was just for debug; remove
             await sleep(5000);
@@ -333,14 +337,11 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             let t = `${sport}_${nr}_${user}`;
             // Check first if title is already ready or if function should wait for title
             if (["ready", "full", "booked"].includes(bookingState[t]))
-                bookCourse(t);
+                bookCourse(t)
             else 
                 titles.push(t);
         }
     }
-
-    console.log("Waiting until ready for " + sport +"\t" + titles);
-
 
     // set refreshtime so it immediately updates in the first loop
     let lastRefreshTime = Date.now() - refreshInterval_short;
@@ -350,7 +351,8 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             for (let t of titles) {
                 updateEntryStateTitle(t, bookingState[t], getColorForBookingState(bookingState[t]));
             }
-            throw new Error("aborted waitUntilReady(" + sport + ")");
+            console.log("aborted waitUntilReady(" + sport + ")");
+            return;
         }
 
         if (Date.now() - lastRefreshTime >= refreshInterval) {
@@ -378,7 +380,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             let newTitles = [];
             for (let t of titles) {
                 if (["ready", "full", "booked", "wronguser"].includes(bookingState[t])) {
-                    bookCourse(t);
+                    bookCourse(t)
                 } else if (!["missing", "wrongnumber"].includes(bookingState[t])) {
                     newTitles.push(t);
                     // adapt interval depending on how long until the course becomes ready 
@@ -461,7 +463,7 @@ async function unarm() {
 function checkBookingDone() {
     for (let title of Object.keys(bookingState)) {
         if (!["booked", "full", "missing", "wrongnumber", "wronguser", "error"].includes(bookingState[title])) {
-            //console.log("Booking not done: " + title + " " + bookingState[title]);
+            console.log("Booking not done: " + title + " " + bookingState[title]);
             return false;
         }
     }
@@ -648,9 +650,8 @@ async function refreshSport(sport, updateTitles=[]) {
 async function refreshChoice() {
     updateStatus("Refreshing choice course status...");
 
-    if (!choice) {
+    if (!choice) 
         await loadChoice();
-    }
 
     let updatedSports = [];
     let updateCheckerInterval = setInterval(
