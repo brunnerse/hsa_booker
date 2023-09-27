@@ -1,6 +1,5 @@
-const FILE = "choice.json";
-
 let userdata;
+let choice;
 let courses = {};
 
 const statusElem = document.getElementById("statustext");
@@ -8,63 +7,13 @@ const userSelectElem = document.getElementById("userselect");
 const iFrame = document.getElementById("iframe");
 
 
-function downloadChoice() {
-    setStatus("Fetching course choice...");
-    return new Promise(function (resolve, reject) {
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
-            console.log("[ERROR] : failed loading course choice");
-            setStatus("Failed to load course choice", "red");
-            reject(err);
-        };
-        xhr.onloadend = async () => {
-            if (xhr.status == "404")
-                throw new Error("404: choice.json not found on server");
-            userdata = xhr.response;
-            // TODO remove sleep
-            await sleep(1000);
-            setStatus("Fetched course choice.")
-            resolve(userdata);
-        }
-        xhr.open("GET", FILE); 
-        xhr.responseType = "json";
-        xhr.send();
-    });
-}
-
-function uploadChoice() {
-    setStatus("Updating user data...");
-    return new Promise(function (resolve, reject) {
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
-            console.log("[ERROR] : failed writing to file!");
-            setStatus("Failed to update user data", "red");
-            reject(err);
-        };
-        xhr.onloadend = async () => {
-            if (xhr.status == "404")
-                throw new Error("404: FILE " + FILE + " not found on server");
-            // update userdata with response
-            userdata = xhr.response;
-            await updateUserSelect();
-            setStatus("Successfully updated user data.");
-            resolve();
-        }
-        xhr.open("POST", FILE + "?write");
-        xhr.responseType = "json";
-        xhr.send(getJSONFileString(userdata));
-    });
-}
-
-
 async function addCourse(user) {
     // get data from form
     let data = {};
 
-    return downloadUserData().then(() => {
+    return download(USERS_FILE).then(() => {
         userdata[user] = data;
-    }).then(uploadUserData)
-      .then(() => setStatus("Added user " + user + ".", "green"));
+    }).then(() => upload(USERS_FILE, userdata));
 }
 
 function setStatus(status, color="white") {
@@ -142,7 +91,6 @@ iFrame.onload =
                 let className = "";
                 let inputElems = bookElem.getElementsByTagName("INPUT");
                 if (inputElems.length > 0) {
-                    inputElems[0].type="text";
                     className = inputElems[0].className;
                 }
                 while (bookElem.lastChild)
@@ -150,7 +98,7 @@ iFrame.onload =
                 let button = document.createElement("BUTTON");
                 button.innerHTML = "ADD"; // TODO or remove if already added for that user
                 button.className = className;
-                button.style = "width:95%; height:25px;border-radius:5px;"
+                button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
                 bookElem.appendChild(button);
                 button.onclick = () => onAdd(button);
             }
@@ -162,8 +110,11 @@ iFrame.onload =
 
 
 // fetch userdata and initialize user bar
-setStatus("Fetching userdata...");
-downloadUserData()
+setStatus("Fetching data...");
+download(CHOICE_FILE)
+.then((d) => {choice = d;})
+.then(() => setStatus("Fetched choice."))
+.then(() => download(USERS_FILE))
 .then((d) => {userdata = d;})
 .then(() => updateUserSelect(userSelectElem, userdata))
-.then(() => setStatus("Fetched userdata."))
+.then(() => setStatus("Fetched userdata."));

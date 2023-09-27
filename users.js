@@ -124,11 +124,11 @@ async function addUser(user) {
     }
 
     setStatus("Fetching most recent user data...");
-    return downloadUserData().then((d) => {
+    return download(USERS_FILE).then((d) => {
         userdata = d;
         userdata[user] = data;
         setStatus("Updating user data...");
-    }).then(() => uploadUserData(userdata))
+    }).then(() => upload(USERS_FILE, userdata))
     .then((d) => userdata = d) 
     .then(() => updateUserSelect(userSelectElem, userdata))
     .then( () => {setStatus("Added user " + user + ".", "green")})
@@ -137,11 +137,11 @@ async function addUser(user) {
 
 async function deleteUser(user) {
     setStatus("Fetching most recent user data...");
-    return downloadUserData().then((d) => {
+    return download(USERS_FILE).then((d) => {
         userdata = d;
         delete userdata[user];
         setStatus("Updating user data...");
-    }).then(() => uploadUserData(userdata))
+    }).then(() => upload(USERS_FILE, userdata))
     .then((d) => userdata = d) 
     .then(() => updateUserSelect(userSelectElem, userdata))
     .then(() => setStatus("Deleted user " + user + ".", "green"))
@@ -312,7 +312,7 @@ window.onbeforeunload = function(e) {
 clearForm()
     .then(toggleInert)
     .then(() => setStatus("Fetching userdata..."))
-    .then(downloadUserData)
+    .then(() => download(USERS_FILE))
     .then((d) => {userdata = d;})
     .then(() => updateUserSelect(userSelectElem, userdata))
     .then(() => setStatus("Fetched userdata."))

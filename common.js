@@ -1,3 +1,5 @@
+const USERS_FILE = "userdata.json"
+const CHOICE_FILE = "choice.json"
 
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
@@ -44,4 +46,46 @@ function getJSONFileString(obj) {
         }
     }
     return str;
+}
+
+
+function download(filename, type="json") {
+    return new Promise(function (resolve, reject) {
+        let xhr = new XMLHttpRequest();
+        xhr.onerror = (err) => {
+            console.log("[ERROR] : failed loading file " + filename);
+            reject(err);
+        };
+        xhr.onloadend = async () => {
+            if (xhr.status == "404") {
+                reject(new Error("Got code 404 not found"));
+            } else {
+                // TODO remove sleep
+                await sleep(1000);
+                resolve(xhr.response);
+            }
+        }
+        xhr.open("GET", filename); 
+        xhr.responseType = type;
+        xhr.send();
+    });
+}
+
+function upload(filename, obj, type="json") {
+    return new Promise(function (resolve, reject) {
+        let xhr = new XMLHttpRequest();
+        xhr.onerror = (err) => {
+            console.log("[ERROR] : failed writing to file!");
+            reject(err);
+        };
+        xhr.onloadend = async () => {
+            if (xhr.status == "404")
+                reject(new Error("404: FILE " + FILE + " not found on server"));
+            else
+                resolve(xhr.response);
+        }
+        xhr.open("POST", filename + "?write");
+        xhr.responseType = type;
+        xhr.send(getJSONFileString(obj));
+    });
 }

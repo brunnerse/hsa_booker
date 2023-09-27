@@ -698,106 +698,68 @@ async function refreshChoice() {
 
 function loadChoice() {
     updateStatus("Loading choice and user data...", "append");
+    return download(USERS_FILE)
+    .then((data) => {
+        userdata = data;
+        updateStatus("Loaded user data.");
+        console.log(userdata);
+    })
+    .catch( (err) => {
+        updateStatus("Failed to load user data");
+        console.log("Failed to load user data:")
+        console.log(err)
+    })
+    .then(() => download(CHOICE_FILE))
+    .then((data) => {
+        choice = data;
+        console.log(choice);
+        updateStatus("Loaded choice.");
 
-    return new Promise(async function (resolve, reject) {
-        if (courses.length == 0) {
-            updateStatus("Loading choice failed: List of courses not loaded", "replace");
-            reject();
-        }
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
-            document.getElementById("choice").innerHTML = "failed ";
-            reject(err);
-        };
-        xhr.onloadend = () => {
-            choice = xhr.response;
-            
-            let frameRootElem  = document.getElementById("formframes");
-            frameRootElem.innerHTML = "";
+        let frameRootElem  = document.getElementById("formframes");
+        frameRootElem.innerHTML = "";
 
-            // Remove tables and create table entry for each choice
-            let leftRightCounter = 0;
-            document.getElementById("choice").innerHTML = "";
-            for (let sport of Object.keys(choice)) {
-                for (let user of Object.keys(choice[sport])) {
-                    for (let nr of choice[sport][user]) {
-                        let title = `${sport}_${nr}_${user}`;
-                        let entryElem = getErrorTable(nr, title, "init");
-                        updateEntryInTable(entryElem, sport, nr, user, "None"); 
+        // Remove tables and create table entry for each choice
+        let leftRightCounter = 0;
+        document.getElementById("choice").innerHTML = "";
+        for (let sport of Object.keys(choice)) {
+            for (let user of Object.keys(choice[sport])) {
+                for (let nr of choice[sport][user]) {
+                    let title = `${sport}_${nr}_${user}`;
+                    let entryElem = getErrorTable(nr, title, "init");
+                    updateEntryInTable(entryElem, sport, nr, user, "None"); 
 
-                        // Create iframe for booking; one one the left side, the next on the right side
-                        let htmlFrame = 
-                            `<div style="align:center;float:${leftRightCounter++ % 2 == 0 ? "left" : "right"};">`+title+"<br>"+
-                            `<iframe width="600" height="600" title="Anmeldung ${title}" name="frame_${title}" style="overflow:scroll;" referrerpolicy="no-referrer">
-                            </iframe><div>`;
-                       frameRootElem.innerHTML += htmlFrame; 
-                    }
+                    // Create iframe for booking; one one the left side, the next on the right side
+                    let htmlFrame = 
+                        `<div style="align:center;float:${leftRightCounter++ % 2 == 0 ? "left" : "right"};">`+title+"<br>"+
+                        `<iframe width="600" height="600" title="Anmeldung ${title}" name="frame_${title}" style="overflow:scroll;" referrerpolicy="no-referrer">
+                        </iframe><div>`;
+                    frameRootElem.innerHTML += htmlFrame; 
                 }
             }
-
-            // Get list of already booked courses and set their bookingState
-            let xhr_booked = new XMLHttpRequest();
-            xhr_booked.onloadend = () => {
-                if (xhr_booked.status == 404) {
-                    console.log("[INFO] bookedcourses file does not exist");
-                } else {
-                    let bookedList = xhr_booked.response;
-                    console.log("[INFO] booked courses: " + bookedList);
-                    let bookedArr = bookedList.split("\n");
-                    for (let title of bookedArr) {
-                        if (title != "") {
-                            bookingState[title] = "booked";
-                            updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
-                        }
-                    } 
-                }
-            }
-            xhr_booked.onerror = () => {
-                console.log("ERROR: Request to load bookedcourses.txt list failed");
-            }
-
-            xhr_booked.responseType = "text";
-            xhr_booked.open("GET", "bookedcourses.txt");
-            xhr_booked.send();
-        
-            updateStatus("Loaded choice.", "replace");
-            try {
-                loadUserData().then( () =>  updateStatus("Loaded user data."));
-             } catch (err) {
-               updateStatus("[ERROR : Failed to load user data");
-               reject();
-            }
-            resolve();
         }
-        xhr.open("GET","choice.json");
-        xhr.responseType = "json";
-        xhr.send();
+    })
+    .catch( (err) => {
+        document.getElementById("choice").innerHTML = "FAILED TO LOAD";
+        updateStatus("Failed to load choice data");
+        console.log("Failed to load choice data:")
+        console.log(err)
+    })
+    .then(() => download("bookedcourses.txt?append", "text")) // use append to create file if it doesnt exist
+    .then((bookedList) => {
+        // set state of titles in bookedList to booked
+        let bookedArr = bookedList.split("\n");
+        for (let title of bookedArr) {
+            if (title != "") {
+                bookingState[title] = "booked";
+                updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
+            }
+        } 
+    })
+    .catch((err) => {
+       updateStatus("Failed to load booked courses list");
+       console.log("ERROR: Request to load bookedcourses.txt list failed");
+       console.log(err);
     });
-}
-
-function loadUserData() {
-    return new Promise(function (resolve, reject) {
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
-            console.log("[ERROR] : failed loading user data");
-            updateStatus("LoadUserData failed!");
-            reject(err);
-        };
-        xhr.onloadend = () => {
-            if (xhr.status == "404")
-                throw new Error("404: userdata.json not found on server");
-            updateStatus("Loaded user data.");
-            userdata = xhr.response;
-            console.log("Loaded user data:")
-            console.log(userdata);
-            
-            resolve(userdata);
-        }
-        xhr.open("GET","userdata.json");
-        xhr.responseType = "json";
-        xhr.send();
-    });
-
 }
 
 
@@ -848,17 +810,26 @@ function onCloseButton(button) {
             if (Object.keys(choice[sport]).length == 0)
                 delete choice[sport];
         }
-        let xhr = new XMLHttpRequest();
-        xhr.onerror = (err) => {
+        //TODO choice instead of choice2 in final version
+        upload("choice2.json", choice)
+        .catch((err) => {
             console.log("[ERROR] : failed to remove " + longTitle);
             updateStatus("Failed to remove chosen course" + longTitle);
-        };
-        xhr.onloadend = () => {
-            if (xhr.status == "404")
-                throw new Error("404: userdata.json not found on server");
-            choice = xhr.response;
+        })
+        .then((data) => { 
+            choice = data;
             if (!choice[title]) {
+                // remove choice element
                 parent.parentElement.removeChild(parent);
+                // remove iframe
+                let frameRootElem  = document.getElementById("formframes");
+                for (let child of frameRootElem.children) { 
+                    let iFrameChild = child.getElementsByTagName("IFRAME")[0];
+                    if (iFrameChild.name == "frame_" + title) { 
+                        frameRootElem.removeChild(child);
+                        break;
+                    }
+                }
                 updateStatus("Successfully removed course " + longTitle);
             } else {
                 updateStatus("Failed to remove course " + longTitle);
@@ -866,11 +837,7 @@ function onCloseButton(button) {
             }
             console.log("New choice:")
             console.log(choice);
-        }
-        //TODO choice instead of choice2 in final version
-        xhr.open("POST","choice2.json?write");
-        xhr.responseType = "json";
-        xhr.send(getJSONFileString(choice));
+        });
     }
 
     return false;
@@ -903,5 +870,7 @@ document.getElementById("debug").addEventListener("click", () => {
 
 
 // Load data initially 
-loadChoice().then( 
-       loadCourses().then(refreshChoice).catch((error) => console.log("Initial loading failed: " + error.message)));
+loadChoice()
+.then(loadCourses)
+.then(refreshChoice)
+.catch((error) => console.log("Initial loading failed: " + error.message));
