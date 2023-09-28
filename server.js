@@ -229,7 +229,7 @@ function respondExtern(req, res, reqUrl) {
 	logFile("external.txt", `\n${outReq.method} ${reqUrl}\n${JSON.stringify(outReq.getHeaders())}`);
 
 	if (req.method == 'POST') {
-		// TODO check if outReq didnt timeout/error before writing/ending it
+		// TODO check if outReq didnt timeout/error before writing/ending it necessary?
 		req.on('data', (data) => {
 			logFile("external.txt", "Post:\n"+data);
 			outReq.write(data);

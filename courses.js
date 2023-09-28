@@ -39,9 +39,10 @@ async function onSelectChange(userSelectElem) {
 
 function getCurrentSport() {
     try {
+        // remove possible anchor from url
         return courses[iFrame.contentWindow.location.href.split('#')[0]];
     } catch {
-        return null;
+        return undefined;
     }
 }
 
@@ -164,10 +165,8 @@ iFrame.onload =
 
 function modifyBookButtons() {
     let sport = getCurrentSport();
-    if (!sport)
-        return;
     let user = getSelectedUser(userSelectElem);
-    let nrlist = user && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
+    let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
     // insert buttons into book table cell
     for (let bookElem of iFrame.contentDocument.getElementsByClassName("bs_sbuch")) {
         if (bookElem.tagName != "TD")

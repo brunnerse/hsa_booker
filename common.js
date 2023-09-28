@@ -57,13 +57,12 @@ function download(filename, type="json") {
             reject(err);
         };
         xhr.onloadend = async () => {
-            if (xhr.status == "404") {
+            //TODO remove
+            await sleep(500);
+            if (xhr.status == "404") 
                 reject(new Error("Got code 404 not found"));
-            } else {
-                // TODO remove sleep
-                await sleep(1000);
+            else
                 resolve(xhr.response);
-            }
         }
         xhr.open("GET", filename); 
         xhr.responseType = type;
@@ -79,6 +78,8 @@ function upload(filename, obj, type="json") {
             reject(err);
         };
         xhr.onloadend = async () => {
+            //TODO remove
+            await sleep(500);
             if (xhr.status == "404")
                 reject(new Error("404: FILE " + FILE + " not found on server"));
             else
