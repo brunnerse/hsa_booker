@@ -288,20 +288,25 @@ async function bookCourse(title) {
                 iFrameElem.onload = async function(event) {
                     console.log("Onload called second inner");
                     //TODO check if success screen appeared
-                    if (false)
-                        throw new Error();
-                    updateStatus("[SUCCESS] Booked course " + title);
-                    updateEntryStateTitle(title, "Booking successful", "#00ff00");
-                    bookingState[title] = "booked"; 
-                    // let server know that course was booked successfully
-                    download("bookedcourses.txt?append="+title)
-                    .then((bookedCourses) => {
-                        console.log("Successfully informed server about successful booking.");
-                        console.log("Booked courses: " + bookedCourses);
-                    })
-                    .catch((err) => {
-                        console.log("WARNING: Failed to inform server about successful booking"); 
-                    })
+                    if (iFrameElem.contentDocument.title == "Bestätigung") {
+                        updateStatus("[SUCCESS] Booked course " + title);
+                        updateEntryStateTitle(title, "Booking successful", "#00ff00");
+                        bookingState[title] = "booked"; 
+
+                        // let server know that course was booked successfully
+                        download("bookedcourses.txt?append="+title, "text")
+                        .then((bookedCourses) => {
+                            console.log("Successfully informed server about successful booking.");
+                            console.log("Booked courses: " + bookedCourses);
+                        })
+                        .catch((err) => {
+                            console.log("WARNING: Failed to inform server about successful booking"); 
+                        })
+                    } else {
+                        updateStatus("[ERROR] Booking course " + title + " failed: no success screen");
+                        updateEntryStateTitle(title, "Booking error", "red");
+                        bookingState[title] = "error"; 
+                    }
                 };
 
                 if (checkAbortFun()) {
@@ -762,7 +767,7 @@ function loadChoice() {
         console.log("Failed to load choice data:")
         console.log(err)
     })
-    .then(() => download("bookedcourses.txt?append", "text")) // use append to create file if it doesnt exist
+    .then(() => download("bookedcourses.txt", "text")) 
     .then((bookedList) => {
         // set state of titles in bookedList to booked
         let bookedArr = bookedList.split("\n");
@@ -774,9 +779,7 @@ function loadChoice() {
         } 
     })
     .catch((err) => {
-       updateStatus("Failed to load booked courses list");
-       console.log("ERROR: Request to load bookedcourses.txt list failed");
-       console.log(err);
+       console.log("Failed to load file bookedcourses.txt; file probably doesnt exist yet.");
     });
 }
 
