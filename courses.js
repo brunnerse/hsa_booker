@@ -5,6 +5,7 @@ let courses = {};
 const statusElem = document.getElementById("statustext");
 const userSelectElem = document.getElementById("userselect"); 
 const iFrame = document.getElementById("iframe");
+const hintElem = document.getElementById("hint");
 
 
 async function addCourse(user) {
@@ -30,27 +31,94 @@ async function onSelectChange(userSelectElem) {
             window.open("/Users.html", '_blank').focus();
             // reset selection to the first blank one
             setSelectedUser(userSelectElem, "");
+            return;
         }
-        return;
+    }
+    modifyBookButtons();
+}
+
+function getCurrentSport() {
+    try {
+        return courses[iFrame.contentWindow.location.href.split('#')[0]];
+    } catch {
+        return null;
     }
 }
 
 async function onAdd(button) {
-    console.log("Add:");
-    console.log(button);
+    let add = button.innerHTML == "ADD";
     let user = getSelectedUser(userSelectElem);
     if (!user) {
         alert("Select a user to add the course for in the top left corner first.")
         return;
     }
-    //TODO
 
-//       addUser(selectedUser).then(() => setSelectedUser(selectedUser)).finally(toggleInert);
+    let sport = getCurrentSport();
+
+    // find nr
+    let trElem = button.parentElement.parentElement;
+    let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
+
+    // confirm if course is already full
+    if (!add && !confirm("Course is already added for selected user. Remove instead?"))
+        return;
+    if (add && button.className == "bs_btn_ausgebucht")
+        if (!confirm("Course is already full. Add nevertheless?"))
+            return;
+
+    setStatus("Fetching most recent choice data...");
+    return download(CHOICE_FILE).then((d) => {
+        choice = d;
+        if (add) {
+            if (!choice[sport])
+                choice[sport] = {};
+            if (!choice[sport][user])
+                choice[sport][user] = [];
+            choice[sport][user].push(nr);
+        } else {
+            if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr)) {
+                choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
+                if (choice[sport][user].length == 0) {
+                    delete choice[sport][user];
+                    if (Object.keys(choice[sport]).length == 0)
+                        delete choice[sport];
+                }
+            } else  {
+                throw new Error("Course " + nr + "is not added for user");
+            }
+        }
+        setStatus("Updating user data...");
+    }).then(() => upload(CHOICE_FILE, choice))
+    .then((d) => choice = d) 
+    .then( () => {
+        console.log("New choice data:");
+        console.log(choice);
+        modifyBookButtons();
+        if (add && choice[sport] && choice[sport][user] && choice[sport][user].includes(nr))
+            setStatus("Added course " + nr + " for user " + user + ".", "green");
+        else if (!add && (!choice[sport] || !choice[sport][user] || !choice[sport][user].includes(nr)))
+            setStatus("Removed course " + nr + " from user " + user + ".", "green");
+        else
+            throw new Error("Choice is unchanged");
+    })
+    .catch( (err) => {
+        if (add)
+            setStatus("Failed to add title: " + err.text, "red");
+        else
+            setStatus("Failed to delete title: " + err.text, "red");
+        console.log(err);
+    });
 }
 
 iFrame.onload =  
 () => {
-    let url = iFrame.contentWindow.location.href;
+    let url;
+    try {
+        url = iFrame.contentWindow.location.href;
+    } catch {
+        alert("The link you clicked on is not supported.");
+        window.location.reload();
+    }
     // remove possible anchor from url
     url = url.split('#')[0];
     console.log("Loaded new frame:\n" + url);
@@ -67,7 +135,10 @@ iFrame.onload =
     // check if URL is course overview; if it is, add all links to courses
     if (url == iFrame.src) {
         setStatus("Course overview");
+        hintElem.innerHTML = "Go to a course website to add the course";
+
         let rootElems = docFrame.getElementsByClassName("bs_menu");
+        courses = {};
         for (let rootElem of rootElems) {
             for (let elem of rootElem.getElementsByTagName("A")) {
                 courses[elem.href] = elem.innerHTML;
@@ -75,44 +146,59 @@ iFrame.onload =
         }
     } 
     else {
-        // TODO check if URL is a course (or check contentDocument for that)
-        if (Object.keys(courses).includes(url)) {
+        // check if URL is a course
+        if (courses[url]) {
             setStatus("Choose " + courses[url] + " course to add", "white")
+            hintElem.innerHTML = "Click on the book button to add the course for the selected user";
             // modify page
             // prevent all forms from submitting 
             for (let formElem of docFrame.forms) {
                 formElem.onsubmit = () => false;
             }
-            // insert buttons into book table cell
-            for (let bookElem of docFrame.getElementsByClassName("bs_sbuch")) {
-                if (bookElem.tagName != "TD")
-                    continue;
-                // check book button, remove it and save its color
-                let className = "";
-                let inputElems = bookElem.getElementsByTagName("INPUT");
-                if (inputElems.length > 0) {
-                    className = inputElems[0].className;
-                }
-                while (bookElem.lastChild)
-                    bookElem.removeChild(bookElem.lastChild);
-                let button = document.createElement("BUTTON");
-                button.innerHTML = "ADD"; // TODO or remove if already added for that user
-                button.className = className;
-                button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
-                bookElem.appendChild(button);
-                button.onclick = () => onAdd(button);
-            }
+            modifyBookButtons();
         } else {
             setStatus("Current Page is not a Course page", "white")
         }
     }
 };
 
+function modifyBookButtons() {
+    let sport = getCurrentSport();
+    if (!sport)
+        return;
+    let user = getSelectedUser(userSelectElem);
+    let nrlist = user && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
+    // insert buttons into book table cell
+    for (let bookElem of iFrame.contentDocument.getElementsByClassName("bs_sbuch")) {
+        if (bookElem.tagName != "TD")
+            continue;
+        // check book button, remove it and save its color
+        let className = "";
+        let childElem = bookElem.lastChild;
+        if (["BUTTON", "INPUT"].includes(childElem.tagName)) {
+            className = childElem.className;
+        }
+        // get corresponding course nr
+        let trElem = bookElem.parentElement;
+        let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
+        // remove content of bookElem
+        while (bookElem.lastChild)
+            bookElem.removeChild(bookElem.lastChild);
+        // create button and add to bookElem
+        let button = document.createElement("BUTTON");
+        button.innerHTML = nrlist.includes(nr) ? "REMOVE" : "ADD"; 
+        button.className = className;
+        button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
+        bookElem.appendChild(button);
+        button.onclick = () => onAdd(button);
+    }
+}
+
 
 // fetch userdata and initialize user bar
 setStatus("Fetching data...");
 download(CHOICE_FILE)
-.then((d) => {choice = d;})
+.then((d) => {choice = d; console.log(choice);})
 .then(() => setStatus("Fetched choice."))
 .then(() => download(USERS_FILE))
 .then((d) => {userdata = d;})
