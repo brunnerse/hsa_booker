@@ -422,18 +422,17 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
 }
 
 async function arm() {
-    updateStatus("Arming...", "append");
 
-    toggleButtonsInert(["arm", "unarm", "refreshchoice"]);
+    toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
 
     if (courses.length == 0 || !choice) {
         updateStatus("Arming failed: List of courses and Choice not loaded", "replace");
         return;
     }
+    updateStatus("Armed.");
 
     let currentArmID = armID;
     checkAbortFun = () => {return armID != currentArmID;};
-
 
     // check if all elements are valid
     for (let sport of Object.keys(choice)) {
@@ -454,7 +453,6 @@ async function arm() {
                 console.log("Error in waitUntilReady: " + error.message);
             });
     }
-    updateStatus("Armed.", "replace");
 
     let intervalID = setInterval(() => {
         //console.log("Checking if booking is done to unarm automatically...");
@@ -470,7 +468,7 @@ async function arm() {
 async function unarm() {
     armID += 1;
     updateStatus("Unarmed.", "append");
-    toggleButtonsInert(["arm", "unarm", "refreshchoice"]);
+    toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
 }
 
 function checkBookingDone() {
@@ -798,16 +796,10 @@ function loadCourses() {
                         courses[elem.innerHTML] = elem.href.substr(idx+1);
                     }
                 }
-                document.getElementById("courses").innerHTML = 
-                    "<div class=\"col-xs-12 content noPadRight\">"+
-                    doc.getElementsByClassName("item-page")[0].innerHTML
-                    +"</div>" ;
-
                 updateStatus("Loaded courses.");
             },
             (err) => {
-                //  document.getElementById("courses").innerHTML = "failed ";
-                updateStatus("Loading courses failed: " + JSON.stringify(err), "append");
+                updateStatus("Loading courses failed: " + JSON.stringify(err));
             }
         );
 }
@@ -870,7 +862,6 @@ function toggleButtonsInert(buttonIDs, inert) {
 }
 
 
-document.getElementById("loadcourses").addEventListener("click", loadCourses);
 document.getElementById("loadchoice").addEventListener("click", loadChoice);
 document.getElementById("refreshchoice").addEventListener("click", refreshChoice);
 document.getElementById("arm").addEventListener("click", arm);
@@ -890,7 +881,7 @@ document.getElementById("debug").addEventListener("click", () => {
 
 
 // Load data initially 
+loadCourses().catch();
 loadChoice()
-.then(loadCourses)
 .then(refreshChoice)
-.catch((error) => console.log("Initial loading failed: " + error.message));
+.catch((error) => console.log("Load and refresh of choice failed: " + error.message));
