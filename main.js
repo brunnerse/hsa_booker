@@ -1,3 +1,4 @@
+const INACTIVE = true;
 const HSA_LINK_new = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
 const HSA_LINK_old = "https://web.archive.org/web/20220120140607/https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"
 var HSA_LINK = HSA_LINK_new;
@@ -135,7 +136,6 @@ function updateStatus(str, style="append") {
             } else {
                 elem.innerHTML += "<br>" + newHTML;
             }
-
     }
 }
 
@@ -159,7 +159,7 @@ function updateTitleWithTime(title, time_msec, preMsg="", postMsg="") {
 }
 
 async function bookCourse(title) {
-    console.log("bookCourse " + title + " state " + bookingState[title]);
+    console.log("Called bookCourse(" + title + "); Course has state " + bookingState[title]);
     
     if (bookingState[title] == "booked") {
         updateEntryStateTitle(title, "Already booked", getColorForBookingState(bookingState[title]));
@@ -195,7 +195,6 @@ async function bookCourse(title) {
 
     iFrameElem.onload = 
         async function (event) { 
-            console.log("First onload function");
             let frameDoc = iFrameElem.contentDocument;
 
             let user = title.split("_")[2];
@@ -257,7 +256,6 @@ async function bookCourse(title) {
             console.assert(submitButton);
 
             iFrameElem.onload = async function(event) {
-                console.log("Onload called inner");
                 let frameDoc = iFrameElem.contentDocument; 
                 let form = frameDoc.getElementsByTagName("FORM")[0];
                 if (!form) {
@@ -286,8 +284,7 @@ async function bookCourse(title) {
                     return;
                 }
                 iFrameElem.onload = async function(event) {
-                    console.log("Onload called second inner");
-                    //TODO check if success screen appeared
+                    // check if success screen appeared
                     if (iFrameElem.contentDocument.title == "Bestätigung") {
                         updateStatus("[SUCCESS] Booked course " + title);
                         updateEntryStateTitle(title, "Booking successful", "#00ff00");
@@ -315,12 +312,15 @@ async function bookCourse(title) {
                     console.log("Aborted booking for " + title);
                     return;
                 }
-                //TODO this button iff sure!!!
-                submitButton.setAttribute("inert", "");
-                submitButton.setAttribute("hidden", "");
-                //form.requestSubmit(submitButton);
-                bookingState[title] = "error";
-                updateEntryStateTitle(title, "Booking medium", "#00ff00");
+                if (INACTIVE) {
+                    submitButton.setAttribute("inert", "");
+                    submitButton.setAttribute("hidden", "");
+                    bookingState[title] = "error";
+                    updateEntryStateTitle(title, "Booking medium", "#00ff00");
+                } else {
+                    //TODO this button iff sure!!!
+                    //form.requestSubmit(submitButton);
+                }
             };
             // lever out countdown 
             // fastest way:
@@ -354,7 +354,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
         for (let nr of choice[sport][user]) {
             let t = `${sport}_${nr}_${user}`;
             // Check first if title is already ready or if function should wait for title
-            if (["ready", "full", "booked"].includes(bookingState[t]))
+            if (["ready", "full", "booked", "wronguserid"].includes(bookingState[t]))
                 bookCourse(t);
             else 
                 titles.push(t);
@@ -427,17 +427,16 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
 }
 
 async function arm() {
-
-    toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
-
     if (courses.length == 0 || !choice) {
         updateStatus("Arming failed: List of courses and Choice not loaded", "replace");
         return;
     }
+
+    toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
     updateStatus("Armed.");
 
     let currentArmID = armID;
-    checkAbortFun = () => {return armID != currentArmID;};
+    checkAbortFun = () => armID != currentArmID;
 
     // check if all elements are valid
     for (let sport of Object.keys(choice)) {
@@ -460,7 +459,6 @@ async function arm() {
     }
 
     let intervalID = setInterval(() => {
-        //console.log("Checking if booking is done to unarm automatically...");
         let bookingDone = checkBookingDone();
         // if checkAbortfun is true, unarm has already been called
         if (bookingDone && !checkAbortFun())
@@ -794,9 +792,7 @@ function loadCourses() {
                 let rootElems = doc.getElementsByClassName("bs_menu");
                 for (let rootElem of rootElems) {
                     for (let elem of rootElem.getElementsByTagName("A")) {
-                        //console.log(`${elem.innerHTML} -> ${elem.href}`);
-                        let idx = elem.href.lastIndexOf("/");
-                        courses[elem.innerHTML] = elem.href.substr(idx+1);
+                        courses[elem.innerHTML] = elem.href.split("/").pop();
                     }
                 }
                 updateStatus("Loaded courses.");
@@ -821,7 +817,6 @@ function onCloseButton(button) {
         choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
         if (choice[sport][user].length == 0) {
             delete choice[sport][user];
-            console.log(choice[sport]);
             if (Object.keys(choice[sport]).length == 0)
                 delete choice[sport];
         }
@@ -888,3 +883,6 @@ loadCourses().catch();
 loadChoice()
 .then(refreshChoice)
 .catch((error) => console.log("Load and refresh of choice failed: " + error.message));
+
+if (INACTIVE)
+    document.title += " - inactive";
