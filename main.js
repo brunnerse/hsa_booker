@@ -1,13 +1,12 @@
 const HSA_LINK_new = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
-//const HSA_LINK_old = "https://web.archive.org/web/20220810201020/https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"
-const HSA_LINK_old = "http://localhost/"
+const HSA_LINK_old = "https://web.archive.org/web/20220120140607/https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"
 var HSA_LINK = HSA_LINK_new;
 
 
 const refreshInterval_short = 2000;
 const refreshInterval_mid = 5000;
 const refreshInterval_long = 30000;
-const timeout_msec = 10000;
+const timeout_msec = 5000;
 
 var statusInterval;
 
@@ -31,7 +30,7 @@ var armID = 0;
 function getColorForBookingState(bookingState) {
     let colors = {"booked" : "#00ff00", "booking" : "blue", "ready" : "aqua", 
         "full": "#ff0000", "missing": "maroon",
-        "failed": "gray", "wrongnumber": "orange", "wronguser" : "darkorange", "none": "white"};
+        "failed": "gray", "wrongnumber": "orange", "wronguserid" : "darkorange", "none": "white"};
     if (colors[bookingState])
         return colors[bookingState];
     return "white";
@@ -211,6 +210,13 @@ async function bookCourse(title) {
 
             // Fill form and submit
             let form = frameDoc.getElementsByTagName("FORM")[0];
+            if (!form) {
+                updateEntryStateTitleErr(title, "Form not found");
+                bookingState[title] = "error";
+                console.log("Error during booking of " + title + ": " + 
+                    "Form on first screen not found!");
+                return;
+            }
             // make form target external
             form.action = "/extern/" + form.action + "?referer=https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi";
             // Set status select option
@@ -254,6 +260,13 @@ async function bookCourse(title) {
                 console.log("Onload called inner");
                 let frameDoc = iFrameElem.contentDocument; 
                 let form = frameDoc.getElementsByTagName("FORM")[0];
+                if (!form) {
+                    updateEntryStateTitleErr(title, "Form not found");
+                    bookingState[title] = "error";
+                    console.log("Error during booking of " + title + ": " + 
+                        "Form on second screen not found!");
+                    return;
+                }
                 // make form target external
                 form.action = "/extern/" + form.action + "?referer=https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi";
 
@@ -337,7 +350,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             let t = `${sport}_${nr}_${user}`;
             // Check first if title is already ready or if function should wait for title
             if (["ready", "full", "booked"].includes(bookingState[t]))
-                bookCourse(t)
+                bookCourse(t);
             else 
                 titles.push(t);
         }
@@ -379,8 +392,8 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             // call book for any ready titles
             let newTitles = [];
             for (let t of titles) {
-                if (["ready", "full", "booked", "wronguser"].includes(bookingState[t])) {
-                    bookCourse(t)
+                if (["ready", "full", "booked", "wronguserid"].includes(bookingState[t])) {
+                    bookCourse(t);
                 } else if (!["missing", "wrongnumber"].includes(bookingState[t])) {
                     newTitles.push(t);
                     // adapt interval depending on how long until the course becomes ready 
@@ -462,8 +475,8 @@ async function unarm() {
 
 function checkBookingDone() {
     for (let title of Object.keys(bookingState)) {
-        if (!["booked", "full", "missing", "wrongnumber", "wronguser", "error"].includes(bookingState[title])) {
-            console.log("Booking not done: " + title + " " + bookingState[title]);
+        if (!["booked", "full", "missing", "wrongnumber", "wronguserid", "error"].includes(bookingState[title])) {
+            //console.log("Booking not done: " + title + " " + bookingState[title]);
             return false;
         }
     }
@@ -501,7 +514,7 @@ function updateEntryStateTitle(title, state, color="white") {
     statusElem.innerHTML = state;
 }
 
-function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
+async function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     const title = `${sport}_${nr}_${user}`;
 
     const availElem = document.getElementById("avail");
@@ -519,12 +532,16 @@ function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     if (!found) {
         let choiceElem = document.getElementById("choice");
         choiceElem.appendChild(availElem.children[0].cloneNode(true));
-        entryElem = choiceElem.children[choiceElem.children.length-1];
+        entryElem = choiceElem.lastChild;
         entryElem.setAttribute("title", title);
     }
 
     // replace tableRow with entryHTML input appended with the old status bar 
     const rowElem = entryElem.getElementsByTagName("TR")[1];
+    // clear row for 100msec for visual effect of refresh
+    for (let cell of rowElem.children)
+        cell.innerHTML = "";
+    await sleep(100);
     const statusElem = entryElem.getElementsByClassName("nr_name")[0];
     rowElem.innerHTML = entryHTML + statusElem.outerHTML;
 
@@ -637,7 +654,7 @@ async function refreshSport(sport, updateTitles=[]) {
                     }
                     if (!userdata[user]){
                         updateStatus("ERROR: userdata for " + user + " not found");
-                        bookingState[title] = "wronguser";
+                        bookingState[title] = "wronguserid";
                     }
                         }
                     }
@@ -680,6 +697,8 @@ async function refreshChoice() {
         
             if (statusInterval)
                 clearInterval(statusInterval);
+            
+            // setup interval function to regularly update the time until booking becomes available for every title
             statusInterval = setInterval(
                 () => { 
                     for (let sport of Object.keys(choice)) {
@@ -711,7 +730,7 @@ function loadChoice() {
         console.log(err)
     })
     .then(() => download(CHOICE_FILE))
-    .then((data) => {
+    .then(async (data) => {
         choice = data;
         console.log(choice);
         updateStatus("Loaded choice.");
@@ -740,7 +759,7 @@ function loadChoice() {
         }
     })
     .catch( (err) => {
-        document.getElementById("choice").innerHTML = "FAILED TO LOAD";
+        document.getElementById("choice").innerHTML = "";
         updateStatus("Failed to load choice data");
         console.log("Failed to load choice data:")
         console.log(err)
