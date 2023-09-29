@@ -186,13 +186,14 @@ async function bookCourse(title) {
     }
     console.assert(iFrameElem);
     // find form element for course
-    let formElem = statusElements[title].parentElement;
-    while (formElem.tagName != "FORM") 
-        formElem = formElem.parentElement;
+    let form = statusElements[title].parentElement;
+    while (form.tagName != "FORM") 
+        form = form.parentElement;
     // find input element for button
-    let submitElem = formElem.getElementsByTagName("INPUT")[1];
+    let submitElem = form.getElementsByTagName("INPUT")[1];
     console.assert(submitElem.type == "submit");
 
+    // function called on the first submit form (the Enter User Data form)
     iFrameElem.onload = 
         async function (event) { 
             let frameDoc = iFrameElem.contentDocument;
@@ -255,9 +256,27 @@ async function bookCourse(title) {
             let submitButton = frameDoc.getElementById("bs_submit");
             console.assert(submitButton);
 
+            // lever out countdown 
+            // fastest way:
+            iFrameElem.contentWindow.send = 1;
+            submitButton.className = "sub";
+            // other way:
+            //iFrameElem.contentWindow.btime = -1; 
+            //await sleep(1000);
+            // Alternatively wait 7s until submitButton.className changed to sub to avoid attracting attention
+            // while(submitButton.className != "sub")await sleep(100);
+
+            // Check if should abort once more before submitting
+            if (checkAbortFun()) {
+                bookingState[title] = "ready";
+                updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
+                console.log("Aborted booking for " + title);
+                return;
+            }
+
+            // function called on the second submit screen (the Check Data screen) 
             iFrameElem.onload = async function(event) {
-                let frameDoc = iFrameElem.contentDocument; 
-                let form = frameDoc.getElementsByTagName("FORM")[0];
+                let form = iFrameElem.contentDocument.forms[0];
                 if (!form) {
                     updateEntryStateTitleErr(title, "Form not found");
                     bookingState[title] = "error";
@@ -277,12 +296,22 @@ async function bookCourse(title) {
                     }
                 }
                 if (!submitButton) {
-                    updateEntryStateTitleErr(title, "Submit button not found");
+                    updateEntryStateTitleErr(title, "Submit button missing");
                     bookingState[title] = "error";
                     console.log("Error during booking of " + title + ": " + 
                         "Submit button on second screen not found!");
                     return;
                 }
+
+                // Check if should abort once more before submitting
+                if (checkAbortFun()) {
+                    bookingState[title] = "ready";
+                    updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
+                    console.log("Aborted booking for " + title);
+                    return;
+                }
+
+                // function called on the third submit screen (the Confirmed Booking screen) 
                 iFrameElem.onload = async function(event) {
                     // check if success screen appeared
                     if (iFrameElem.contentDocument.title == "Bestätigung") {
@@ -305,13 +334,6 @@ async function bookCourse(title) {
                         bookingState[title] = "error"; 
                     }
                 };
-
-                if (checkAbortFun()) {
-                    bookingState[title] = "ready";
-                    updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
-                    console.log("Aborted booking for " + title);
-                    return;
-                }
                 if (INACTIVE) {
                     submitButton.setAttribute("inert", "");
                     submitButton.setAttribute("hidden", "");
@@ -322,30 +344,12 @@ async function bookCourse(title) {
                     //form.requestSubmit(submitButton);
                 }
             };
-            // lever out countdown 
-            // fastest way:
-            iFrameElem.contentWindow.send = 1;
-            submitButton.className = "sub";
-            // other way:
-            //iFrameElem.contentWindow.btime = -1; 
-            //await sleep(1000);
-            // Alternatively wait until submitButton.className changed to sub to avoid attracting attention
-            //await sleep(7200);
-
-            // Check if should abort
-            if (checkAbortFun()) {
-                bookingState[title] = "ready";
-                updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
-                console.log("Aborted booking for " + title);
-                return;
-            }
             //TODO this sleep was just for debug; remove
             await sleep(5000);
             form.requestSubmit(submitButton);
-            console.log("Submitted " + title + "...");
         };
 
-    formElem.requestSubmit(submitElem); 
+    form.requestSubmit(submitElem); 
 }
 
 async function waitUntilReadyAndBook(sport, checkAbortFun) {
@@ -718,7 +722,7 @@ async function refreshChoice() {
 
 
 function loadChoice() {
-    updateStatus("Loading choice and user data...", "append");
+    updateStatus("Loading choice and user data...");
     return download(USERS_FILE)
     .then((data) => {
         userdata = data;
@@ -805,7 +809,7 @@ function loadCourses() {
 
 function onCloseButton(button) {
     let parent = button.parentElement;
-    while (parent && parent.id != "bs_content") {
+    while (parent.id != "bs_content") {
         parent = parent.parentElement;
     }
     let title = parent.title;
@@ -860,7 +864,7 @@ function toggleButtonsInert(buttonIDs, inert) {
 }
 
 
-document.getElementById("loadchoice").addEventListener("click", loadChoice);
+document.getElementById("loadchoice").addEventListener("click", () => loadChoice().then(refreshChoice));
 document.getElementById("refreshchoice").addEventListener("click", refreshChoice);
 document.getElementById("arm").addEventListener("click", arm);
 document.getElementById("unarm").addEventListener("click", unarm);
