@@ -197,7 +197,7 @@ async function clearForm() {
     let inputElems = form.getElementsByTagName("INPUT");
     for (let inputElem of inputElems) {
         // uncheck sex radio buttons
-        if (inputElem["name"] == "sex")
+        if (inputElem.type == "radio")
             inputElem.checked = false; 
         else {
             // clear form data
@@ -221,7 +221,10 @@ function toggleInert() {
     document.getElementById("btn_cancel").toggleAttribute("inert");
     document.getElementById("bs_submit").toggleAttribute("inert");
     document.getElementById("userselect").toggleAttribute("inert");
-    //TODO inert input elems
+
+    for (let inputElem of formElem.getElementsByTagName("INPUT")) {
+        inputElem.toggleAttribute("inert");
+    }
 }
 
 
@@ -291,12 +294,24 @@ function isFormModified() {
     let inputElems = formElem.getElementsByTagName("INPUT");
     let selectedUser = getSelectedUser(userSelectElem);
     for (let inputElem of inputElems) {
-        // Get sex radio button
-        if (inputElem["type"] == "text" && inputElem.getAttribute("disabled") != "disabled" && inputElem["value"])
+        // check is text element has content and if that content differs from the saved user content
+        if (inputElem["type"] == "text" && inputElem.getAttribute("disabled") != "disabled" && inputElem["value"]) {
             if (selectedUser == "" || inputElem.value != userdata[selectedUser][inputElem.name])
                 return true;
-        // TODO also return true if user is saved and radio button / statusorig is different
+        // check if user is saved and radio button is different
+        } else if (inputElem["type"] == "radio" && selectedUser) {
+            let isCheckedForUser = (userdata[selectedUser][inputElem.name] == inputElem.value); 
+            if (isCheckedForUser != inputElem.checked) 
+                return true;
+        }
     }
+    // check if user is saved and statusorig is different
+    let selectElem = formElem.getElementsByTagName("SELECT")[0];
+    console.assert(formElem.getElementsByTagName("SELECT").length == 1);
+    let statusOrigVal = selectElem.options[selectElem.selectedIndex].value;
+    if (selectedUser && statusOrigVal && statusOrigVal != userdata[selectedUser].statusorig)
+        return true;
+
     return false;
 }
 
