@@ -118,7 +118,8 @@ iFrame.onload =
         url = iFrame.contentWindow.location.href;
     } catch {
         alert("The link you clicked on is not supported.");
-        window.location.reload();
+        iFrame.contentWindow.location.href = iFrame.src;
+        return;
     }
     // remove possible anchor from url
     url = url.split('#')[0];

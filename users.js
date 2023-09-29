@@ -4,12 +4,28 @@ const userSelectElem = document.getElementById("userselect");
 const formElem = document.getElementById("bs_form_main");
 const statusElem = document.getElementById("statustext");
 
+const formDataElem = document.getElementById("formdata");
+const formdata = JSON.parse(formDataElem.textContent||formDataElem.innerText);
 
+
+function removeWarnMarks() {
+    let inputElems = formElem.getElementsByTagName("INPUT");
+    for (let e of inputElems) {
+        let g = e.parentElement;
+        while (!g.className.match(/\bbs_form_row\b/))
+            g = g.parentElement;
+        removeClass(g, "warn");
+    }
+
+}
+// returns name of element with wrong data
 function checkForm() {
     let inputElems = formElem.getElementsByTagName("INPUT");
 
     for (let e of inputElems) {
-        let g = e.parentElement.parentElement;
+        let g = e.parentElement;
+        while (!g.className.match(/\bbs_form_row\b/))
+            g = g.parentElement;
         removeClass(g, "warn");
 
         if (e.getAttribute("disabled") == "disabled" || g.className.split(" ").includes("hide"))
@@ -18,21 +34,22 @@ function checkForm() {
         if (!chk_input(e, f ? f[1] : "")) {
             // g is row
             g.className += " warn"; e.focus(); 
-            return false;
+            console.log(g.children[0]);
+            console.log(g.children[0].children[0].innerHTMl);
+            return g.children[0].children[0].innerHTML.replace(/[:*]/g, "");
         }
     }
-    return true;
+    return "";
 }
 
 // a is input elem, b is input elem class: bs_fval_[b]
 function chk_input(a, b) {
     let F = formElem.parentElement; 
-//    let F = {elements : formElem.getElementsByTagName("INPUT")};
-    //TODO formdata var
     if (a) {
+        // C is value of input elem a; more concrete:
         // c is for select: the value of the selected elem
         // c is for radio buttons: 1 if (at least) one is checked, "" if none is checked
-        // else:  value.trim() of a 
+        // else:  a.value (trimmed)
         var c = "select-one" == a.type ? 
             a.options[a.selectedIndex].value 
             : "radio" == a.type ?
@@ -42,7 +59,7 @@ function chk_input(a, b) {
                 : a.value.trim();
         
         // If bs_fval_name, then remove Dr|Prof
-        // if bs_fval_iban or bs_fval_bic, transform to upper case and remove A-Z 0-9 
+        // if bs_fval_iban or bs_fval_bic, transform to upper case and remove any characters not A-Z 0-9 
         // else if a.type is textarea, remove invalid characters ;: etc
        "name" == b ? 
             c = c.replace(/(Dr|Prof)\.\s?/g, "") 
@@ -50,37 +67,40 @@ function chk_input(a, b) {
                 c = c.toUpperCase().replace(/[^A-Z0-9]/g, "") 
                 : "textarea" == a.type && (c = c.replace(/[";:\-\(\)']/g, ""));
         
-        // check which type f input it is according to b, then check if regex pattern matchesjj
+        // check which type f input it is according to b, then check if regex pattern matches
+        // if any of the AND conditions (separated by ||) return true, the function returns false
         if ("" == b && "" != c && !EOK(c) 
             || "req" == b && !EOK(c) 
-            || "name" == b && (!EOK(c) 
-            || !grossklein(c) 
-            || -1 < c.indexOf(".") 
-            || c.match(/\d/)) 
-            || !("ort" != b 
-            || c.match(/^[A-Z\-]{0,3}\s?\d{4,7}[A-Z]{0,2}\s.{2,}$/) && EOK(c)) 
+            || "name" == b && (
+                    !EOK(c) || !grossklein(c) || -1 < c.indexOf(".") || c.match(/\d/)
+                    ) 
+            || !("ort" != b || c.match(/^[A-Z\-]{0,3}\s?\d{4,7}[A-Z]{0,2}\s.{2,}$/) && EOK(c)) 
             || "date" == b && !c.match(/^[0-3]?\d\.[01]?\d\.(19|20)?\d{2}$/) 
             || "iban" == b && !c.match(/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/) 
             || "bic" == b && !c.match(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/) 
-            || "kih" == b && "" != c && (!grossklein(c) || -1 < c.indexOf(".") 
-            || c.match(/\d/)) || "num" == b && !c.match(/^\d+$/) 
+            || "kih" == b && "" != c && (!grossklein(c) || -1 < c.indexOf(".") || c.match(/\d/)) 
+            || "num" == b && !c.match(/^\d+$/) 
             || "num2" == b && !c.match(/^\d\d?$/) 
-            || "email" == b && ("" != c 
+                // false email only triggers return false if email is not empty, formdata.ep = 2 or (formdata.ep = 1 and endpreis and lastschrift)
+            || "email" == b && !isEmail(c) && ("" != c 
                                 || 2 == formdata.ep 
-                                || document.getElementById("bs_lastschrift") && 1 == formdata.ep && endpreis) && !isEmail(c) 
-                                || "tel" == b && "" != c && !c.match(/^[0-9 -\\/()]+$/)
+                                || document.getElementById("bs_lastschrift") && 1 == formdata.ep && endpreis)
+            || "tel" == b && "" != c && !c.match(/^[0-9 -\\/()]+$/)
         )
            return !1
     } 
     return !0
 }
 
-// check input helper functions
+// checks if string is valid, i.e. contains only characters is valid range, and is not empty or whitespace only 
 function EOK(a) { 
-    // check sth??
+    // replace ; with , replace newline \n and carriage return \r with space " "
     a = String(a).replace(/;/g, ",").replace(/\r|\n/g, " ");
+    // return false if a is empty or only contains whitespace characters 
     return !a || a.match(/^\s*$/) ?
          !1 
+    // return false if any character is not in the range 0x20-0xff 
+    // or if any character is in the list, i.e. *%$ etc. 
          : !a.match(/[\^\*"<>\[\]%{}`'\$]|[^\u0020-\u00ff]/) 
 } 
 function isEmail(a) { 
@@ -156,7 +176,6 @@ async function onSelectChange() {
         clearForm(); 
     } else {
         let data = userdata[selectedUser];
-        let formElem = document.getElementById("bs_form_main");
         // Set status select option
         let selectElem = formElem.getElementsByTagName("SELECT")[0];
         console.assert(formElem.getElementsByTagName("SELECT").length == 1);
@@ -173,6 +192,7 @@ async function onSelectChange() {
             throw new Error("Didn't find status element for " + data.statusorig);
         } 
 
+        removeWarnMarks();
         let inputElems = formElem.getElementsByTagName("INPUT");
         for (let inputElem of inputElems) {
             // set sex radio button
@@ -193,6 +213,7 @@ async function onSelectChange() {
 }
 
 async function clearForm() {
+    removeWarnMarks();
     let form = document.getElementById("bs_form_main");
     let inputElems = form.getElementsByTagName("INPUT");
     for (let inputElem of inputElems) {
@@ -231,8 +252,9 @@ function toggleInert() {
 document.getElementById("userselect").onchange = onSelectChange; 
 
 document.getElementById("bs_submit").onclick = () => {
-    if (!checkForm()) {
-        setStatus("Form invalid", "red");
+    let wrongInput = checkForm();
+    if (wrongInput) {
+        setStatus("Form invalid: " + wrongInput + " is wrong", "red");
         return;
     }
     let selectedUser = getSelectedUser(userSelectElem);
@@ -253,10 +275,9 @@ document.getElementById("btn_cancel").onclick = () => {
     else {
         if (confirm("Delete user " + selectedUser + "?")) {
             toggleInert(); 
+            removeWarnMarks();
             deleteUser(selectedUser).then(() => setSelectedUser(userSelectElem, "")).finally(toggleInert);
-        } {
-
-        }
+        } 
     }
 };
 
@@ -267,11 +288,10 @@ const statusorig = formElem.getElementsByTagName("SELECT")[0];
 statusorig.addEventListener("change", () => {
     let regex = /\bbs_fval_status(\d)(\d)\b/;
     let inputElems = formElem.getElementsByTagName("INPUT");
-    const stdata = "0011112111323240";
     const zsf = [0,0,0];
     for (var c = 1; 3 > c; c++) {
         // d: Indizes in stdata für Förderverein, Student etc
-        var d = stdata.substr(2 * statusorig.selectedIndex, 2).split("");
+        var d = formdata.stdata.substr(2 * statusorig.selectedIndex, 2).split("");
         // d[0] ist für Endpreis relevant, welcher hir nicht vorkommt
         d = [parseInt(d[0]), parseInt(d[1])];
         zsf[c] = d && d[1] ? d[1] : 0;

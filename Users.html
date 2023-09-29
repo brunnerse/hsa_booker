@@ -13,7 +13,10 @@
 
 <body class="anmeldung">
 	<div class="hidden" id="formdata">
-		{"quote":[0,0,0,0,1],"entgelte":[26,0,0,0,26],"vag":[0,0,0,0,0],"ik":0,"kdata":[0],"wrng":"€","stdata":"0011112111323240","fp":0,"ep":2}
+		{"stdata":"0011112111323240","fp":0,"ep":2}
+	<!--unused: 
+		{"quote":[0,0,0,0,1],"entgelte":[26,0,0,0,26],"vag":[0,0,0,0,0],"ik":0,"kdata":[0],"wrng":"€"2}
+	-->
 	</div>
 	<div id="bs_form_content">
 		<div id="bs_form_head">
@@ -34,7 +37,7 @@
 			</div>
 			<div class="bs_space"></div>
 		</div>
-		<form name="bsform" method="get" target="_self" action="user.json?write=" onsubmit="return form_onsubmit();">
+		<form name="bsform" method="get" target="_self" action="user.json?write=" onsubmit="javascript:return false">
 			<!--chkForm-->
 			<div id="bs_form_main">
 				<div id="bs_pw_anmlink" class="  pointer">
@@ -195,10 +198,10 @@
                     </div>
 					<div class="bs_form_row">
 						<div class="bs_button bs_left">
-							<a href="javascript:void(0);" id="btn_cancel" title="Delete user">User löschen </button>
+							<a href="javascript:void(0);" id="btn_cancel" title="Delete user">Delete User</button>
 						</div>
 						<div class="bs_button bs_right">
-							<a href="javascript:void(0);" id="bs_submit" title="Save user">User speichern</button>
+							<a href="javascript:void(0);" id="bs_submit" title="Save user">Save User</button>
 						</div>
 					</div>
 				</div>
