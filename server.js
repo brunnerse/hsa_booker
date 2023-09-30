@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const USE_COOKIES_FOR_FILES = true;
+const LOGFILE = "logs.txt"
 
 var http = require('http');
 var https = require('https');
@@ -58,24 +59,29 @@ function respondError(res, message="") {
 	res.end(message);
 }
 
-
-function getText(req, variable) {
-	return new Promise((resolve, reject) => {
-		if (req.method == "GET") {
-			let q = url.parse(req.url, true);
-			resolve(q.query[variable]);
-		} else if (req.method == "POST") {
-			let text = "";
-			req.on('data', (data) => {
-				text += data;
-			});
-			req.on('end', () => {
-				resolve(text);
-			});
-		} else {
-			reject("Data not given");
-		}
+function getPOSTDataAsync(req) {
+	return new Promise((resolve, reject) =>  {
+		if (req.method != "POST")
+			resolve("");
+		let data = ""
+		req.on('data', (d) => {
+			data += d;
+		});
+		req.on('end', () => {
+			resolve(data);
+		});
 	});
+}
+
+function getText(req, variable, postdata) {
+	if (req.method == "GET") {
+		let q = url.parse(req.url, true);
+		return q.query[variable];
+	} else if (req.method == "POST") {
+		return postdata;
+	} else {
+		throw new Error("Unsupported request method type " + req.method);
+	}
 }
 
 async function respondFile(req, res) {
@@ -85,15 +91,19 @@ async function respondFile(req, res) {
 	if (filename == "./")
 		filename = "./main.html";
 	let fsfun = (filename, text, cb) => cb();
-	let text; 
+	let text = await getPOSTDataAsync(req); 
+	logFile(LOGFILE, `\n${req.method} ${req.url}\n${JSON.stringify(req.headers)}`);
+	if (req.method == "POST")
+		logFile(LOGFILE, "POST: " + text);
+
 	let isWriting = true;
 	try {
 		if (q.query.append != undefined) {
 			fsfun = fs.appendFile;
-			text = await getText(req, "append") + "\n";
+			text = getText(req, "append", text) + "\n";
 		} else if (q.query.write != undefined) {
 			fsfun = fs.writeFile;
-			text = await getText(req, "write");
+			text = getText(req, "write", text);
 		} else {
 			isWriting = false;
 		}
@@ -138,17 +148,18 @@ async function respondFile(req, res) {
 			if (err) {
 				console.log("File " + filename + " not found");
 				respondError(res, "File " + filename + " not found");
-				return;
-			}
-			if (filename.endsWith(".js")) {
-				res.writeHead(200, {'Content-Type': 'text/javascript'});
-			} else if (filename.endsWith(".http")) {
-				res.writeHead(200, {'Content-Type': 'text/html'});
 			} else {
-				res.writeHead(200);
+				if (filename.endsWith(".js")) {
+					res.writeHead(200, {'Content-Type': 'text/javascript'});
+				} else if (filename.endsWith(".http")) {
+					res.writeHead(200, {'Content-Type': 'text/html'});
+				} else {
+					res.writeHead(200);
+				}
+				res.end(data);
 			}
-			res.end(data);
 			console.log("Responded with file " + filename);
+			logFile(LOGFILE, `Response (file ${filename}): ${res.statusCode} ${JSON.stringify(res.getHeaders())}`);
 		});
 	});
 }
@@ -194,15 +205,12 @@ function respondExtern(req, res, reqUrl) {
 		reqUrl += "?";
 		Object.keys(variables).forEach((key) => reqUrl += key+"="+variables[key]+"&");
 	}
-	console.log("reqUrl: "+reqUrl);
-
-
 
 	const outReq = protocol.request(reqUrl, options, response => {
-		console.log("Got code " + response.statusCode);
+		console.log("Got response code " + response.statusCode + " for url " + reqUrl);
 		returnedStatus = response.statusCode;
 		returnedHeaders = response.headers;
-		logFile("external.txt", `Response ${returnedStatus} ${JSON.stringify(returnedHeaders)}`);
+		logFile(LOGFILE, `Response (extern ${reqUrl}): ${returnedStatus} ${JSON.stringify(returnedHeaders)}`);
 
 		// Modify header: remove content security policy and modify location (for 304 codes) 
 		delete returnedHeaders["content-security-policy"];
@@ -239,12 +247,12 @@ function respondExtern(req, res, reqUrl) {
 
 	outReq.setTimeout(5000);
 
-	logFile("external.txt", `\n${outReq.method} ${reqUrl}\n${JSON.stringify(outReq.getHeaders())}`);
+	logFile(LOGFILE, `\n${outReq.method} ${reqUrl}\n${JSON.stringify(outReq.getHeaders())}`);
 
 	if (req.method == 'POST') {
 		// TODO check if outReq didnt timeout/error before writing/ending it necessary?
 		req.on('data', (data) => {
-			logFile("external.txt", "Post:\n"+data);
+			logFile(LOGFILE, "Post:\n"+data);
 			outReq.write(data);
 		});
 		req.on('end', () => {
