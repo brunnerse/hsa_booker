@@ -87,6 +87,7 @@ function upload(filename, obj, type="json") {
         }
         xhr.open("POST", filename + "?write");
         xhr.responseType = type;
-        xhr.send(getJSONFileString(obj));
+        let toSend = (type == "json") ?  getJSONFileString(obj) : obj;
+        xhr.send(toSend);
     });
 }

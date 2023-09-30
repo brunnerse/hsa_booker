@@ -389,15 +389,14 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                     }
                 },
                 250);
-            try {
-                await refreshSport(sport, titles);
-            } catch {
+            await refreshSport(sport, titles)
+                .catch( () =>  {
                 // refresh again the next loop iteration by resetting the lastRefreshTime
                 lastRefreshTime -= refreshInterval;
-            } finally {
-                clearInterval(statusInterval);
-                statusInterval = undefined;
-            }
+            });
+            clearInterval(statusInterval);
+            statusInterval = undefined;
+
             // call book for any ready titles
             let newTitles = [];
             for (let t of titles) {
@@ -696,7 +695,9 @@ async function refreshChoice() {
                              "Refresh (Timeout in ", ")");
             }, 100);
 
-        refreshSport(sport).catch((err) => {console.log(err)}).finally(() => {
+        refreshSport(sport)
+        .catch((err) => {console.error(err)})
+        .finally(() => {
             updatedSports.push(sport);
             clearInterval(intervalID);
         
@@ -824,12 +825,9 @@ function onCloseButton(button) {
             if (Object.keys(choice[sport]).length == 0)
                 delete choice[sport];
         }
-        //TODO choice instead of choice2 in final version
+        // update choice file
+        //TODO CHOICE_FLE instead of choice2 in final version
         upload("choice2.json", choice)
-        .catch((err) => {
-            console.log("[ERROR] : failed to remove " + longTitle);
-            updateStatus("Failed to remove chosen course" + longTitle);
-        })
         .then((data) => { 
             choice = data;
             if (!choice[title]) {
@@ -851,6 +849,45 @@ function onCloseButton(button) {
             }
             console.log("New choice:")
             console.log(choice);
+        })
+        .then (() => {
+            // update bookedcourses file
+            console.log("Trying to remove course " + title + " from bookedcourses file...");
+            return download("bookedcourses.txt", "text")
+            .then((bookedCourses) => {
+                // set state of titles in bookedList to booked
+                let bookedTitles = bookedCourses.split("\n");
+                console.log("Current bookedcourses:")
+                console.log(bookedTitles);
+                for (let i = 0; i < bookedTitles.length; i++) {
+                    // remove any whitespace titles
+                    if (bookedTitles[i].match(/^\s*$/))  {
+                        bookedTitles.splice(i, 1);
+                        i--;
+                    } else if (bookedTitles[i] == title ) {
+                        // once the title was found, remove and upload, then return
+                        bookedTitles.splice(i, 1);
+                        upload("bookedcourses.txt", bookedTitles.join("\n"), "text")
+                        .then( (bookedCourses) => { 
+                            console.log("Updated bookedcourses: ");
+                            console.log(bookedCourses);
+                        })
+                        .catch((err) => {
+                            console.error("Failed to update bookedcourses file: ");
+                            console.error(err);
+                        });
+                        return;
+                    }
+                }
+                console.log("Course " + title + " was not stored in bookedcourses file: No update necessary");
+            })
+            .catch((err) => {
+                console.log("bookedcourses file does not exist");
+            });
+        })
+        .catch((err) => { // catch function for choice upload
+            console.error("[ERROR] : failed to remove " + longTitle);
+            updateStatus("Failed to remove chosen course" + longTitle);
         });
     }
 
