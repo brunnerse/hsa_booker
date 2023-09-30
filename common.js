@@ -4,7 +4,7 @@ const CHOICE_FILE = "choice.json"
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
         setTimeout(resolve, msec);
-    })
+    });
 }
 
 

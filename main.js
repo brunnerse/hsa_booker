@@ -165,7 +165,7 @@ async function bookCourse(title) {
         updateEntryStateTitle(title, "Already booked", getColorForBookingState(bookingState[title]));
         return;
     } else if (bookingState[title] != "ready") {
-        console.log("Booking failed: " + bookingState[title]);
+        console.warn("Booking failed: " + bookingState[title]);
         updateEntryStateTitle(title, "Booking failed: " + bookingState[title], "red");
         return;
     }
@@ -203,7 +203,7 @@ async function bookCourse(title) {
             if (!data){
                 updateEntryStateTitleErr(title, "userdata for " + user + " not found");
                 bookingState[title] = "error";
-                console.log("Error during booking of " + title + ": " + 
+                console.warn("Error during booking of " + title + ": " + 
                     "ERROR: userdata for " + user + " not found!");
                 return;
             }
@@ -213,7 +213,7 @@ async function bookCourse(title) {
             if (!form) {
                 updateEntryStateTitleErr(title, "Form not found");
                 bookingState[title] = "error";
-                console.log("Error during booking of " + title + ": " + 
+                console.warn("Error during booking of " + title + ": " + 
                     "Form on first screen not found!");
                 return;
             }
@@ -280,7 +280,7 @@ async function bookCourse(title) {
                 if (!form) {
                     updateEntryStateTitleErr(title, "Form not found");
                     bookingState[title] = "error";
-                    console.log("Error during booking of " + title + ": " + 
+                    console.warn("Error during booking of " + title + ": " + 
                         "Form on second screen not found!");
                     return;
                 }
@@ -298,7 +298,7 @@ async function bookCourse(title) {
                 if (!submitButton) {
                     updateEntryStateTitleErr(title, "Submit button missing");
                     bookingState[title] = "error";
-                    console.log("Error during booking of " + title + ": " + 
+                    console.warn("Error during booking of " + title + ": " + 
                         "Submit button on second screen not found!");
                     return;
                 }
@@ -326,7 +326,7 @@ async function bookCourse(title) {
                             console.log("Booked courses: " + bookedCourses);
                         })
                         .catch((err) => {
-                            console.log("WARNING: Failed to inform server about successful booking"); 
+                            console.warn("WARNING: Failed to inform server about successful booking"); 
                         })
                     } else {
                         updateStatus("[ERROR] Booking course " + title + " failed: no success screen");
@@ -339,6 +339,14 @@ async function bookCourse(title) {
                     submitButton.setAttribute("hidden", "");
                     bookingState[title] = "error";
                     updateEntryStateTitle(title, "Booking medium", "#00ff00");
+                    // TODO remove append to bookedcourses
+                    download("bookedcourses.txt?append="+title, "text")
+                    .then((bookedCourses) => {
+                        console.log("Booked courses: " + bookedCourses);
+                        })
+                    .catch((err) => {
+                        console.warn("WARNING: Failed to inform server about successful booking"); 
+                    })
                 } else {
                     //TODO this button iff sure!!!
                     //form.requestSubmit(submitButton);
@@ -457,7 +465,7 @@ async function arm() {
         waitUntilReadyAndBook(sport, checkAbortFun)
         .catch(
             (error) => {
-                console.log("Error in waitUntilReady: " + error.message);
+                console.error("Error in waitUntilReady: " + error.message);
             });
     }
 
@@ -509,7 +517,7 @@ function updateEntryStateTitle(title, state, color="white") {
     let choiceElem = document.getElementById("choice");
     const statusElem = statusElements[title];
     if (!statusElem) {
-        console.log("[ERROR] updating Status: status element " + title + " missing");
+        console.error("[ERROR] updating Status: status element " + title + " missing");
         return;
     }
     let style = "height:30px; width: 250px; font-weight: bold; text-align: center;"
@@ -732,8 +740,8 @@ function loadChoice() {
     })
     .catch( (err) => {
         updateStatus("Failed to load user data");
-        console.log("Failed to load user data:")
-        console.log(err)
+        console.error("Failed to load user data:")
+        console.error(err)
     })
     .then(() => download(CHOICE_FILE))
     .then(async (data) => {
@@ -767,8 +775,8 @@ function loadChoice() {
     .catch( (err) => {
         document.getElementById("choice").innerHTML = "";
         updateStatus("Failed to load choice data");
-        console.log("Failed to load choice data:")
-        console.log(err)
+        console.error("Failed to load choice data:")
+        console.error(err)
     })
     .then(() => download("bookedcourses.txt", "text")) 
     .then((bookedList) => {
@@ -915,7 +923,7 @@ document.getElementById("debug").addEventListener("click", () => {
     } else {
         HSA_LINK = HSA_LINK_new;
     }
-    console.log("Switched HSA_LINK to " + HSA_LINK);
+    console.debug("Switched HSA_LINK to " + HSA_LINK);
 });
 
 
@@ -923,7 +931,7 @@ document.getElementById("debug").addEventListener("click", () => {
 loadCourses().catch();
 loadChoice()
 .then(refreshChoice)
-.catch((error) => console.log("Load and refresh of choice failed: " + error.message));
+.catch((error) => console.error("Load and refresh of choice failed: " + error.message));
 
 if (INACTIVE)
     document.title += " - inactive";
