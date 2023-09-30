@@ -182,8 +182,21 @@ function respondExtern(req, res, reqUrl) {
 	else
 		delete options.headers.referer;
 
-	// remove variables from URL  TODO preserve variables except custom ones
+	// remove variables from URL  
 	reqUrl = reqUrl.split("?")[0];
+	// preserve variables except custom ones
+	let variables = {}
+	Object.keys(parsedReq.query).forEach((key) => {
+		if (!["origin", "referer"].includes(key))
+			variables[key] = parsedReq.query[key];
+	})
+	if (Object.keys(variables).length > 0) {
+		reqUrl += "?";
+		Object.keys(variables).forEach((key) => reqUrl += key+"="+variables[key]+"&");
+	}
+	console.log("reqUrl: "+reqUrl);
+
+
 
 	const outReq = protocol.request(reqUrl, options, response => {
 		console.log("Got code " + response.statusCode);
