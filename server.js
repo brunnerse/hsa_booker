@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const USE_COOKIES_FOR_FILES = true;
+const COOKIE_EXPIRE_MS = 1000*60*60*24*500; // let cookies expire in 500 days 
 const LOGFILE = "logs.txt"
 
 var http = require('http');
@@ -112,29 +113,43 @@ async function respondFile(req, res) {
 	}
 
 	let folder = "";
+	let randName;
 	if (USE_COOKIES_FOR_FILES) {
 		let cookie =  req.headers["cookie"];
 		if (cookie) {
+			console.log("Received cookie " + cookie);
 			// extract folder cookie
 			cookie.split(";").forEach((c) => {
 				let [name, ...rest] = c.split("=");
-				if (name.trim() == "folder")
-					folder =  "Cookies/" + rest.join() + "/";
-			})
-			console.log("Received cookie " + cookie + "; folder is " + folder);
-		} else if (isWriting) {
+				if (name.trim() == "folder") {
+					randName = rest.join();
+					folder =  "Cookies/" + randName + "/";
+					console.log("Folder is " + folder);
+					// if folder for cookie doesnt exist, let the cookie expire now 
+					if (!fs.existsSync(folder)) {
+						res.setHeader("Set-Cookie", ["folder="+ randName + ";Expires="+new Date(Date.now()).toUTCString()]); 
+					// otherwise extend cookie 
+					} else {
+						// let expireDate = new Date(Date.now() + COOKIE_EXPIRE_MS); 
+						// res.setHeader("Set-Cookie", ["folder="+ randName + ";Expires="+expireDate.toUTCString()]); 
+					}
+				}
+			});
+		} 
+		if (isWriting && !folder) {
 			// if writing and no cookie yet, generate new folder and set the cookie 
-			let randName;
 			do {
 				randName = Math.floor(Math.random() * 1e8).toString(16);	
 				folder = "./Cookies/" + randName + "/";
 			} while (fs.existsSync(folder)); 
-			let expireDate = new Date(Date.now() + 1000*60*60*24*500); // Expire in 500 days
+			let expireDate = new Date(Date.now() + COOKIE_EXPIRE_MS); 
 			res.setHeader("Set-Cookie", ["folder="+ randName + ";Expires="+expireDate.toUTCString()]); 
 			if (!fs.existsSync("Cookies"))
 				fs.mkdirSync("Cookies");
 			fs.mkdirSync(folder);
-			console.log("Created new folder " + folder)
+			// write expiry date to file in folder
+			fs.writeFile(folder+".expires", expireDate.toUTCString(), (err) => {if (err)console.error(err);});
+			console.log("Created new cookie with folder " + folder)
 		}
 		if (isWriting)
 			console.log("Writing to file " + folder + filename);
@@ -144,6 +159,7 @@ async function respondFile(req, res) {
 		console.log(folder + filename + " File exists: " + fs.existsSync(folder+filename));
 		if (fs.existsSync(folder + filename))
 			filename = folder + filename; 
+
 		fs.readFile(filename, (err,data) => {
 			if (err) {
 				console.log("File " + filename + " not found");
@@ -292,12 +308,36 @@ function requestListen(req, res) {
 }
 
 
+// on startup: check cookie folders and remove the expired ones 
+console.log("Checking cookie files for expiry...");
+let cookieFolders = fs.readdirSync("./Cookies/");
+cookieFolders.forEach((f) => {
+		let expireDate;
+		try { 
+			let expireStr = fs.readFileSync("./Cookies/"+f+"/.expires");
+			expireDate = new Date(Date.parse(expireStr));
+			console.log("Cookie " + f + " expires at " + expireDate.toUTCString());
+		} catch {
+			expireDate = null;	
+			console.log("Cookie " + f + ": Expiry date not stored, deleting...");
+		}
+		if (!expireDate || expireDate < Date.now()) {
+			try {
+				fs.rmdirSync("./Cookies/"+f, {recursive: true});
+				console.log("Cookie " + f + ": Removed files due to expiry");
+			} catch (err) {
+				console.err("Cookie " + f + ": Error removing folder - " + err);
+			};
+		}
+});
 
+// create http and equivalent https server
 http.createServer(requestListen).listen(80);
-
 
 const options = {
   key: fs.readFileSync('keys/server.key'),
   cert: fs.readFileSync('keys/server.cert'),
 };
 https.createServer(options, requestListen).listen(443);
+
+console.log("Started HTTP and HTTPS server.");
