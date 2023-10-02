@@ -240,9 +240,11 @@ async function bookCourse(title) {
             // Set form input elements
             let inputElems = form.getElementsByTagName("INPUT");
             for (let inputElem of inputElems) {
-                // set sex radio button
-                if (inputElem["name"] == "sex" && inputElem.value == data["sex"])
-                    inputElem.checked = true; 
+                if (inputElem.getAttribute("disabled") == "disabled")
+                    continue;
+                // set radio button checked
+                if (inputElem.type == "radio" && data[inputElem.name])
+                    inputElem.checked = (inputElem.value == data[inputElem.name]); 
                 // set accept conditions button
                 else if (inputElem["name"] == "tnbed")
                     inputElem.checked = true;
@@ -481,7 +483,7 @@ async function arm() {
 
 async function unarm() {
     armID += 1;
-    updateStatus("Unarmed.", "append");
+    updateStatus("Unarmed.");
     toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
 }
 
@@ -834,8 +836,7 @@ function onCloseButton(button) {
                 delete choice[sport];
         }
         // update choice file
-        //TODO CHOICE_FLE instead of choice2 in final version
-        upload("choice2.json", choice)
+        upload(CHOICE_FILE, choice)
         .then((data) => { 
             choice = data;
             if (!choice[title]) {
