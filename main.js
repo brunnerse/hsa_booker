@@ -320,7 +320,7 @@ async function bookCourse(title) {
                         bookingState[title] = "booked"; 
 
                         // let server know that course was booked successfully
-                        download("bookedcourses.txt?append="+title, "text")
+                        upload("bookedcourses.txt", title, "text", true)
                         .then((bookedCourses) => {
                             console.log("Successfully informed server about successful booking.");
                             console.log("Booked courses: " + bookedCourses);
@@ -340,7 +340,7 @@ async function bookCourse(title) {
                     bookingState[title] = "error";
                     updateEntryStateTitle(title, "Booking medium", "#00ff00");
                     // TODO remove append to bookedcourses
-                    download("bookedcourses.txt?append="+title, "text")
+                    upload("bookedcourses.txt", title, "text", true)
                     .then((bookedCourses) => {
                         console.log("Booked courses: " + bookedCourses);
                         })
@@ -778,7 +778,7 @@ function loadChoice() {
         console.error("Failed to load choice data:")
         console.error(err)
     })
-    .then(() => download("bookedcourses.txt", "text")) 
+    .then(() => upload("bookedcourses.txt", "",  "text", true)) // upload with append to create the file if it doesnt exist
     .then((bookedList) => {
         // set state of titles in bookedList to booked
         let bookedArr = bookedList.split("\n");
@@ -790,13 +790,13 @@ function loadChoice() {
         } 
     })
     .catch((err) => {
-       console.log("Failed to load file bookedcourses.txt; file probably doesnt exist yet.");
+       console.log("Failed to load file bookedcourses.txt");
     });
 }
 
 
 function loadCourses() {
-    updateStatus("Loading courses...", "append");
+    updateStatus("Loading courses...");
 
     return requestHTML("GET",
             "/extern/" + HSA_LINK 

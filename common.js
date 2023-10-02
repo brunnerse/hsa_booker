@@ -70,7 +70,7 @@ function download(filename, type="json") {
     });
 }
 
-function upload(filename, obj, type="json") {
+function upload(filename, obj, type="json", append = false) {
     return new Promise(function (resolve, reject) {
         let xhr = new XMLHttpRequest();
         xhr.onerror = (err) => {
@@ -85,7 +85,7 @@ function upload(filename, obj, type="json") {
             else
                 resolve(xhr.response);
         }
-        xhr.open("POST", filename + "?write");
+        xhr.open("POST", filename + "?" + (append ? "append" : "write"));
         xhr.responseType = type;
         let toSend = (type == "json") ?  getJSONFileString(obj) : obj;
         xhr.send(toSend);

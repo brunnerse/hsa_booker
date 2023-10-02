@@ -77,7 +77,7 @@ function getPOSTDataAsync(req) {
 function getText(req, variable, postdata) {
 	if (req.method == "GET") {
 		let q = url.parse(req.url, true);
-		return q.query[variable];
+		return q.query[variable] + "\n"; // append newline if text to be written is given as GET parameter
 	} else if (req.method == "POST") {
 		return postdata;
 	} else {
@@ -101,7 +101,7 @@ async function respondFile(req, res) {
 	try {
 		if (q.query.append != undefined) {
 			fsfun = fs.appendFile;
-			text = getText(req, "append", text) + "\n";
+			text = getText(req, "append", text);
 		} else if (q.query.write != undefined) {
 			fsfun = fs.writeFile;
 			text = getText(req, "write", text);
@@ -323,7 +323,7 @@ cookieFolders.forEach((f) => {
 		}
 		if (!expireDate || expireDate < Date.now()) {
 			try {
-				fs.rmdirSync("./Cookies/"+f, {recursive: true});
+				fs.rmSync("./Cookies/"+f, {recursive: true});
 				console.log("Cookie " + f + ": Removed files due to expiry");
 			} catch (err) {
 				console.err("Cookie " + f + ": Error removing folder - " + err);
