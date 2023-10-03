@@ -322,10 +322,10 @@ async function bookCourse(title) {
                         bookingState[title] = "booked"; 
 
                         // let server know that course was booked successfully
-                        upload("bookedcourses.txt", title, "text", true)
+                        upload("bookedcourses.txt", title+"\n", "text", true)
                         .then((bookedCourses) => {
                             console.log("Successfully informed server about successful booking.");
-                            console.log("Booked courses: " + bookedCourses);
+                            console.log("Booked courses: ");console.log(bookedCourses.split("\n"));
                         })
                         .catch((err) => {
                             console.warn("WARNING: Failed to inform server about successful booking"); 
@@ -342,9 +342,9 @@ async function bookCourse(title) {
                     bookingState[title] = "error";
                     updateEntryStateTitle(title, "Booking medium", "#00ff00");
                     // TODO remove append to bookedcourses
-                    upload("bookedcourses.txt", title, "text", true)
+                    upload("bookedcourses.txt", title+"\n", "text", true)
                     .then((bookedCourses) => {
-                        console.log("Booked courses: " + bookedCourses);
+                        console.log("Booked courses: ");console.log(bookedCourses.split("\n"));
                         })
                     .catch((err) => {
                         console.warn("WARNING: Failed to inform server about successful booking"); 
@@ -879,7 +879,7 @@ function onCloseButton(button) {
                         upload("bookedcourses.txt", bookedTitles.join("\n"), "text")
                         .then( (bookedCourses) => { 
                             console.log("Updated bookedcourses: ");
-                            console.log(bookedCourses);
+                            console.log(bookedCourses.split("\n"));
                         })
                         .catch((err) => {
                             console.error("Failed to update bookedcourses file: ");
