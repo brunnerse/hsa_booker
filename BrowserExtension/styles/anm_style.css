@@ -1,0 +1,24 @@
+.bs_head_small {
+    color: #fff;
+    background: #bd6b62;
+    font-weight: 600;
+    font-size: 12pt;
+    padding: 9px;
+    margin-top: 13px;
+}
+.bs_head {
+    color: #fff;
+    background: #d8a6a1;
+    font-weight: 600;
+    font-size: 12pt;
+    padding: 9px;
+    margin-top: 13px;
+    margin-bottom: 13px;
+}
+div#bs_content {
+    width: 99%;
+}
+
+.sublink.hidden {
+    display: block !important;
+}

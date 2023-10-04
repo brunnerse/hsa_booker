@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="de-de" xml:lang="de-de">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="IE=edge" http-equiv="X-UA-Compatible" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta content="Kursangebot, Uni, Augsburg, adh, HSA, Sport" name="keywords" />
+    <meta content="Hochschulsport Augsburg" name="description" />
+    <meta content="Joomla! - Open Source Content Management" name="generator" />
+    <title>HSA Booker</title>
+    <link href="/hsa/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+    <link href="/hsa/media/system/css/modal.css?b00d61c8474b9edaf27f509167f6a526" rel="stylesheet" type="text/css" />
+    <link href="/hsa/media/com_attachments/css/attachments_hide.css" rel="stylesheet" type="text/css" />
+    <link href="/hsa/media/com_attachments/css/attachments_list.css" rel="stylesheet" type="text/css" />
+    <link href="/hsa/templates/hssport/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <meta content="de-DE" itemprop="inLanguage" />
+    <meta content="no-referrer-when-downgrade" name="referrer" />
+    <meta content="no-cache, no-store, must-revalidate, max-age=0" http-equiv="cache-control" />
+    <meta content="no-cache" http-equiv="Pragma" />
+    <meta content="text/css" http-equiv="Content-Style-Type" />
+    <link href="/buchsys/lib/global/flyout_menu1.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/buchsys/lib/global/angebote.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/SysBilder/resex/bs_style.css" media="all" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="/hsa/templates/hssport/dist/css/bootstrap.min.css" type="text/css" />
+    <style>
+        .closebutton:hover {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class='container-fluid noPad banner'>
+        <a href="/">
+            <div class='title'>
+                <div class='col-xs-10'>Hochschulsport<br />Augsburg</div>
+                <div class='col-xs-2 logo-cont'>
+                    <img class='hsa-logo img-responsive' src='/hsa/templates/hssport/dist/img/logo_entwurf.jpg' />
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class='container-fluid noPad'>
+        <div class='col-xs-12 noPad'>
+            <div class='col-xs-12 col-sm-3 col-md-3 col-lg-2 noPad padTop'>
+                <div class='menu blue'>
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                            <span class="glyphicon glyphicon-menu-hamburger menuButton"></span>
+                        </button>
+                    </div>
+                    <div class="collapse navbar-collapse" id="myNavbar">
+                        <div class="biggerLink"><strong>Control</strong></div>
+                        <hr />
+                        <ul class="nav menu mod-list">
+                            <li class="item-165"><a id="chkuserdata" href="/Users.html" target="_blank">Edit User Data</a></li>
+                            <li class="item-166"><a id="chkcourses" href="/Courses.html" target="_blank">Add Courses</a></li>
+                            <li class="item-160"><a id="loadchoice" href="javascript:void(0)">Reload choice and user data</a></li>
+                            <li class="item-161"><a id="refreshchoice" href="javascript:void(0)">Refresh course status</a></li>
+                            <li class="item-162"><a id="arm" href="javascript:void(0)">Arm</a></li>
+                            <li class="item-163"><a id="unarm" href="javascript:void(0)">Unarm</a></li>
+                            <li class="item-164"><a id="clearstatus" href="javascript:void(0)">Clear status window</a></li>
+                            <li class="item-167"><a id="debug" href="javascript:void(0)">Debug</a></li>
+                        </ul>
+
+                        <a href="https://www.uni-augsburg.de/"><img src='/hsa/templates/hssport/dist/img/uni_white.png'
+                                class='img-responsive logo' /></a>
+                    </div>
+                </div>
+            </div>
+            <div class='col-xs-12 col-sm-9 col-md-9 col-lg-10 noPad'>
+                <div class="custom darkred" style="text-align: center;">
+                    <strong>Status<br /></strong>
+                    <hr />
+                    <div style="text-align:left;height:200px;overflow:auto;display:flex;flex-direction:column-reverse">
+                        <p id="statustext"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-9">
+                <div class="bs_head_small">Chosen courses status</div>
+
+                <div id="choice"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-9" id="formframes">
+    </div>
+
+    <div hidden id="avail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
+        <div id="bs_content">
+            <form method="post" target="frame_anmeldung"
+                action="extern/https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi">
+                <input type="hidden" name="BS_Code" value="2ca70363-d94d-11ec-874f-00505600022a">
+                <div class="bs_kursangebot">
+                    <table class="bs_kurse" style="border-style: none">
+                        <thead>
+                            <tr>
+                                <th class="bs_sknr"><span class="bslang_de">Kursnr</span><span
+                                        class="bslang_en">No.</span>
+                                </th>
+                                <th class="bs_sdet"><span class="bslang_de">Details</span><span
+                                        class="bslang_en">Detail</span></th>
+                                <th class="bs_stag"><span class="bslang_de">Tag</span><span class="bslang_en">Day</span>
+                                </th>
+                                <th class="bs_szeit"><span class="bslang_de">Zeit</span><span
+                                        class="bslang_en">Time</span>
+                                </th>
+                                <th class="bs_sort"><span class="bslang_de">Ort</span><span
+                                        class="bslang_en">Location</span></th>
+                                <th class="bs_szr"><span class="bslang_de">Zeitraum</span><span
+                                        class="bslang_en">Duration</span></th>
+                                <th class="bs_skl"><span class="bslang_de">Leitung</span><span
+                                        class="bslang_en">Guidance</span></th>
+                                <th class="bs_spreis"><span class="bslang_de">Preis</span><span
+                                        class="bslang_en">Cost</span></th>
+                                <th class="bs_sbuch"><span class="bslang_de">Buchung</span><span
+                                        class="bslang_en">Booking</span></th>
+                                <th style="text-align:center;">Status</th>
+                                <th class="closebutton" style="text-align:center;background-color:red;" onclick="onCloseButton(this)">x</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bs_odd" id="bs_tr591E90A78D">
+                                <td class="bs_sknr">7014</td>
+                                <td class="bs_sdet">Frauen</td>
+                                <td class="bs_stag">Fr</td>
+                                <td class="bs_szeit">18:30-20:00</td>
+                                <td class="bs_sort"><a
+                                        href="/web/20220521214003/https://anmeldung.sport.uni-augsburg.de/cgi/webpage.cgi?spid=81f1a4476b674b96513c4638ed490555">DJK
+                                        Augsburg Hochzoll</a></td>
+                                <td class="bs_szr"><a
+                                        href="/web/20220521214003/https://anmeldung.sport.uni-augsburg.de/cgi/webpage.cgi?kursinfo=591E90A78D">06.05.-<wbr/><wbr>22.07.</a>
+                                </td>
+                                <td class="bs_skl"><a
+                                        href="/web/20220521214003/https://anmeldung.sport.uni-augsburg.de/cgi/webpage.cgi?kursid=591E90A78D&amp;klid=4416f39eeb4cac923c65570e76900172">
+                                        Saum Andreas</a></td>
+                                <td class="bs_spreis">
+                                    <div class="bs_tip">40/ 40/ 45&nbsp;&euro;<div>
+                                            <div class="bs_tt1">40&nbsp;EUR</div>
+                                            <div class="bs_tt2">f&uuml;r Studierende</div><br>
+                                            <div class="bs_tt1">40&nbsp;EUR</div>
+                                            <div class="bs_tt2">f&uuml;r Erm&#228;&#223;igte</div><br>
+                                            <div class="bs_tt1">45&nbsp;EUR</div>
+                                            <div class="bs_tt2">f&uuml;r Mitarbeiter</div><br>
+                                            <div class="bs_tt1">40&nbsp;EUR</div>
+                                            <div class="bs_tt2">f&uuml;r F&#246;rderverein</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="bs_sbuch"><a id="K7014"></a><input type="submit" value="buchen"
+                                        title="booking" name="BS_Kursid_10911" class="bs_btn_buchen"></td>
+                                <td class="nr_name"
+                                    style="height:30px;width:250px;font-weight: bold;text-align:center;">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div hidden id="notavail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
+        <div id="bs_content">
+            <div class="bs_kursangebot">
+                <table class="bs_kurse" style="border-style: none">
+                    <thead>
+                        <tr>
+                            <th class="bs_sknr"><span class="bslang_de">Kursnr</span></th>
+                            <th class="bs_sdet"><span class="bslang_de">Details</span></th>
+                            <th class="bs_stag"><span class="bslang_de">Tag</span></th>
+                            <th class="bs_szeit"><span class="bslang_de">Zeit</span></th>
+                            <th class="bs_sort"><span class="bslang_de">Ort</span></th>
+                            <th class="bs_szr"><span class="bslang_de">Zeitraum</span></th>
+                            <th class="bs_skl"><span class="bslang_de">Leitung</span></th>
+                            <th class="bs_spreis"><span class="bslang_de">Preis</span></th>
+                            <th class="bs_sbuch"><span class="bslang_de">Status</span></th>
+                            <th style="text-align:center;">Status</th>
+                            <th class="closebutton" style="text-align:center;background-color:red;" onclick="onCloseButton(this)">x</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bs_odd" id="bs_tr591E90A78D">
+                            <td class="bs_sknr" style="color: red">xx</td>
+                            <td class="bs_sdet" style="color: red">None</td>
+                            <td class="bs_stag"></td>
+                            <td class="bs_szeit"></td>
+                            <td class="bs_sort"></td>
+                            <td class="bs_szr"></td>
+                            <td class="bs_skl"></td>
+                            <td class="bs_spreis"></td>
+                            <td class="bs_sbuch" style="color: red">Unavailable</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+<script src="common.js"></script>
+<script src="main.js"></script>
+
+</html>

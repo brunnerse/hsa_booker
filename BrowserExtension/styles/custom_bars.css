@@ -1,0 +1,26 @@
+.bar {
+    display: block;
+    position: fixed;
+    top: 0px;
+    background-color: black;
+    border: thick solid black;
+    border-radius: 5px;
+    height: 60px;
+    width: 99.9%;
+}
+
+.status {
+    border-radius: 15px;
+    font-size: 120%;
+    color: black;
+    text-align: center;
+}
+
+.bottombar {
+    float: right;
+    position: fixed;
+    display: block;
+    bottom: 20px;
+    right: 5%;
+    font-weight: bold;
+}
