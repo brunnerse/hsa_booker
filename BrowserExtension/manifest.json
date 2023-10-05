@@ -28,7 +28,8 @@
 
 		},
 		{
-			"js": ["scripts/book.js"],
+			"js": ["scripts/common.js", "scripts/users_common.js", 
+					"scripts/book.js"],
 			"matches": [
 				"*://anmeldung.sport.uni-augsburg.de/cgi/*"
 			]
