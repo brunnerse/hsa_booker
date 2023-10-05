@@ -36,4 +36,17 @@ const bottombar = document.createElement("DIV");
 bottombar.id = "hint";
 bottombar.className = "bottombar"; 
 document.getElementsByTagName('body')[0].appendChild(bottombar);
-bottombar.innerHTML = "TEST BOTTOM"
+
+
+let tHeadElems = document.getElementsByTagName("THEAD");
+for (let tHead of tHeadElems) {
+	let tRows = tHead.getElementsByTagName("TR");
+	for (let tRow of tRows)
+		tRow.innerHTML += '<th style="text-align:center">Aktion</th>'
+}
+let tBodyElems = document.getElementsByTagName("TBODY");
+for (let tBody of tBodyElems) {
+	let tRows = tBody.getElementsByTagName("TR");
+	for (let tRow of tRows)
+		tRow.innerHTML += '<td class="aktion bs_sbuch" style="text-align:center"></td>'
+}

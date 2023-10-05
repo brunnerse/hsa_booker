@@ -134,10 +134,6 @@ window.onload =
         setStatus("Choose " + course + " course to add", "white")
         hintElem.innerHTML = "Click on the book button to add the course for the selected user";
         // modify page
-        // prevent all forms from submitting 
-        for (let formElem of document.forms) {
-            formElem.onsubmit = () => false;
-        }
         modifyBookButtons();
     } else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
         setStatus("Course overview");
@@ -164,15 +160,16 @@ function modifyBookButtons() {
         // get corresponding course nr
         let trElem = bookElem.parentElement;
         let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
-        // remove content of bookElem
-        while (bookElem.lastChild)
-            bookElem.removeChild(bookElem.lastChild);
+        let aktionElem = bookElem.parentElement.lastChild;
+        // remove content of aktionElem
+        while (aktionElem.lastChild)
+            aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
         button.innerHTML = nrlist.includes(nr) ? "REMOVE" : "ADD"; 
-        button.className = className;
+        //button.className = className;
         button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
-        bookElem.appendChild(button);
+        aktionElem.appendChild(button);
         button.onclick = () => onAdd(button);
     }
 }
