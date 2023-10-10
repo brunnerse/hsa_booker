@@ -30,8 +30,6 @@ var statusElements = {};
 var ongoingXMLRequests = {};
 var armID = 0;
 
-var timeOffset;
-
 
 function getColorForBookingState(bookingState) {
     let colors = {"booked" : "#00ff00", "booking" : "blue", "ready" : "aqua", 
@@ -49,11 +47,7 @@ function getRemainingTimeMS(timeStr) {
     let month = arr[0].split(".")[1];
     let year = new Date(Date.now()).getUTCFullYear();
     let bookDate = new Date(`${year}-${month}-${day}T${arr[1].trim()}`);
-    if (!timeOffset) {
-        timeOffset = bookDate - Date.now() - 4*60*1000;
-        console.log("Set current time to " + new Date(Date.now()+timeOffset).toUTCString())
-    }
-    return bookDate - new Date(Date.now() + timeOffset);
+    return bookDate - new Date(Date.now());
 }
 
 function getRemainingTimeString(timeStr) {
