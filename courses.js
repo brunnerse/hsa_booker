@@ -136,9 +136,6 @@ iFrame.onload =
 
     // check if URL is course overview; if it is, add all links to courses
     if (url == iFrame.src) {
-        setStatus("Course overview");
-        hintElem.innerHTML = "Go to a course website to add the course";
-
         let rootElems = docFrame.getElementsByClassName("bs_menu");
         courses = {};
         for (let rootElem of rootElems) {
@@ -147,20 +144,22 @@ iFrame.onload =
             }
         }
     } 
-    else {
-        // check if URL is a course
-        if (courses[url]) {
-            setStatus("Choose " + courses[url] + " course to add", "white")
-            hintElem.innerHTML = "Click on the book button to add the course for the selected user";
-            // modify page
-            // prevent all forms from submitting 
-            for (let formElem of docFrame.forms) {
-                formElem.onsubmit = () => false;
-            }
-            modifyBookButtons();
-        } else {
-            setStatus("Current Page is not a Course page", "white")
+
+    // set hint elem status depending on url
+    if (courses[url]) { // check if URL is a course
+        setStatus("Choose " + courses[url] + " course to add", "white")
+        hintElem.innerHTML = "Click on the book button to add the course for the selected user";
+        // modify page
+        // prevent all forms from submitting 
+        for (let formElem of docFrame.forms) {
+            formElem.onsubmit = () => false;
         }
+        modifyBookButtons();
+    } else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
+        setStatus("Course overview");
+        hintElem.innerHTML = "Go to a course website to add the course";
+    } else { 
+        setStatus("Current Page is not a Course page", "white")
     }
 };
 
@@ -188,6 +187,7 @@ function modifyBookButtons() {
         let button = document.createElement("BUTTON");
         button.innerHTML = nrlist.includes(nr) ? "REMOVE" : "ADD"; 
         button.className = className;
+        button.type = "button";
         button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
         bookElem.appendChild(button);
         button.onclick = () => onAdd(button);

@@ -4,9 +4,12 @@ const HSA_LINK_old = "https://web.archive.org/web/20220120140607/https://anmeldu
 var HSA_LINK = HSA_LINK_new;
 
 
-const refreshInterval_short = 2000;
-const refreshInterval_mid = 5000;
-const refreshInterval_long = 30000;
+const refreshInterval_short = 2 * 1000;
+const refreshInterval_mid = 5 * 1000;
+const refreshInterval_long = 30 * 1000;
+const timeThreshold_short = 30 * 1000; 
+const timeThreshold_mid = 3 * 60 * 1000; 
+
 const timeout_msec = 6000;
 
 var statusInterval;
@@ -46,13 +49,18 @@ function getRemainingTimeMS(timeStr) {
     let month = arr[0].split(".")[1];
     let year = new Date(Date.now()).getUTCFullYear();
     let bookDate = new Date(`${year}-${month}-${day}T${arr[1].trim()}`);
-    if (!timeOffset)
-        timeOffset = bookDate - Date.now() - 6*60*1000;
-    return bookDate - new Date(Date.now()) - timeOffset;
+    if (!timeOffset) {
+        timeOffset = bookDate - Date.now() - 4*60*1000;
+        console.log("Set current time to " + new Date(Date.now()+timeOffset).toUTCString())
+    }
+    return bookDate - new Date(Date.now() + timeOffset);
 }
 
 function getRemainingTimeString(timeStr) {
     let remainMS = getRemainingTimeMS(timeStr);
+    let s = remainMS >= 0 ? "" : "- "; 
+    remainMS = remainMS >= 0 ? remainMS : -remainMS; 
+
     let remDays = Math.floor(remainMS / (1000 * 60 * 60 * 24));
     remainMS -= remDays * (1000 * 60 * 60 * 24);
     let remHours = Math.floor(remainMS / (1000 * 60 * 60));
@@ -61,7 +69,6 @@ function getRemainingTimeString(timeStr) {
     remainMS -= remMins * (1000 * 60);
     let remSecs = Math.floor(remainMS / (1000));
 
-    s = ""
     if (remDays > 0)
         s += remDays + "d ";
     if (remHours > 0)
@@ -418,8 +425,8 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                 } else if (!["missing", "wrongnumber"].includes(bookingState[t])) {
                     newTitles.push(t);
                     // adapt interval depending on how long until the course becomes ready 
-                    if (bookingTime[t] && getRemainingTimeMS(bookingTime[t]) > 30 * 1000) {
-                        if (getRemainingTimeMS(bookingTime[t]) > 5*60*1000) 
+                    if (bookingTime[t] && getRemainingTimeMS(bookingTime[t]) > timeThreshold_short) {
+                        if (getRemainingTimeMS(bookingTime[t]) > timeThreshold_mid) 
                             refreshInterval = refreshInterval_long;
                         else
                             refreshInterval = refreshInterval_mid;
@@ -735,7 +742,7 @@ function startBookingTimeCountdownInterval() {
                     }
                 }
             }
-        }, 1000);
+        }, 500);
 }
 
 
