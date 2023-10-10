@@ -7,7 +7,7 @@ var HSA_LINK = HSA_LINK_new;
 const refreshInterval_short = 2000;
 const refreshInterval_mid = 5000;
 const refreshInterval_long = 30000;
-const timeout_msec = 5000;
+const timeout_msec = 6000;
 
 var statusInterval;
 
@@ -154,7 +154,7 @@ function getErrorTable(nr, details, error) {
 
 function updateTitleWithTime(title, time_msec, preMsg="", postMsg="") {
     updateEntryStateTitle(title, preMsg + 
-        `${Math.round(time_msec / 100)/10}` + postMsg,
+        (time_msec / 1000).toFixed(1) + postMsg,
         "#ffff00");
 }
 
@@ -429,7 +429,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
         } else {
             for (let t of titles) {
                 let statusStr = bookingTime[t] ? getRemainingTimeString(bookingTime[t]) + "<br>" : ""; 
-                updateTitleWithTime(t, refreshInterval_short - (Date.now() - lastRefreshTime), 
+                updateTitleWithTime(t, refreshInterval - (Date.now() - lastRefreshTime), 
                             statusStr + "Refreshing in ", "...");
             }         
             // sleep for a quarter second
@@ -483,8 +483,9 @@ async function arm() {
 
 async function unarm() {
     armID += 1;
-    updateStatus("Unarmed.");
     toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
+    startBookingTimeCountdownInterval();
+    updateStatus("Unarmed.");
 }
 
 function checkBookingDone() {
@@ -710,25 +711,28 @@ async function refreshChoice() {
         .finally(() => {
             updatedSports.push(sport);
             clearInterval(intervalID);
-        
-            if (statusInterval)
-                clearInterval(statusInterval);
-            
-            // setup interval function to regularly update the time until booking becomes available for every title
-            statusInterval = setInterval(
-                () => { 
-                    for (let sport of Object.keys(choice)) {
-                        for (let user of Object.keys(choice[sport])) {
-                            for (let nr of choice[sport][user]) { 
-                                let title =  `${sport}_${nr}_${user}`;
-                                if (bookingTime[title]) 
-                                    updateEntryStateTitle(title, getRemainingTimeString(bookingTime[title]));
-                            }
-                        }
-                    }
-                }, 1000);
+            startBookingTimeCountdownInterval();
         });
     }
+}
+
+function startBookingTimeCountdownInterval() {
+    if (statusInterval)
+        clearInterval(statusInterval);
+    
+    // setup interval function to regularly update the time until booking becomes available for every title
+    statusInterval = setInterval(
+        () => { 
+            for (let sport of Object.keys(choice)) {
+                for (let user of Object.keys(choice[sport])) {
+                    for (let nr of choice[sport][user]) { 
+                        let title =  `${sport}_${nr}_${user}`;
+                        if (bookingTime[title]) 
+                            updateEntryStateTitle(title, getRemainingTimeString(bookingTime[title]));
+                    }
+                }
+            }
+        }, 1000);
 }
 
 
@@ -929,8 +933,8 @@ document.getElementById("debug").addEventListener("click", () => {
 
 
 // Load data initially 
-loadCourses().catch();
-loadChoice()
+loadCourses().catch()
+.then(loadChoice)
 .then(refreshChoice)
 .catch((error) => console.error("Load and refresh of choice failed: " + error.message));
 
