@@ -521,7 +521,6 @@ function updateEntryState(sport, nr, user, state, color="white") {
 }
 
 function updateEntryStateTitle(title, state, color="white") {
-    let choiceElem = document.getElementById("choice");
     const statusElem = statusElements[title];
     if (!statusElem) {
         console.error("[ERROR] updating Status: status element " + title + " missing");
@@ -536,20 +535,18 @@ function updateEntryStateTitle(title, state, color="white") {
 async function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     const title = `${sport}_${nr}_${user}`;
 
-    const availElem = document.getElementById("avail");
     let entryElem;
     // check if nr is already in table
-    let found = false;
     for (let tableEntry of document.getElementById("choice").children) {
         if (tableEntry.getAttribute("title") == title) {
-            found = true;
-            tableEntry.innerHTML = availElem.children[0].innerHTML;
             entryElem = tableEntry;
             break;
         }
     }
-    if (!found) {
+    // if not, create new table entry
+    if (!entryElem) {
         let choiceElem = document.getElementById("choice");
+        const availElem = document.getElementById("avail");
         choiceElem.appendChild(availElem.children[0].cloneNode(true));
         entryElem = choiceElem.lastChild;
         entryElem.setAttribute("title", title);
@@ -558,8 +555,8 @@ async function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     // replace tableRow with entryHTML input appended with the old status bar 
     const rowElem = entryElem.getElementsByTagName("TR")[1];
     // clear row for 100msec for visual effect of refresh
-    for (let cell of rowElem.children)
-        cell.innerHTML = "";
+   for (let cell of rowElem.children)
+       cell.setAttribute("style", "color: white;");
     await sleep(100);
     const statusElem = entryElem.getElementsByClassName("nr_name")[0];
     rowElem.innerHTML = entryHTML + statusElem.outerHTML;
