@@ -775,7 +775,8 @@ function loadChoice() {
 
                     // Create iframe for booking; one one the left side, the next on the right side
                     let htmlFrame = 
-                        `<div style="align:center;float:${leftRightCounter++ % 2 == 0 ? "left" : "right"};">`+title+"<br>"+
+                        `<div style="display:inline-block;">` +
+                        `<div style="text-align:center;font-weight:bold">`+title+"</div>"+
                         `<iframe width="600" height="600" title="Anmeldung ${title}" name="frame_${title}" style="overflow:scroll;" referrerpolicy="no-referrer">
                         </iframe><div>`;
                     frameRootElem.innerHTML += htmlFrame; 
@@ -938,7 +939,7 @@ document.getElementById("debug").addEventListener("click", () => {
 
 
 // Load data initially 
-loadCourses().catch()
+loadCourses()
 .then(loadChoice)
 .then(refreshChoice)
 .catch((error) => console.error("Load and refresh of choice failed: " + error.message));
