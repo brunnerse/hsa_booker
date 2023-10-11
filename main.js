@@ -344,22 +344,13 @@ async function bookCourse(title) {
                     submitButton.setAttribute("inert", "");
                     submitButton.setAttribute("hidden", "");
                     bookingState[title] = "error";
-                    updateEntryStateTitle(title, "Booking medium", "#00ff00");
-                    // TODO remove append to bookedcourses
-                    upload("bookedcourses.txt", title+"\n", "text", true)
-                    .then((bookedCourses) => {
-                        console.log("Booked courses: ");console.log(bookedCourses.split("\n"));
-                        })
-                    .catch((err) => {
-                        console.warn("WARNING: Failed to inform server about successful booking"); 
-                    })
+                    updateEntryStateTitle(title, "Booking test successful", "#00ff00");
                 } else {
-                    //TODO this button iff sure!!!
-                    //form.requestSubmit(submitButton);
+                    form.requestSubmit(submitButton);
                 }
             };
-            //TODO this sleep was just for debug; remove
-            await sleep(5000);
+            //TODO is sleep here necessary?
+            //await sleep(1000);
             form.requestSubmit(submitButton);
         };
 
