@@ -12,7 +12,7 @@ const timeThreshold_mid = 3 * 60 * 1000;
 
 const timeout_msec = 6000;
 
-var statusInterval;
+var allStatusInterval;
 
 var choice = undefined;
 var userdata = undefined;
@@ -393,9 +393,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
 
         if (Date.now() - lastRefreshTime >= refreshInterval) {
             lastRefreshTime = Date.now();
-            if (statusInterval)
-                clearInterval(statusInterval);
-            statusInterval = setInterval(
+            let refreshIntervalId = setInterval(
                  () => {
                     for (let t of titles) {
                         updateTitleWithTime(t, timeout_msec - (Date.now() - lastRefreshTime), 
@@ -408,8 +406,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                 // refresh again the next loop iteration by resetting the lastRefreshTime
                 lastRefreshTime -= refreshInterval;
             });
-            clearInterval(statusInterval);
-            statusInterval = undefined;
+            clearInterval(refreshIntervalId);
 
             // call book for any ready titles
             let newTitles = [];
@@ -445,11 +442,17 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
 
 async function arm() {
     if (courses.length == 0 || !choice) {
-        updateStatus("Arming failed: List of courses and Choice not loaded", "replace");
+        updateStatus("Arming failed: List of courses and Choice not loaded");
         return;
     }
 
     toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
+
+    // stop status update interval
+    if (allStatusInterval)
+        clearInterval(allStatusInterval);
+    allStatusInterval = undefined;
+
     updateStatus("Armed.");
 
     let currentArmID = armID;
@@ -488,7 +491,7 @@ async function arm() {
 async function unarm() {
     armID += 1;
     toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
-    startBookingTimeCountdownInterval();
+    startAllStatusInterval();
     updateStatus("Unarmed.");
 }
 
@@ -681,7 +684,7 @@ async function refreshSport(sport, updateTitles=[]) {
 }
 
 async function refreshChoice() {
-    updateStatus("Refreshing choice course status...");
+    updateStatus("Refreshing course status...");
 
     if (!choice) 
         await loadChoice();
@@ -691,7 +694,7 @@ async function refreshChoice() {
         async function() {
             if (updatedSports.length == Object.keys(choice).length) {
                 clearInterval(updateCheckerInterval);
-                updateStatus("Refreshed choice course status.");
+                updateStatus("Refreshed course status.");
             }
         },
         500
@@ -712,17 +715,18 @@ async function refreshChoice() {
         .finally(() => {
             updatedSports.push(sport);
             clearInterval(intervalID);
-            startBookingTimeCountdownInterval();
+            startAllStatusInterval();
         });
     }
 }
 
-function startBookingTimeCountdownInterval() {
-    if (statusInterval)
-        clearInterval(statusInterval);
+// starts countdown until booking time for all tasks
+function startAllStatusInterval() {
+    if (allStatusInterval)
+        clearInterval(allStatusInterval);
     
     // setup interval function to regularly update the time until booking becomes available for every title
-    statusInterval = setInterval(
+    allStatusInterval = setInterval(
         () => { 
             for (let sport of Object.keys(choice)) {
                 for (let user of Object.keys(choice[sport])) {
