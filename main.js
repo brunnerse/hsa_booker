@@ -10,6 +10,8 @@ const refreshInterval_long = 30 * 1000;
 const timeThreshold_short = 30 * 1000; 
 const timeThreshold_mid = 3 * 60 * 1000; 
 
+const statusUpdateInterval = 500;
+
 const timeout_msec = 6000;
 
 var allStatusInterval;
@@ -158,7 +160,7 @@ function getErrorTable(nr, details, error) {
 
 function updateTitleWithTime(title, time_msec, preMsg="", postMsg="") {
     updateEntryStateTitle(title, preMsg + 
-        (time_msec / 1000).toFixed(1) + postMsg,
+        Math.ceil(time_msec / 1000) + postMsg,
         "#ffff00");
 }
 
@@ -391,7 +393,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                             "Refresh (Timeout in ", ")");
                     }
                 },
-                250);
+                statusUpdateInterval);
             await refreshSport(sport, titles)
                 .catch( () =>  {
                 // refresh again the next loop iteration by resetting the lastRefreshTime
@@ -399,7 +401,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             });
             clearInterval(refreshIntervalId);
 
-            // call book for any ready titles
+            // call book for any ready titles, for other titles (that are not missing or wrongnumber) continue to process them
             let newTitles = [];
             for (let t of titles) {
                 if (["ready", "full", "booked", "wronguserid"].includes(bookingState[t])) {
@@ -424,8 +426,8 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                 updateTitleWithTime(t, refreshInterval - (Date.now() - lastRefreshTime), 
                             statusStr + "Refreshing in ", "...");
             }         
-            // sleep for a quarter second
-            await sleep(250); 
+            // sleep for statusUpdateInterval ms or until the next refresh happens 
+            await sleep(Math.min(statusUpdateInterval, lastRefreshTime + refreshInterval - Date.now())); 
         }
     }
     console.log("waitUntilReady for " + sport + " done");
@@ -588,6 +590,7 @@ async function refreshSport(sport, updateTitles=[]) {
                     if (bookingState[title] != "booked") {
                         bookingState[title] = "failed";
                     }
+                    delete bookingTime[title];
                     entryElem = getErrorTable(nr, `[${nr}] ${sport} (${user})`, "Page load failed");
                     updateEntryInTable(entryElem, sport, nr, user, "None"); 
                 }
@@ -699,7 +702,7 @@ async function refreshChoice() {
                     for (let nr of choice[sport][user]) 
                         updateTitleWithTime(`${sport}_${nr}_${user}`, timeout_msec - (Date.now() - startTime),
                              "Refresh (Timeout in ", ")");
-            }, 100);
+            }, statusUpdateInterval);
 
         refreshSport(sport)
         .catch((err) => {console.error(err)})
