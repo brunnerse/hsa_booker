@@ -24,9 +24,9 @@ async function onSelectChange() {
     let selectedUser = getSelectedUser(userSelectElem);
     if (selectedUser == "") {
         if (userSelectElem.options[userSelectElem.selectedIndex].title == "adder") {
-            // TODO extension link
             // open user edit page in new tab
-            window.open("/Users.html", '_blank').focus();
+            // TODO Doesnt work
+            window.open(chrome.runtime.getURL("Users.html"));
             // reset selection to the first blank one
             setSelectedUser(userSelectElem, "");
             return;
@@ -169,6 +169,7 @@ function modifyBookButtons() {
         button.innerHTML = nrlist.includes(nr) ? "REMOVE" : "ADD"; 
         //button.className = className;
         button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
+        button.type = "button";
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button);
     }
