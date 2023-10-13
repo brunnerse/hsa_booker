@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="robots" content="noindex,nofollow">
+	<meta name="viewport" content="width=device-width; initial-scale=1.0;">
+	<title>HSA Booker - Edit users</title>
+	<link href="https://hsa.sport.uni-augsburg.de/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+	<link rel="stylesheet" href="https://anmeldung.sport.uni-augsburg.de/buchsys/lib/global/anmeldung.css">
+	<link rel="stylesheet" href="https://anmeldung.sport.uni-augsburg.de/SysBilder/resex/anm_style.css">
+</head>
+
+<body class="anmeldung">
+	<div class="hidden" id="formdata">
+		{"stdata":"0011112111323240","fp":0,"ep":2}
+	<!--unused: 
+		{"quote":[0,0,0,0,1],"entgelte":[26,0,0,0,26],"vag":[0,0,0,0,0],"ik":0,"kdata":[0],"wrng":"€"2}
+	-->
+	</div>
+	<div id="bs_form_content">
+		<div id="bs_form_head">
+			<div id="bs_uni">
+				<div class="bs_space"></div>
+				<div id="bs_uni_text">Hochschulsport der Universität Augsburg</div>
+			</div>
+			<div id="bs_ag">
+				<div class="bs_form_row">
+					<div class="bs_form_sp1">User-ID:<div class="bs_form_entext">Comment</div>
+					</div>
+					<div class="bs_form_sp2">
+						<select class="bs_form_field bs_fval_req" name="users" size="1" id="userselect">
+							<option value="" selected="selected">Neuer User</option>
+						</select>
+					</div>
+				</div>
+			</div>
+			<div class="bs_space"></div>
+		</div>
+		<form name="bsform" method="get" target="_self" action="user.json?write=" onsubmit="javascript:return false">
+			<!--chkForm-->
+			<div id="bs_form_main">
+				<div id="bs_pw_anmlink" class="  pointer">
+				</div>
+				<div id="bs_kl_anm">
+					<div class="bs_form_row alr">* verbindliche Angaben<div class="bs_form_entext">Essential Information
+						</div>
+					</div>
+					<div class="bs_form_row bs_exspace">Bitte geben Sie die Daten der teilnehmenden Person ein:<div
+							class="bs_form_entext">Please enter the data of the participant</div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F1000">Geschlecht:*</label>
+							<div class="bs_form_entext">Gender</div>
+						</div>
+						<div class="bs_form_sp2"><label><input class="bs_fval_req" type="radio" name="sex" value="W">
+								weiblich</label>&nbsp;&nbsp;<label><input class="bs_fval_req" type="radio" name="sex"
+									value="M"> männlich</label>&nbsp;&nbsp;<label><input class="bs_fval_req"
+									type="radio" name="sex" value="D"> divers</label>&nbsp;&nbsp;<label><input
+									class="bs_fval_req" type="radio" name="sex" value="X"> keine Angabe</label></div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F1100">Vorname:*</label>
+							<div class="bs_form_entext">First Name</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_name" type="text" id="BS_F1100"
+								name="vorname" maxlength="50"></div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F1200">Familienname:*</label>
+							<div class="bs_form_entext">Surname</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_name" type="text" id="BS_F1200"
+								name="name" maxlength="60"></div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F1300">Strasse Nr:*</label>
+							<div class="bs_form_entext">Street No</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req" type="text" id="BS_F1300"
+								name="strasse" maxlength="60"></div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F1400">PLZ Ort:*</label>
+							<div class="bs_form_entext">Zip Code+City</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_ort" type="text" id="BS_F1400"
+								name="ort" maxlength="50"></div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F1600">Status:*</label>
+							<div class="bs_form_entext">Status</div>
+						</div>
+						<div class="bs_form_sp2"><select class="bs_form_field bs_fval_req" name="statusorig" size="1"
+								id="BS_F1600">
+								<option value="" selected="selected"></option>
+								<option value="S-UNIA">StudentIn der UNI Augsburg</option>
+								<option value="S-HS">StudentIn der HS Augsburg</option>
+								<option value="S-Sport">SportstudentIn</option>
+								<option value="S-aH">StudentIn einer anderen Hochschule</option>
+								<option value="B-UNIA">Beschäftigte/r der UNI Augsburg</option>
+								<option value="B-HS">Beschäftigte/r der HS Augsburg</option>
+								<option value="FV">Förderverein</option>
+							</select></div>
+					</div>
+					<div class="bs_form_row" style="display: none;">
+						<div class="bs_form_sp1"><label for="BS_F1700">Matrikel-Nr.:*</label>
+							<div class="bs_form_entext">Matriculation No</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req bs_fval_status11" type="text"
+								id="BS_F1700" name="matnr" maxlength="20" disabled="disabled"></div>
+					</div>
+					<div class="bs_form_row" style="display: none;">
+						<div class="bs_form_sp1"><label for="BS_F1800">dienstl. Telefonnr:*</label>
+							<div class="bs_form_entext">Official phone</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req bs_fval_status12" type="text"
+								id="BS_F1800" name="mitnr" maxlength="100" disabled="disabled"></div>
+					</div>
+					<div class="bs_form_row" style="display: none;">
+						<div class="bs_form_sp1"><label for="BS_F1801">Personalnr.:*</label>
+							<div class="bs_form_entext">Employee No</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req bs_fval_status13" type="text"
+								id="BS_F1801" name="mitnr" maxlength="50" disabled="disabled"></div>
+					</div>
+					<div class="bs_form_row" style="display: none;">
+						<div class="bs_form_sp1"><label for="BS_F1802">Mitgliedsnr.:*</label>
+							<div class="bs_form_entext">Membership no</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req bs_fval_status14" type="text"
+								id="BS_F1802" name="mitnr" maxlength="50" disabled="disabled"></div>
+					</div>
+					<div class="bs_form_row" style="display: none;">
+						<div class="bs_form_sp1"><label for="BS_F1803">Ausweisnr.:*</label>
+							<div class="bs_form_entext">ID no</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req bs_fval_status15" type="text"
+								id="BS_F1803" name="mitnr" maxlength="50" disabled="disabled"></div>
+					</div>
+					<div hidden class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F1900">Ihr Entgelt:</label>
+							<div class="bs_form_entext">Fee payable</div>
+						</div>
+						<div class="bs_form_sp2">
+							<div class="bs_ag_text" id="bs_anz_entgelt1">------</div>
+						</div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F2000">E-Mail:*</label>
+							<div class="bs_form_entext">E-mail Address</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_email" type="text" id="BS_F2000"
+								name="email" maxlength="100">
+							<div class="bs_form_ftext">Bitte geben Sie Ihre E-Mail Adresse an, damit wir Sie ggf.
+								erreichen können.<div class="bs_form_entext">Please enter your email address so we can
+									reach you if necessary.</div>
+							</div>
+						</div>
+					</div>
+					<div class="bs_form_row">
+						<div class="bs_form_sp1"><label for="BS_F2100">Telefon:*</label>
+							<div class="bs_form_entext">Phone number</div>
+						</div>
+						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_tel" type="text" id="BS_F2100"
+								name="telefon" maxlength="60"></div>
+					</div>
+					<div class="bs_space"></div>
+					<div id="bs_lastschrift" class="show">
+						<div class="bs_form_infotext">Konto, von dem das Kursentgelt per Lastschrift abgebucht werden
+							soll:<div class="bs_form_entext">European bank account from which the course fee will be
+								debited</div>
+						</div>
+						<div class="bs_form_row" id="Fiban">
+							<div class="bs_form_sp1"><label for="BS_F_iban">IBAN:*</label>
+								<div class="bs_form_entext">Intern. Bank Account No</div>
+							</div>
+							<div class="bs_form_sp2"><input class="bs_form_field bs_fval_iban" type="text" name="iban"
+									id="BS_F_iban"></div>
+						</div>
+						<div class="bs_form_row hide" id="Fbic">
+							<div class="bs_form_sp1"><label for="BS_F_bic">BIC:*</label>
+								<div class="bs_form_entext">Bank Identifier Code</div>
+							</div>
+							<div class="bs_form_sp2"><input class="bs_form_field bs_fval_bic" type="text" name="bic"
+									id="BS_F_bic" disabled="disabled"></div>
+						</div>
+						<div class="bs_form_row">
+							<div class="bs_form_sp1"><label for="BS_F_kih">Kontoinhaber:</label>
+								<div class="bs_form_entext">Account holder</div>
+							</div>
+							<div class="bs_form_sp2"><input class="bs_form_field bs_fval_kih" type="text"
+									name="kontoinh" value="" id="BS_F_kih"></div>
+						</div>
+					</div>
+                    <div class="bs_form_row" style="text-align:center;">
+                        <p id="statustext"></p>
+                    </div>
+					<div class="bs_form_row">
+						<div class="bs_button bs_left">
+							<a href="javascript:void(0);" id="btn_cancel" title="Delete user">Delete User</button>
+						</div>
+						<div class="bs_button bs_right">
+							<a href="javascript:void(0);" id="bs_submit" title="Save user">Save User</button>
+						</div>
+					</div>
+				</div>
+			</div>
+	</form>
+	</div>
+</body>
+
+<script src="scripts/common.js"></script>
+<script src="scripts/users_common.js"></script>
+<script src="scripts/users.js"></script>
+
+</html>

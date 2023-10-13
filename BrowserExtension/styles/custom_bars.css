@@ -20,7 +20,9 @@
     float: right;
     position: fixed;
     display: block;
-    bottom: 20px;
-    right: 5%;
+    bottom: 15px;
+    right: 2%;
+    padding-left: 50%;
     font-weight: bold;
+    background-color: none;
 }
