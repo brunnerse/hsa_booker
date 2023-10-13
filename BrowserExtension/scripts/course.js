@@ -63,8 +63,6 @@ async function onAdd(button) {
     let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
 
     // confirm if course is already full
-    if (!add && !confirm("Course is already added for selected user. Remove instead?"))
-        return;
     if (add && button.className == "bs_btn_ausgebucht")
         if (!confirm("Course is already full. Add nevertheless?"))
             return;
@@ -151,7 +149,7 @@ function modifyBookButtons() {
     for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
         if (bookElem.tagName != "TD")
             continue;
-        // check book button, remove it and save its color
+        // check book button and save its color (by classname)
         let className = "";
         let childElem = bookElem.lastChild;
         if (["BUTTON", "INPUT"].includes(childElem.tagName)) {

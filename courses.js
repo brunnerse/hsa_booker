@@ -61,8 +61,6 @@ async function onAdd(button) {
     let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
 
     // confirm if course is already full
-    if (!add && !confirm("Course is already added for selected user. Remove instead?"))
-        return;
     if (add && button.className == "bs_btn_ausgebucht")
         if (!confirm("Course is already full. Add nevertheless?"))
             return;
@@ -154,6 +152,19 @@ iFrame.onload =
         for (let formElem of docFrame.forms) {
             formElem.onsubmit = () => false;
         }
+        // add new column to each table
+        let tHeadElems = iFrame.contentDocument.getElementsByTagName("THEAD");
+        for (let tHead of tHeadElems) {
+            let tRows = tHead.getElementsByTagName("TR");
+            for (let tRow of tRows)
+                tRow.innerHTML += '<th style="text-align:center">Aktion</th>'
+        }
+        let tBodyElems = iFrame.contentDocument.getElementsByTagName("TBODY");
+        for (let tBody of tBodyElems) {
+            let tRows = tBody.getElementsByTagName("TR");
+            for (let tRow of tRows)
+                tRow.innerHTML += '<td class="aktion" style="text-align:center;vertical-align:center;width:84px;"></td>'
+        }
         modifyBookButtons();
     } else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
         setStatus("Course overview");
@@ -164,6 +175,7 @@ iFrame.onload =
 };
 
 function modifyBookButtons() {
+
     let sport = getCurrentSport();
     let user = getSelectedUser(userSelectElem);
     let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
@@ -171,7 +183,7 @@ function modifyBookButtons() {
     for (let bookElem of iFrame.contentDocument.getElementsByClassName("bs_sbuch")) {
         if (bookElem.tagName != "TD")
             continue;
-        // check book button, remove it and save its color
+        // check book button and save its color (by classname)
         let className = "";
         let childElem = bookElem.lastChild;
         if (["BUTTON", "INPUT"].includes(childElem.tagName)) {
@@ -180,16 +192,17 @@ function modifyBookButtons() {
         // get corresponding course nr
         let trElem = bookElem.parentElement;
         let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
-        // remove content of bookElem
-        while (bookElem.lastChild)
-            bookElem.removeChild(bookElem.lastChild);
+        let aktionElem = bookElem.parentElement.lastChild;
+        // remove content of aktionElem
+        while (aktionElem.lastChild)
+            aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
-        let button = document.createElement("BUTTON");
+        let button = iFrame.contentDocument.createElement("BUTTON");
         button.innerHTML = nrlist.includes(nr) ? "REMOVE" : "ADD"; 
-        button.className = className;
-        button.type = "button";
+        //button.className = className;
         button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
-        bookElem.appendChild(button);
+        button.type = "button";
+        aktionElem.appendChild(button);
         button.onclick = () => onAdd(button);
     }
 }
