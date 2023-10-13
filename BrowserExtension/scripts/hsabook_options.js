@@ -328,10 +328,14 @@ async function bookCourse(title) {
                         bookingState[title] = "booked"; 
 
                         // let server know that course was booked successfully
-                        upload("bookedcourses.txt", title+"\n", "text", true)
+                        download("bookedcourses")
+                        .then((data) => {
+                                data.push(title);
+                                return upload("bookedcourses", data)
+                        })
                         .then((bookedCourses) => {
                             console.log("Successfully informed server about successful booking.");
-                            console.log("Booked courses: ");console.log(bookedCourses.split("\n"));
+                            console.log("Booked courses: ");console.log(bookedCourses);
                         })
                         .catch((err) => {
                             console.warn("WARNING: Failed to inform server about successful booking"); 
@@ -784,19 +788,16 @@ function loadChoice() {
         console.error("Failed to load choice data:")
         console.error(err)
     })
-    .then(() => upload("bookedcourses.txt", "",  "text", true)) // upload with append to create the file if it doesnt exist
-    .then((bookedList) => {
-        // set state of titles in bookedList to booked
-        let bookedArr = bookedList.split("\n");
+    .then(() => download("bookedcourses")) 
+    .catch(() => []) // if bookedcourses does not exist, give empty list instead
+    .then((bookedArr) => {
+        // set state of titles in bookedArr to booked
         for (let title of bookedArr) {
             if (title != "") {
                 bookingState[title] = "booked";
                 updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
             }
         } 
-    })
-    .catch((err) => {
-       console.log("Failed to load file bookedcourses.txt");
     });
 }
 
@@ -863,11 +864,10 @@ function onCloseButton(button) {
         })
         .then (() => {
             // update bookedcourses file
-            console.log("Trying to remove course " + title + " from bookedcourses file...");
-            return download("bookedcourses.txt", "text")
-            .then((bookedCourses) => {
+            console.log("Trying to remove course " + title + " from bookedcourses...");
+            return download("bookedcourses")
+            .then((bookedTitles) => {
                 // set state of titles in bookedList to booked
-                let bookedTitles = bookedCourses.split("\n");
                 console.log("Current bookedcourses:")
                 console.log(bookedTitles);
                 for (let i = 0; i < bookedTitles.length; i++) {
@@ -878,10 +878,10 @@ function onCloseButton(button) {
                     } else if (bookedTitles[i] == title ) {
                         // once the title was found, remove and upload, then return
                         bookedTitles.splice(i, 1);
-                        upload("bookedcourses.txt", bookedTitles.join("\n"), "text")
+                        upload("bookedcourses", bookedTitles)
                         .then( (bookedCourses) => { 
                             console.log("Updated bookedcourses: ");
-                            console.log(bookedCourses.split("\n"));
+                            console.log(bookedCourses);
                         })
                         .catch((err) => {
                             console.error("Failed to update bookedcourses file: ");
