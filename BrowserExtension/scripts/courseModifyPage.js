@@ -30,12 +30,15 @@ const topbar_html = '<div id="topbar" class="bar">\
 		</div>\
 	</div>\
 ';
-document.getElementsByTagName('body')[0].innerHTML += topbar_html;
-
-const bottombar = document.createElement("DIV");
-bottombar.id = "hint";
-bottombar.className = "bottombar"; 
-document.getElementsByTagName('body')[0].appendChild(bottombar);
+const bottombar_html = '<div class="bottombar">\
+		<div id="hint" class="hint"">\
+		</div>\
+	</div>\
+';
+document.getElementsByTagName('body')[0].innerHTML += 
+	topbar_html 
+	+ bottombar_html 
+	+ '<div class="bottombar" style="position:static"></div>';
 
 
 let tHeadElems = document.getElementsByTagName("THEAD");
