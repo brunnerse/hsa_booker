@@ -16,15 +16,20 @@ if (!document.getElementById(cssId))
 
 // insert top bar
 const topbar_html = '<div id="topbar" class="bar">\
-		<div class="darkred" style="margin-top: 0px; height: 100%;">\
-			<div class="bs_form_sp2" style="float:left;margin-left:7%;margin-top:-0.1%;font-size:120%;font-weight:bolder;width:40%;height:100%">\
+		<div class="darkred" align="center" style="margin-top:0px;">\
+			<div align="center" style="float:left;margin-left:5%;font-size:120%;font-weight:bolder;">\
+			Book for user:\
+			</div>\
+			<div align="center" style="float:left;margin-left:2%;font-size:120%;font-weight:bolder;">\
 				<select style="color:black;" class="bs_form_field bs_fval_req" name="users" size="0" id="userselect">\
-					<option value="" selected="selected" style="background-color: white;font-weight:bold;margin:20px">\
-						Select User to add a course for</option>\
-					<option value="" style="background-color: gray" title="adder">Add new user</option>\
+					<option value="" style="background-color: gray" title="adder">Add user</option>\
 				</select>\
 			</div>\
-			<div style="float:right;margin-right:7%;width:45%;margin-top:-0.1%">\
+			<div align="center" style="float:left;margin-left:7%;font-size:120%;font-weight:bolder;width:20%">\
+				<div id="armbuttontext" style="float:left;width:50%;text-align:right;padding-right:5%">ARM</div>\
+				<button class="roundbutton" style="color:green;float:left;margin-top:-3%;"></button>\
+			</div>\
+			<div align="center" style="float:right;margin-right:5%;width:40%;">\
 				<div class="status" id="statustext" style="background-color:white;">STATUS</div>\
 			</div>\
 		</div>\
