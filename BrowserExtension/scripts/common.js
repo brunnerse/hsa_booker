@@ -52,9 +52,6 @@ function getJSONFileString(obj) {
 
 function download(filename) {
     return new Promise(async function (resolve, reject) {
-        //TODO remove
-        await sleep(500);
-
         chrome.storage.sync.get(filename).then((result) => {
             resolve(result[filename]);
         })
@@ -67,8 +64,6 @@ function download(filename) {
 
 function upload(filename, obj) {
     return new Promise(async function (resolve, reject) {
-        //TODO remove
-        await sleep(500);
         let o = {};
         o[filename] = obj;
         console.log(o);
@@ -79,4 +74,38 @@ function upload(filename, obj) {
             reject(err);
         });
     });
+}
+
+function addChangeListener(fun) {
+    chrome.storage.onChanged.setListener(fun);
+}
+
+
+// Getters and setters for options
+
+var option_var;
+
+async function getOption(val) {
+    if (!option_var) {
+        option_var = await download("options");
+    }
+    if (option_var && option_var[val])
+        return option_var[val];
+    else {
+        // return default values
+        if (val == "maxusers")
+            return 1;
+        else if (val == "mode")
+            return "formonly";
+        else
+            return null;
+    }
+}
+
+function setOption(option, value) {
+    if (!option_var) {
+        option_var = download("options");
+    }
+    option_var[option] = value;
+    return upload("options", option_var);
 }

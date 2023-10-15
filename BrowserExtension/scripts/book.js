@@ -7,7 +7,7 @@ const STATES = ["fill", "check", "confirmed", "error"];
 let STATE;
 
 
-function circumventCountdown() {
+async function circumventCountdown() {
     //TODO this doesnt work here as i cant access variable of another script, need to override onsubmit like this:
 //    form.onsubmit = ownCheck();
     /*
@@ -22,11 +22,9 @@ function circumventCountdown() {
     // Alternatively wait 7s until submitButton.className changed to sub to avoid attracting attention
     // while(submitElem.className != "sub")await sleep(100);
     */
+   await sleep(7200);
 }
 
-function fillForm() {
-
-}
 async function onSelectChange() {
     let selectedUser = getSelectedUser(userSelectElem); 
     if (selectedUser == "") {
@@ -152,31 +150,36 @@ if (STATE == "fill") {
     .then((d) => {userdata = d;})
     .then(() => updateUserSelect(userSelectElem, userdata))
     // TODO way to check which user is supposed to be booked for
+    // TODO or default user in options
     .then(() => setSelectedUser(userSelectElem, userSelectElem.options[userSelectElem.options.length-1].value))
     .then(() => onSelectChange())
     .then(() => circumventCountdown())
-    ;
-
-    // find submit button and submit
-    let submitButton = document.getElementById("bs_submit");
-    console.assert(submitButton);
-    //sleep(5000)
-    //.then(form.requestSubmit(submitButton));
+    .then(() => {
+        if (getOption("mode") == "formonly")  {
+        } else {
+        // find submit button and submit
+            let submitButton = document.getElementById("bs_submit");
+            console.assert(submitButton);
+            form.requestSubmit(submitButton);
+        }
+    }) 
 
 } else if (STATE == "check") {
-    // find submit button
-    let inputElems = form.getElementsByTagName("INPUT");
-    let submitButton; 
-    for (let inputElem of inputElems) {
-        if (inputElem.title == "fee-based order") {
-            submitButton = inputElem;
-            break;
+    if (getOption("mode") == "formonly")  {
+    } else {
+        // find submit button
+        let inputElems = form.getElementsByTagName("INPUT");
+        let submitButton; 
+        for (let inputElem of inputElems) {
+            if (inputElem.title == "fee-based order") {
+                submitButton = inputElem;
+                break;
+            }
         }
+        // submit
+        console.assert(submitButton);
+        form.requestSubmit(submitElem); 
     }
-
-    // submit
-    console.assert(submitButton);
-    form.requestSubmit(submitElem); 
 
 } else if (STATE == "confirmed") {
     // signalize success
