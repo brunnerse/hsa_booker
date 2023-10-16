@@ -7,7 +7,7 @@ var HSA_LINK = HSA_LINK_new;
 const refreshInterval_short = 2 * 1000;
 const refreshInterval_mid = 5 * 1000;
 const refreshInterval_long = 30 * 1000;
-const timeThreshold_short = 30 * 1000; 
+const timeThreshold_short = 15 * 1000; 
 const timeThreshold_mid = 3 * 60 * 1000; 
 
 const statusUpdateInterval = 500;
@@ -43,17 +43,20 @@ function getColorForBookingState(bookingState) {
 }
 
 function getRemainingTimeMS(timeStr) {
-    timeStr = timeStr.replace("ab ", "");
-    let arr = timeStr.split(",");
+    if (!timeStr || !timeStr.match(/\d+\.\d+[\.,\s]*\d+:\d+/))
+        return null;
+    let arr = timeStr.match(/\d+[:\.]\d+/g);
     let day = arr[0].split(".")[0];
     let month = arr[0].split(".")[1];
     let year = new Date(Date.now()).getUTCFullYear();
-    let bookDate = new Date(`${year}-${month}-${day}T${arr[1].trim()}`);
+    let bookDate = new Date(`${year}-${month}-${day}T${arr[1]}`);
     return bookDate - new Date(Date.now());
 }
 
 function getRemainingTimeString(timeStr) {
     let remainMS = getRemainingTimeMS(timeStr);
+    if (!remainMS)
+        return null;
     let s = remainMS >= 0 ? "" : "- "; 
     remainMS = remainMS >= 0 ? remainMS : -remainMS; 
 
@@ -192,12 +195,20 @@ async function bookCourse(title) {
     }
     console.assert(iFrameElem);
     // find form element for course
-    let form = statusElements[title].parentElement;
-    while (form.tagName != "FORM") 
-        form = form.parentElement;
-    // find input element for button
-    let submitElem = form.getElementsByTagName("INPUT")[1];
-    console.assert(submitElem.type == "submit");
+    let form;
+    for (let bsContent of document.getElementById("choice").children) {
+        if (bsContent.getAttribute("title") == title) {
+            form = bsContent.children[0];
+            break;
+        }
+    }
+    console.assert(form.tagName == "FORM");
+    // find submit element for button
+    let submitElem;
+    for (let inputElem of form.getElementsByTagName("INPUT"))
+        if (inputElem.type == "submit")
+            submitElem = inputElem;
+    console.assert(submitElem);
 
     // function called on the first submit form (the Enter User Data form)
     iFrameElem.onload = 
@@ -409,11 +420,12 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
                 } else if (!["missing", "wrongnumber"].includes(bookingState[t])) {
                     newTitles.push(t);
                     // adapt interval depending on how long until the course becomes ready 
-                    if (bookingTime[t] && getRemainingTimeMS(bookingTime[t]) > timeThreshold_short) {
-                        if (getRemainingTimeMS(bookingTime[t]) > timeThreshold_mid) 
-                            refreshInterval = refreshInterval_long;
+                    let remainingTime = getRemainingTimeMS(bookingTime[t]);
+                    if (remainingTime && remainingTime > timeThreshold_short) {
+                        if (remainingTime > timeThreshold_mid) 
+                            refreshInterval = Math.min(refreshInterval_long, remainingTime - timeThreshold_mid);
                         else
-                            refreshInterval = refreshInterval_mid;
+                            refreshInterval = Math.min(refreshInterval_mid, remainingTime - timeThreshold_short);
                     } else {
                         refreshInterval = refreshInterval_short;
                     }
@@ -430,7 +442,7 @@ async function waitUntilReadyAndBook(sport, checkAbortFun) {
             await sleep(Math.min(statusUpdateInterval, lastRefreshTime + refreshInterval - Date.now())); 
         }
     }
-    console.log("waitUntilReady for " + sport + " done");
+    console.log("waitUntilReady(" + sport + ") done");
 }
 
 async function arm() {
@@ -439,7 +451,7 @@ async function arm() {
         return;
     }
 
-    toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
+    toggleButtonsInert(["arm", "unarm", "loadchoice", "refreshchoice", "chkuserdata", "chkcourses"]);
 
     // stop status update interval
     if (allStatusInterval)
@@ -483,7 +495,7 @@ async function arm() {
 
 async function unarm() {
     armID += 1;
-    toggleButtonsInert(["arm", "unarm", "refreshchoice", "chkuserdata", "chkcourses"]);
+    toggleButtonsInert(["arm", "unarm", "loadchoice", "refreshchoice", "chkuserdata", "chkcourses"]);
     startAllStatusInterval();
     updateStatus("Unarmed.");
 }
@@ -726,8 +738,9 @@ function startAllStatusInterval() {
                 for (let user of Object.keys(choice[sport])) {
                     for (let nr of choice[sport][user]) { 
                         let title =  `${sport}_${nr}_${user}`;
-                        if (bookingTime[title]) 
-                            updateEntryStateTitle(title, getRemainingTimeString(bookingTime[title]));
+                        let remainingTime = getRemainingTimeString(bookingTime[title]);
+                        if (remainingTime) 
+                            updateEntryStateTitle(title, remainingTime);
                     }
                 }
             }
