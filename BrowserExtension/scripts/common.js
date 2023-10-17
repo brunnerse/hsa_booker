@@ -93,19 +93,34 @@ async function getOption(val) {
         return option_var[val];
     else {
         // return default values
-        if (val == "maxusers")
-            return 1;
+        if (val == "multipleusers")
+            return 0;
         else if (val == "mode")
             return "formonly";
+        else if (val == "defaultuseridx")
+            return 1;
         else
             return null;
     }
 }
 
-function setOption(option, value) {
+async function setOption(option, value) {
     if (!option_var) {
-        option_var = download("options");
+        option_var = await download("options");
+        if (!option_var) // if not stored yet, create empty object
+            option_var = {};
     }
     option_var[option] = value;
+    return upload("options", option_var);
+}
+
+async function setAllOptions(options) {
+    if (!option_var) {
+        option_var = await download("options");
+        if (!option_var) // if not stored yet, create empty object
+            option_var = {};
+    }
+    for(let o of Object.keys(options))
+        option_var[o] = options[o];
     return upload("options", option_var);
 }
