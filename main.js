@@ -182,6 +182,17 @@ async function bookCourse(title) {
     bookingState[title] = "booking";
     updateStatus("Booking course " + title);
     updateEntryStateTitle(title, "Started booking...", "blue");
+
+    // get userdata
+    const user = title.split("_")[2];
+    const data = userdata[user];
+    if (!data){
+        updateEntryStateTitleErr(title, "userdata for " + user + " not found");
+        bookingState[title] = "error";
+        console.warn("Error during booking of " + title + ": " + 
+            "ERROR: userdata for " + user + " not found!");
+        return;
+    }
     
     // find iframe for course
     let frameRootElem  = document.getElementById("formframes");
@@ -214,16 +225,6 @@ async function bookCourse(title) {
     iFrameElem.onload = 
         async function (event) { 
             let frameDoc = iFrameElem.contentDocument;
-
-            let user = title.split("_")[2];
-            let data = userdata[user];
-            if (!data){
-                updateEntryStateTitleErr(title, "userdata for " + user + " not found");
-                bookingState[title] = "error";
-                console.warn("Error during booking of " + title + ": " + 
-                    "ERROR: userdata for " + user + " not found!");
-                return;
-            }
 
             // Fill form and submit
             let form = frameDoc.getElementsByTagName("FORM")[0];
@@ -306,12 +307,14 @@ async function bookCourse(title) {
                 // make form target external
                 form.action = "/extern/" + form.action + "?referer=https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi";
 
+                // find submit button and fill out confirm email address
                 let inputElems = form.getElementsByTagName("INPUT");
                 let submitButton; 
                 for (let inputElem of inputElems) {
                     if (inputElem.title == "fee-based order") {
                         submitButton = inputElem;
-                        break;
+                    } else if (inputElem.name.startsWith("email_check")) {
+                        inputElem.value = data["email"];  
                     }
                 }
                 if (!submitButton) {
