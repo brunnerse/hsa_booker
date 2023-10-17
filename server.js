@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const WRITE_LOGS = true;
 const USE_COOKIES_FOR_FILES = true;
 const COOKIE_EXPIRE_MS = 1000*60*60*24*500; // let cookies expire in 500 days 
 const LOGFILE = "logs.txt"
@@ -43,7 +44,8 @@ function isValidURL(str) {
 }
 
 function logFile(filename, log) {
-	fs.appendFile(filename, log + "\n", (err) => {if (err) console.log("[LOG] Error: " + err);});
+	if (WRITE_LOGS) 
+		fs.appendFile(filename, log + "\n", (err) => {if (err) console.log("[LOG] Error: " + err);});
 }
 
 
@@ -144,8 +146,6 @@ async function respondFile(req, res) {
 			} while (fs.existsSync(folder)); 
 			let expireDate = new Date(Date.now() + COOKIE_EXPIRE_MS); 
 			res.setHeader("Set-Cookie", ["folder="+ randName + ";Expires="+expireDate.toUTCString()]); 
-			if (!fs.existsSync("Cookies"))
-				fs.mkdirSync("Cookies");
 			fs.mkdirSync(folder);
 			// write expiry date to file in folder
 			fs.writeFile(folder+".expires", expireDate.toUTCString(), (err) => {if (err)console.error(err);});
@@ -309,27 +309,34 @@ function requestListen(req, res) {
 
 
 // on startup: check cookie folders and remove the expired ones 
-console.log("Checking cookie files for expiry...");
-let cookieFolders = fs.readdirSync("./Cookies/");
-cookieFolders.forEach((f) => {
-		let expireDate;
-		try { 
-			let expireStr = fs.readFileSync("./Cookies/"+f+"/.expires");
-			expireDate = new Date(Date.parse(expireStr));
-			console.log("Cookie " + f + " expires at " + expireDate.toUTCString());
-		} catch {
-			expireDate = null;	
-			console.log("Cookie " + f + ": Expiry date not stored, deleting...");
-		}
-		if (!expireDate || expireDate < Date.now()) {
-			try {
-				fs.rmSync("./Cookies/"+f, {recursive: true});
-				console.log("Cookie " + f + ": Removed files due to expiry");
-			} catch (err) {
-				console.err("Cookie " + f + ": Error removing folder - " + err);
-			};
-		}
-});
+if (USE_COOKIES_FOR_FILES) {
+	console.log("Checking cookie files for expiry...");
+	if (fs.existsSync("Cookies")) {
+		let cookieFolders = fs.readdirSync("./Cookies/");
+		cookieFolders.forEach((f) => {
+				let expireDate;
+				try { 
+					let expireStr = fs.readFileSync("./Cookies/"+f+"/.expires");
+					expireDate = new Date(Date.parse(expireStr));
+					console.log("Cookie " + f + " expires at " + expireDate.toUTCString());
+				} catch {
+					expireDate = null;	
+					console.log("Cookie " + f + ": Expiry date not stored, deleting...");
+				}
+				if (!expireDate || expireDate < Date.now()) {
+					try {
+						fs.rmSync("./Cookies/"+f, {recursive: true});
+						console.log("Cookie " + f + ": Removed files due to expiry");
+					} catch (err) {
+						console.err("Cookie " + f + ": Error removing folder - " + err);
+					};
+				}
+		});
+	} else {
+		console.log("No cookies stored yet")
+		fs.mkdirSync("Cookies");
+	}
+}
 
 // create http and equivalent https server
 http.createServer(requestListen).listen(80);

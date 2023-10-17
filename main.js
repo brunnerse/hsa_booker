@@ -1,4 +1,4 @@
-const INACTIVE = true;
+const INACTIVE = false;
 const HSA_LINK_new = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
 const HSA_LINK_old = "https://web.archive.org/web/20220120140607/https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"
 var HSA_LINK = HSA_LINK_new;
@@ -315,7 +315,7 @@ async function bookCourse(title) {
                     }
                 }
                 if (!submitButton) {
-                    updateEntryStateTitleErr(title, "Submit button missing");
+                    updateEntryStateTitleErr(title, "Submit button not found");
                     bookingState[title] = "error";
                     console.warn("Error during booking of " + title + ": " + 
                         "Submit button on second screen not found!");
@@ -359,7 +359,8 @@ async function bookCourse(title) {
                     bookingState[title] = "error";
                     updateEntryStateTitle(title, "Booking test successful", "#00ff00");
                 } else {
-                    form.requestSubmit(submitButton);
+                    submitButton.setAttribute("inert", "");
+                    //form.requestSubmit(submitButton);
                 }
             };
             //TODO is sleep here necessary?
