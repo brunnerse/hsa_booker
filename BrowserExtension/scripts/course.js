@@ -2,6 +2,7 @@ let userdata;
 let choice;
 const statusElem = document.getElementById("statustext");
 const userSelectElem = document.getElementById("userselect"); 
+const armButton = document.getElementById("armbutton"); 
 const hintElem = document.getElementById("hint");
 
 
@@ -25,10 +26,11 @@ async function onSelectChange() {
     if (selectedUser == "") {
         if (userSelectElem.options[userSelectElem.selectedIndex].title == "adder") {
             // open user edit page in new tab
-            // TODO Doesnt work
-            window.open(chrome.runtime.getURL("Users.html"));
+            // Opening extension directly doesnt work; make alert instead
+            //window.open(chrome.runtime.getURL("Users.html"));
+            alert("To add users, click on the HSA Booker icon on the top right and click \"Edit User Data\".")
             // reset selection to the first blank one
-            setSelectedUser(userSelectElem, "");
+            setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             return;
         }
     }
@@ -49,7 +51,7 @@ function getCurrentSport() {
 }
 
 async function onAdd(button) {
-    let add = button.innerHTML == "ADD";
+    let add = button.innerHTML.startsWith("MARK FOR BOOKING");
     let user = getSelectedUser(userSelectElem);
     if (!user) {
         alert("Select a user to add the course for in the top left corner first.")
@@ -112,6 +114,10 @@ async function onAdd(button) {
     });
 }
 
+function onArm() {
+    console.log("ARM clicked.")
+}
+
 window.onload =  
 () => {
     let url;
@@ -164,9 +170,10 @@ function modifyBookButtons() {
             aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
-        button.innerHTML = nrlist.includes(nr) ? "REMOVE" : "ADD"; 
+        button.innerHTML = nrlist.includes(nr) ? "MARKED" : "MARK FOR BOOKING"; 
         //button.className = className;
-        button.style = "width:95%; height:25px;border-radius:5px;text-align:center;"
+        button.style = "width:95%; border-radius:5px;text-align:center;" 
+            + (nrlist.includes(nr) ? "background-color: green;" : "");
         button.type = "button";
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button);
@@ -176,6 +183,8 @@ function modifyBookButtons() {
 console.log("USEREL:")
 console.log(userSelectElem);
 userSelectElem.addEventListener("change", onSelectChange);
+armButton.addEventListener("click", onArm);
+
 
 // fetch userdata and initialize user bar
 download(CHOICE_FILE)

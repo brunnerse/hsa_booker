@@ -27,7 +27,7 @@ const topbar_html = '<div id="topbar" class="bar">\
 			</div>\
 			<div align="center" style="float:left;margin-left:7%;font-size:120%;font-weight:bolder;width:20%">\
 				<div id="armbuttontext" style="float:left;width:50%;text-align:right;padding-right:5%">ARM</div>\
-				<button class="roundbutton" style="color:green;float:left;margin-top:-3%;"></button>\
+				<button class="roundbutton" style="color:green;float:left;margin-top:-3%;" id="armbutton" ></button>\
 			</div>\
 			<div align="center" style="float:right;margin-right:5%;width:40%;">\
 				<div class="status" id="statustext" style="background-color:white;">STATUS</div>\

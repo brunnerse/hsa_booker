@@ -1,4 +1,4 @@
-const form = document.forms[0];
+let form = document.forms[0];
 
 let userdata = {};
 
@@ -8,21 +8,25 @@ let STATE;
 
 
 async function circumventCountdown() {
-    //TODO this doesnt work here as i cant access variable of another script, need to override onsubmit like this:
-//    form.onsubmit = ownCheck();
-    /*
-    window.send = 1;
     let submitElem = document.getElementById("bs_submit");
     console.assert(submitElem);
+    // Only way to do this is to circumvent the onsubmit function is to wait
+//   await sleep(7200);
+    while(submitElem.className != "sub")
+        await sleep(100);
+    return;
+
+    // another way, not yet working:  Replace whole form with itself while removing the listener
+    /*
+    form.removeAttribute("data-onsubmit");
+    // Replace whole form
+    form.outerHTML = form.outerHTML;
+
+    form = document.forms[0];
     submitElem.className = "sub";
-    console.log("Vals: " + window.send + " " + window.btime + " " + submitElem.className)
-    // other way:
-    //window.btime = -1; 
-    //await sleep(1000);
-    // Alternatively wait 7s until submitButton.className changed to sub to avoid attracting attention
-    // while(submitElem.className != "sub")await sleep(100);
-    */
-   await sleep(7200);
+    onSelectChange();
+//    form.removeEventListener("submit", chkForm);
+*/
 }
 
 async function onSelectChange() {
@@ -107,85 +111,101 @@ async function clearForm() {
 }
 
 
-
-// Check which state the site is in
-let nameInput;
-for (let input of form.getElementsByTagName("INPUT")) {
-    if (input["name"] == "vorname") {
-        nameInput = input;
-        break;
+async function processDocument() {
+    // Check which state the site is in
+    let nameInput;
+    for (let input of form.getElementsByTagName("INPUT")) {
+        if (input["name"] == "vorname") {
+            nameInput = input;
+            break;
+        }
     }
-}
-STATE = "error";
-if (!nameInput) {
-    if (document.title == "Bestätigung")
-        STATE = "confirmed"
-} else if (nameInput.type == "hidden") {
-    STATE = "check";
-} else if (nameInput.type == "text") {
-    STATE = "fill";
-}
+    STATE = "error";
+    if (!nameInput) {
+        if (document.title == "Bestätigung")
+            STATE = "confirmed"
+    } else if (nameInput.type == "hidden") {
+        STATE = "check";
+    } else if (nameInput.type == "text") {
+        STATE = "fill";
+    }
 
-if (STATE == "fill") {
-    // Insert user select elem
-    document.getElementById("bs_form_head").innerHTML += '\
-                <div id="bs_ag">\
-                    <div class="bs_form_row">\
-                        <div class="bs_form_sp1">User-ID:<div class="bs_form_entext">Comment</div>\
-                        </div>\
-                        <div class="bs_form_sp2">\
-                            <select class="bs_form_field bs_fval_req" name="users" size="1" id="userselect">\
-                                <option value="" selected="selected">Neuer User</option>\
-                            </select>\
+    if (STATE == "fill") {
+        // Insert user select elem
+        document.getElementById("bs_form_head").innerHTML += '\
+                    <div id="bs_ag">\
+                        <div class="bs_form_row">\
+                            <div class="bs_form_sp1">User-ID:<div class="bs_form_entext">HSA Booker</div>\
+                            </div>\
+                            <div class="bs_form_sp2">\
+                                <select class="bs_form_field bs_fval_req" name="users" size="1" id="userselect">\
+                                    <option value="" selected="selected">Neuer User</option>\
+                                </select>\
+                            </div>\
                         </div>\
                     </div>\
-                </div>\
-                <div class="bs_space"></div>\
-    ';
+                    <div class="bs_space"></div>\
+        ';
 
-    userSelectElem = document.getElementById("userselect");
-    userSelectElem.addEventListener("change", onSelectChange); 
+        userSelectElem = document.getElementById("userselect");
+        userSelectElem.addEventListener("change", onSelectChange); 
 
-    download(USERS_FILE)
-    .then((d) => {userdata = d;})
-    .then(() => updateUserSelect(userSelectElem, userdata))
-    // TODO way to check which user is supposed to be booked for
-    // TODO or default user in options
-    .then(() => setSelectedUser(userSelectElem, userSelectElem.options[userSelectElem.options.length-1].value))
-    .then(() => onSelectChange())
-    .then(() => circumventCountdown())
-    .then(() => {
-        if (getOption("mode") == "formonly")  {
-        } else {
-        // find submit button and submit
-            let submitButton = document.getElementById("bs_submit");
-            console.assert(submitButton);
-            form.requestSubmit(submitButton);
-        }
-    }) 
+        download(USERS_FILE)
+        .then((d) => {userdata = d;})
+        .then(() => updateUserSelect(userSelectElem, userdata))
+        // TODO way to check which user is supposed to be booked for
+        // TODO or default user in options
+        .then(async () => setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx")))
+        .then(() => onSelectChange())
+        .then(() => circumventCountdown())
+        .then(async () => {
+            if (await getOption("submitimmediately"))  {
+                // find submit button and submit
+                let submitButton = document.getElementById("bs_submit");
+                console.assert(submitButton);
+                form.requestSubmit(submitButton);
+            } else {
+                // Do nothing
+            }
+        }); 
 
-} else if (STATE == "check") {
-    if (getOption("mode") == "formonly")  {
-    } else {
-        // find submit button
+    } else if (STATE == "check") {
         let inputElems = form.getElementsByTagName("INPUT");
+        let emailVal = "";
+        for (let inputElem of inputElems) {
+            if (inputElem.name == "email") {
+                emailVal = inputElem.value;
+                break;
+            }
+        }
+        // find submit button and enter email check
         let submitButton; 
         for (let inputElem of inputElems) {
             if (inputElem.title == "fee-based order") {
                 submitButton = inputElem;
                 break;
+            } else if (inputElem.name.startsWith("email_check")) {
+                inputElem.value = data["email"];  
             }
         }
-        // submit
-        console.assert(submitButton);
-        form.requestSubmit(submitElem); 
+
+        if (await getOption("submitimmediately"))  {
+            // submit
+            console.assert(submitButton);
+            //form.requestSubmit(submitElem); 
+        } else {
+            // Do nothing
+        }
+
+    } else if (STATE == "confirmed") {
+        // signalize success
+        console.log("STATE IS SUCCESS");
+
+    } else {
+        // signalize error
+        console.log("STATE IS ERROR");
     }
-
-} else if (STATE == "confirmed") {
-    // signalize success
-    console.log("STATE IS SUCCESS")
-
-} else {
-    // signalize error
-    console.log("STATE IS ERROR")
 }
+
+
+processDocument();
