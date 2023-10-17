@@ -1,0 +1,143 @@
+/* ================================================================ 
+This copyright notice must be untouched at all times.
+
+The original version of this stylesheet and the associated (x)html
+is available at http://www.cssplay.co.uk/menus/flyout2.html
+Copyright (c) 2005-2007 Stu Nicholls. All rights reserved.
+This stylesheet and the assocaited (x)html may be modified in any 
+way to fit your requirements.
+=================================================================== */
+div#bs_content div.bs_flmenu {
+	z-index:1000;
+	margin:15px 0 0 0;
+	line-height:1.2em;
+	font-size:11px;
+}
+
+/* remove all the bullets, borders and padding from the default list styling */
+div#bs_content div.bs_flmenu ul {
+	padding:0;
+	margin:0;
+	list-style-type:none;
+	line-height: auto;
+	min-width:350px;
+	width:45%;
+	border-left:2px solid #949e7c;
+	z-index: 1001;
+	overflow: inherit;
+	content: inherit;
+}
+div#bs_content div.bs_flmenu>ul ul {
+	width:100%;
+}
+
+/* position relative so that you can position the sub levels */
+
+div#bs_content div.bs_flmenu li {
+	position:relative;
+	background:#F5F5F5;
+	height:21px;
+	margin:0;
+	padding:0;
+	width:auto;
+	background-image:none;
+	list-style-type:none;
+	LIST-STYLE-IMAGE: none;
+	overflow: inherit;
+}
+
+/* style the links */
+div#bs_content div.bs_flmenu a, div#bs_content div.bs_flmenu a:visited {
+	display:block; 
+	text-decoration:none;
+	height:20px;
+	line-height:20px;
+	width:100%;
+	color:#000;
+	text-indent:3px;
+	border:1px solid #fff;
+	border-width:0 1px 1px 0;
+}
+div#bs_content div.bs_flmenu > ul > li > a:hover {
+	text-decoration:none;
+}
+div#bs_content div.bs_flmenu a::before, div#bs_content div.bs_flmenu a::after, div#bs_content div.bs_flmenu ul::before, div#bs_content div.bs_flmenu ul::after, div#bs_content div.bs_flmenu li::before, div#bs_content div.bs_flmenu li::after{
+	content: "";
+	width:0;
+	height:0;
+	display:none;
+	list-style-type:none;	
+}
+
+/* style the link hover */
+* html div#bs_content div.bs_flmenu a:hover {color:#fff; background:#949e7c;}
+
+div#bs_content div.bs_flmenu :hover > a {
+	color:#fff; 
+	background:#949e7c;
+	text-decoration:none;	
+}
+
+div#bs_content div.bs_flmenu a span, div#bs_content div.bs_flmenu a:visited span {
+	cursor:pointer;
+}
+
+div#bs_content div.bs_flmenu a span.bs_spname {
+	width: 305px;
+	overflow: hidden;
+	display: inline-block;
+    text-overflow: ellipsis;
+	white-space: nowrap; 
+}
+body.bs_orte_ue div#bs_content div.bs_flmenu a span.bs_spname {
+	width: 345px;
+}
+
+
+/* hide the sub levels and give them a positon absolute so that they take up no room */
+div#bs_content div.bs_flmenu ul ul {
+	visibility:hidden;
+	position:absolute;
+	top:0;
+	margin:0;	
+	left:100%; 
+}
+/* make the second level visible when hover on first level list OR link */
+div#bs_content div.bs_flmenu ul li:hover ul,
+div#bs_content div.bs_flmenu ul a:hover ul {
+	visibility:visible;
+}
+
+/* keep the third level hidden when you hover on first level list OR link */
+div#bs_content div.bs_flmenu ul :hover ul ul{
+	visibility:hidden;
+}
+
+
+div#bs_content div.bs_flmenu ul .bs_dist {
+	padding:0 4px;
+	position:absolute;
+    right:0;
+	color: #999999;
+}
+/*
+     FILE ARCHIVED ON 13:50:56 Oct 17, 2022 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 02:41:51 Aug 27, 2023.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+*/
+/*
+playback timings (ms):
+  captures_list: 331.477
+  exclusion.robots: 0.066
+  exclusion.robots.policy: 0.058
+  cdx.remote: 0.053
+  esindex: 0.008
+  LoadShardBlock: 228.569 (3)
+  PetaboxLoader3.resolve: 246.081 (4)
+  PetaboxLoader3.datanode: 128.861 (5)
+  load_resource: 175.517
+  loaddict: 47.09
+*/

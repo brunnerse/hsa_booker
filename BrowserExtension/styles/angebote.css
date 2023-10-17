@@ -1,0 +1,596 @@
+v\:* { behavior:url(/web/20221017135027im_/https://anmeldung.sport.uni-augsburg.de/buchsys/lib/global/angebote.css#default#VML); }
+
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/***** Menu Sportarten A-Z *****/
+div#bs_content dl.bs_menu  {
+	margin: 0;
+}
+div#bs_content dl.bs_menu  dt {
+	box-sizing: border-box;
+	float: none;
+	width: 600px;
+	border-top:1px dotted #cccccc;
+	font-weight: bold;
+	font-size: 110%;
+	margin: 18px 0 2px 0;
+	padding: 10px 10px 8px 0;
+}
+div#bs_content dl.bs_menu  dt a, div#bs_content  dl.bs_menu  dt a:visited {
+	color: #000000;
+	font-weight:bold;
+	text-decoration:none;
+	border:0;
+}
+div#bs_content dl.bs_menu  dd {
+	margin: 0;
+	padding:0;
+	overflow: inherit;
+	width:  auto;
+}
+div#bs_content dl.bs_menu  dd a, div#bs_content dl.bs_menu  dd a:visited {
+	display: block;
+	text-decoration: none;
+	margin: 0;
+	/*width:auto;*/
+	padding: 1px 0px 1px 20px;
+	background: none;
+	font-weight:normal;
+	color: #000000;
+	border:0;
+}
+div#bs_content dl.bs_menu  dd a:hover {
+	text-decoration: none;
+	color: #000000;
+	background-color:#bbbbbb;
+}
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+div#bs_content{
+/*	width:99%;*/
+}
+
+.bs_rechts {
+	float: right;
+}
+.bs_links {
+	float: left;
+}
+
+/***** Alphabet A-Z *****/
+.bs_alpha {
+	font-size:1em;
+	font-weight:bold;
+	white-space: nowrap;
+	padding: 15px 0 0px 0;
+}
+
+/***** Überschrift Semester, Restplatzliste *****/
+.bs_head_small {
+	font-size: 110%;
+	font-weight: bold;
+	margin: 15px 0 5px 0;
+}
+
+/***** Überschrift Sportart *****/
+.bs_head {
+	padding: 2px 10px 5px 0;
+	font-weight: bold;
+	font-size:14pt;
+}
+/***** Überschrift Tag *****/
+.bs_head_day {
+	padding: 2px 10px 5px 0;
+	font-weight: bold;
+	font-size:16pt;
+}
+
+div.bs_verantw {
+	display: none;
+}
+
+/***** Kursbeschreibung Sportart *****/
+.bs_kursbeschreibung {
+	text-align:justify;
+}
+
+/***** zusätzlicher Platz am Ende der Seite *****/
+.bs_endspace {
+	height:100px;
+}
+
+/***** Kursbeschreibung Bilder *****/
+img.bs_rechts {
+	margin: 0 0 .5em 1em;
+	border: 1px solid #104871;
+	float: right;
+}
+img.bs_links {
+	margin: 0 1em .5em 0;
+	border: 1px solid #104871;
+	float: left;
+}
+
+img[align=right] {
+	margin: 0 0 5px 10px;
+	border: 1px solid #000;
+}
+img[align=left] {
+	margin: 0 10px 5px 0;
+	border: 1px solid #000;
+}
+
+.bs_hidden {
+	display:none;
+}
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/***** Tabelle Kursangebot *****/
+
+div.bs_kursangebot {
+	clear:both;
+}
+
+#bs_content table.bs_kurse {
+	border:0;
+	margin:5px 0 20px 0;
+	width:100%;
+	border-collapse:collapse;
+	border-right:1px solid #66645C;
+}
+#bs_content table.bs_kurse tr.bs_odd {
+	background-color:#FcFcFc;
+	color:#66645C;
+}
+#bs_content table.bs_kurse tr.bs_even {
+	background-color:#EDEEE8;
+	color:#66645C;
+}
+#bs_content table.bs_kurse tr.bs_highlight {
+	background-color:#A1B7C7;
+}
+#bs_content table.bs_kurse tr:hover {
+	background-color:#FFFF99; 
+}
+
+/***** Tabelle Kursangebot -> Tabellenüberschrift *****/
+#bs_content table.bs_kurse thead {
+/*	display:none; 	*/
+}
+#bs_content table.bs_kurse th {
+	font-size:9px;
+	text-align:left;
+	padding: 0 5px 0 5px;
+	background-color:#66645C;
+	color:#ffffff;
+	border:1px solid #66645C;
+	line-height:1.3em;
+}
+#bs_content table.bs_kurse th.bs_sknr {
+/*	display:none; */
+}
+#bs_content table.bs_kurse th.bs_szr {
+/*	display:none; */
+}
+#bs_content table.bs_kurse th.bs_spreis {
+	text-align:center;
+}
+#bs_content table.bs_kurse th.bs_sbuch {
+	text-align:center;
+}
+
+/***** Tabelle Kursangebot -> Tabellenspalten *****/
+div#bs_content table.bs_kurse td {
+/*	font-size:12px; */
+	text-align:left;
+	line-height:1.1em;
+	border:1px solid #66645C;
+	padding:1px 1px;
+}
+div#bs_content table.bs_kurse td.bs_sknr {  /*	Kursnr */
+/*	display:none; */
+	width:45px;
+}
+div#bs_content table.bs_kurse td.bs_sdet {  /*	Details */
+	-ms-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+/*	width:150px; */
+}
+div#bs_content table.bs_kurse td.bs_stag {  /*	Tag */
+	width:30px;
+}
+div#bs_content table.bs_kurse td.bs_szeit {  /*	Uhrzeit */
+	width:80px;
+}
+div#bs_content table.bs_kurse td.bs_sort {  /*	Sportstaette */
+	-ms-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+	width:100px;
+}
+
+div#bs_content table.bs_kurse td.bs_szr {  /*	Zeitraum */
+/*	display:none; 	*/
+	width:77px;
+}
+div#bs_content table.bs_kurse td.bs_skl {  /*	Kursleitung */
+	width:110px;
+}
+div#bs_content table.bs_kurse td.bs_spreis {  /*	Preis */
+	width:80px;
+	text-align:right;
+	vertical-align:middle;
+	padding:0 5px 0 5px;
+}
+div#bs_content table.bs_kurse td.bs_sbuch  {  /*	Button */
+	width:84px;
+	text-align:center;
+	vertical-align:middle;
+}
+
+/***** Tabelle Kursangebot -> Links in Tabellen *****/
+#bs_content table.bs_kurse a, #bs_content table.bs_kurse a:visited {
+	text-decoration: none;
+}
+#bs_content table.bs_kurse a:hover {
+	text-decoration: underline;
+}
+
+
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/***** Tabelle Kursangebot -> Buttons in Tabellen *****/
+#bs_content div.bs_kursangebot table td.bs_sbuch span,#bs_content div.bs_kursangebot table  input  {
+	box-sizing: border-box;
+	font-size:11px;
+	font-weight: normal;
+	padding:5px 2px;
+	line-height:1.1em;
+	display:block;
+	width:84px;
+	border:2px outset #ffffff;
+	background-color: transparent;
+	background-image: none;
+	color: #666666;
+	cursor:pointer;
+	margin:0;
+	height:auto;
+	text-align: center;
+	text-transform: none;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch a span {
+	text-align:center;
+}
+#bs_content div.bs_kursangebot table a:hover span,#bs_content div.bs_kursangebot table  input:hover {
+	border-style: inset;
+}
+#bs_content div.bs_kursangebot table a {
+	text-decoration:none;
+	font-weight: normal;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_keine_buchung {
+	border:0;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_ohne_anmeldung {
+	border:0;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_nur_buero {
+	border:0;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_siehe_text {
+	border:0;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch  .bs_btn_abgelaufen {
+	font-size:10px;
+	border:0;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_storniert {
+	border:0;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_gesperrt {
+	background-color: red;
+	color: black;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_autostart {
+	color:#888888;
+	font-size:8pt;
+	border:0;
+	cursor:auto;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_buchen{
+	background-color: lime;
+	color: black;
+	letter-spacing: .1ex;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_karte_kaufen{
+	background-color: lime;
+	color: black;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_semesterkarte{
+	background-color: lime;
+	color: black;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_platz_buchen{
+	background-color: lime;
+	color: black;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_vormerkliste{
+	background-color: #dddddd;
+	color: black;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_infoservice{
+	background-color: #aaaaaa;
+	color: black;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_warteliste{
+	background-color: #FF4500;
+	color: black;
+}
+#bs_content div.bs_kursangebot table td.bs_sbuch .bs_btn_ausgebucht{
+	background-color: #FF4500;
+	color: black;
+}
+
+#bs_content div.bs_kursangebot table .nur_semesterkarte {
+	font-size:7pt;
+	line-height:1em;
+	border:0;
+}
+
+
+
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/***** Tabelle Platzvermietung *****/
+#bs_content table.bs_platz {
+	display: table; 
+	font-size:11px;
+	margin:10px 0 20px 0;
+	border-collapse:collapse;
+}
+#bs_content table.bs_platz td {
+	background-color: #fcfcfc;
+	border:1px solid #CCCCCC;
+	text-align:center;
+	padding:0;
+	width:84px;
+}
+#bs_content table.bs_platz th.bs_platz_tag, #bs_content table.bs_platz th.bs_platz_tag span {
+	background-color:#66645C;
+	color:#ffffff;
+	text-align:center;
+	font-weight:normal;
+}
+#bs_content table.bs_platz th.bs_platz_zeit {
+	background-color: #EDEEE8;
+	text-align:right;
+	padding:1px 5px;
+	font-weight:normal;
+	line-height: 1em;
+	vertical-align: middle;
+	color: #66645C;
+}
+#bs_content table.bs_platz.bs_timetable  {
+	margin:10px;
+}
+#bs_content table.bs_platz.bs_timetable td {
+	text-align:left;
+	padding:10px;
+	width:auto;
+	vertical-align: top;
+}
+
+#bs_content table.bs_platz tr:hover  th.bs_platz_zeit {
+	background-color:#FFFF99; 
+}
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/***** Timetable *****/
+#bs_content table.bs_timetable {
+	table-layout: fixed;
+	display: table; 
+	width: 98%;
+}
+.bs_ag {
+	margin-bottom:10px;
+}
+.bs_ag a {
+	-ms-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+}
+.bs_ag:hover {
+	background-color:yellow; 
+	border: 1px solid black;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
+.bs_time,.bs_date {
+	color:#888;
+	display:inline-block;
+	width:50%;
+}
+.bs_date {
+	text-align: right;
+}
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+
+div.bs_meldung {
+	width:500px;
+	border:20px solid #DCDCDC;
+	border-left:0;
+	border-right:0;
+	padding:10px 20px 10px 20px;
+}
+
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/***** Formularfelder *****/
+.bs_inp,.bs_sub {
+	background: url(data:image/gif;base64,R0lGODlhAQAUAPYAAPz9+/f5+fDx7/37/e7t7+/x7/Ty9O/x8fHx8ff19/n3+fX39+3v7fj6+vn4+vr4+u7s7Pb39e3v7+7v7fz8/Pn6+Pv9++zu7u3s7u/t7/j59+7u7vj6+O/v7/Dw8PDv8fHv8fz7/f37+/r4+Pf59/f19fL09Pv9/fv8+vr8/O/t7fP08vb19/n39/3//fj3+fr6+uzu7Pz6+v79//Py9PHv7+3u7Pf39/n5+e3t7fT09Pv7+/7+/vX19fLy8v39/f///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQJAAD/ACwAAAAAAQAUAAAHFoAQDAc+Oj0sGjg7FD88QEBAQEBAQIEAOw==) white repeat-x;
+}
+.bs_inp {
+	width:450px;
+	border: #8cacbb 1px solid;
+	margin: 0;
+	text-align: left;	
+	max-width:99%;
+}
+.bs_sub {
+	margin:5px 0 0 0;
+	border:#737357 1px solid;
+	color: #3b3b1f;
+	max-width:99%;
+}
+#bs_content form {
+    border: 0 none;
+    margin: 0;
+    outline: 0 none;
+    padding: 0;
+}
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/***** Kurssuche *****/
+body.bs_index_ks	dl.bs_menu  dt {
+	width: auto;
+	margin: 2px 0 2px 0;
+	cursor:pointer;
+}
+body.bs_index_ks dl.bs_menu  dd {
+	width: auto;
+}
+body.bs_index_ks dl.bs_menu dd #map a,div#bs_content dl.bs_menu dd #map a:visited {
+	display:inline;
+}
+body.bs_index_ks .bs_suchoption {
+	margin:5px 0 10px 20px;
+}
+#map {
+	height:300px;
+}
+#bs_umkreis {
+	width:70px;
+}
+#bs_schlagwort {
+	width:98%;
+}
+body.bs_index_ks	input,select {
+	margin-bottom: 10px;
+	width:auto;
+}
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+#map {width: 99%; height: 500px; margin-bottom:20px;}
+#map_head {width: 99%; text-align:right;font-size:80%;clear: both;}
+#geo_qrcode { margin:2px; border:0;width: 100px; }
+#map.fullscreen {
+	width: 100%;
+	height: 99%;
+	border: 1px solid black;
+}
+@keyframes fade { 
+  from { opacity: 0.3; } 
+}
+.map_blinking {
+  animation: fade 1s infinite alternate;
+}
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+#bs_content div.bs_kursangebot table div.bs_tip {
+	position: relative;
+}
+#bs_content div.bs_kursangebot table div.bs_tip > div {
+	font-size:90%;
+	display: none;
+	position: absolute;
+	top: 15px;
+	right: 50px;
+	z-index: 10200;
+	background: #555555;
+	color: #fff;
+	min-width:200px;
+	width:auto;
+	overflow:auto;
+	text-align:left;
+	border:0;
+	padding:8px;
+	white-space: nowrap;
+}
+#bs_content div.bs_kursangebot table div:hover.bs_tip > div {
+	display: block;
+}
+#bs_content div.bs_kursangebot table div.bs_tip > div div {
+	display:inline-block;
+	padding:2px;
+}
+#bs_content div.bs_kursangebot table div.bs_tip > div div.bs_tt1 {
+	text-align:right;
+	min-width:70px;
+	padding-right:10px;
+}
+
+/*------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+#bs_content #bs_lang_switch {
+	position:absolute;
+	right:0px;
+	width:30px;
+	height:18px;
+	display:block;
+	cursor:pointer;
+}
+#bs_content .bs_en_flag {
+	background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNjAgMzAiIGhlaWdodD0iNjAwIj4NCjxkZWZzPg0KPGNsaXBQYXRoIGlkPSJ0Ij4NCjxwYXRoIGQ9Im0zMCwxNWgzMHYxNXp2MTVoLTMwemgtMzB2LTE1enYtMTVoMzB6Ii8+DQo8L2NsaXBQYXRoPg0KPC9kZWZzPg0KPHBhdGggZmlsbD0iIzAwMjQ3ZCIgZD0ibTAsMHYzMGg2MHYtMzB6Ii8+DQo8cGF0aCBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iNiIgZD0ibTAsMGw2MCwzMG0wLTMwbC02MCwzMCIvPg0KPHBhdGggc3Ryb2tlPSIjY2YxNDJiIiBzdHJva2Utd2lkdGg9IjQiIGQ9Im0wLDBsNjAsMzBtMC0zMGwtNjAsMzAiIGNsaXAtcGF0aD0idXJsKCN0KSIvPg0KPHBhdGggc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEwIiBkPSJtMzAsMHYzMG0tMzAtMTVoNjAiLz4NCjxwYXRoIHN0cm9rZT0iI2NmMTQyYiIgc3Ryb2tlLXdpZHRoPSI2IiBkPSJtMzAsMHYzMG0tMzAtMTVoNjAiLz4NCjwvc3ZnPg0K');
+	background-size: 100% 100%;
+}
+#bs_content .bs_de_flag {
+    background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDUgMyI+DQo8cGF0aCBkPSJtMCwwaDV2M2gtNXoiLz4NCjxwYXRoIGZpbGw9IiNkMDAiIGQ9Im0wLDFoNXYyaC01eiIvPg0KPHBhdGggZmlsbD0iI2ZmY2UwMCIgZD0ibTAsMmg1djFoLTV6Ii8+DQo8L3N2Zz4NCg==');
+    background-size: 100% 100%;
+}
+
+#bs_content:lang(de) .bslang_de, #bs_content:lang(en) .bslang_en {
+/*	display:inherit;*/
+}
+#bs_content:lang(en) .bslang_de, #bs_content:lang(de) .bslang_en {
+	display:none;
+}
+
+/**** Anpassungen für kleine Bildschirme ****/
+@media all and (max-width: 1020px) {
+	#bs_content table.bs_kurse th.bs_sknr, #bs_content table.bs_kurse th.bs_skl,  div#bs_content table.bs_kurse td.bs_sknr, div#bs_content table.bs_kurse td.bs_skl{
+		display:none;
+	}
+	div#bs_content table.bs_kurse td.bs_spreis, div#bs_content table.bs_kurse td.bs_szeit,	div#bs_content table.bs_kurse td.bs_sort  {
+		width:auto;
+	}
+	div#bs_content table.bs_kurse td {
+		font-size:75%;
+		min-width:auto;
+	}
+	div#bs_content table.bs_kurse th {
+		min-width:auto;
+	}	
+	body.bs_kursangebot div.bs_flmenu {
+		display:none;
+	}
+}
+/*
+     FILE ARCHIVED ON 13:50:27 Oct 17, 2022 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 02:41:51 Aug 27, 2023.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+*/
+/*
+playback timings (ms):
+  captures_list: 149.489
+  exclusion.robots: 0.119
+  exclusion.robots.policy: 0.106
+  cdx.remote: 0.077
+  esindex: 0.012
+  LoadShardBlock: 103.094 (3)
+  PetaboxLoader3.datanode: 141.63 (5)
+  load_resource: 177.976
+  PetaboxLoader3.resolve: 65.866
+  loaddict: 70.817
+*/
