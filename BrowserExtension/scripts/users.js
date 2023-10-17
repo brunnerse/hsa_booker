@@ -142,6 +142,8 @@ async function addUser(user) {
                 data[inputElem["name"]] = inputElem.value;
         }
     }
+    
+    const isUpdate = userdata[user] ? true : false;
 
     setStatus("Fetching most recent user data...");
     return download(USERS_FILE).then((d) => {
@@ -151,8 +153,8 @@ async function addUser(user) {
     }).then(() => upload(USERS_FILE, userdata))
     .then((d) => userdata = d) 
     .then(() => updateUserSelect(userSelectElem, userdata))
-    .then( () => {setStatus("Added user " + user + ".", "green")})
-    .catch( (err) => setStatus("Failed to delete user " + user + ": Error " + err, "red"));
+    .then( () => {setStatus((isUpdate ? "Updated" : "Added") + " user " + user + ".", "green")})
+    .catch( (err) => setStatus("Failed to " + (isUpdate ? "update" : "add") + " user " + user + ": Error " + err, "red"));
 }
 
 async function deleteUser(user) {

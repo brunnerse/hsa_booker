@@ -2,6 +2,7 @@ async function updateUserSelect(userSelectElem, userdata) {
     console.log("Updating user selection to:")
     console.log(userdata);
 
+
     let childrenToRemove = [];
     for (let child of userSelectElem.children) {
         if (child.value != "") {
@@ -9,13 +10,22 @@ async function updateUserSelect(userSelectElem, userdata) {
         }
     }
     childrenToRemove.forEach((child) => userSelectElem.removeChild(child));
-
     for (let user of Object.keys(userdata)) {
         let elem = document.createElement("OPTION");
         elem.value = user;
         elem.innerHTML = user; 
         userSelectElem.appendChild(elem);
     }
+    if (!(await getOption("multipleusers"))) {
+        for (let idx = 0; idx < userSelectElem.children.length; idx++) {
+            if (idx != await getOption("defaultuseridx")) {
+                userSelectElem.children[idx].setAttribute("hidden", "");
+            }
+        }
+        if (Object.keys(userdata).length == 0) 
+            userSelectElem.children[0].removeAttribute("hidden");
+        setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
+    }  
 }
 
 function setSelectedUser(userSelectElem, user) {
@@ -27,9 +37,13 @@ function setSelectedUser(userSelectElem, user) {
         }
     }
     console.assert(idx != -1);
+    setSelectedUserIdx(userSelectElem, idx);
+}
+
+function setSelectedUserIdx(userSelectElem, idx) {
+    console.assert(idx != -1);
     userSelectElem.selectedIndex = idx;
     userSelectElem.dispatchEvent(new Event("change"));
-
 }
 
 function getSelectedUser(userSelectElem) {
