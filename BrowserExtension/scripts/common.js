@@ -106,9 +106,7 @@ async function getOption(val) {
 
 async function setOption(option, value) {
     if (!option_var) {
-        option_var = await download("options");
-        if (!option_var) // if not stored yet, create empty object
-            option_var = {};
+        option_var = await download("options") ?? {};
     }
     option_var[option] = value;
     return upload("options", option_var);
@@ -116,9 +114,7 @@ async function setOption(option, value) {
 
 async function setAllOptions(options) {
     if (!option_var) {
-        option_var = await download("options");
-        if (!option_var) // if not stored yet, create empty object
-            option_var = {};
+        option_var = await download("options") ?? {};
     }
     for(let o of Object.keys(options))
         option_var[o] = options[o];

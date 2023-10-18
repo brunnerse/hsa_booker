@@ -146,8 +146,9 @@ async function addUser(user) {
     const isUpdate = userdata[user] ? true : false;
 
     setStatus("Fetching most recent user data...");
-    return download(USERS_FILE).then((d) => {
-        userdata = d;
+    return download(USERS_FILE)
+    .then((d) => {
+        userdata = d ?? {};
         userdata[user] = data;
         setStatus("Updating user data...");
     }).then(() => upload(USERS_FILE, userdata))
@@ -159,7 +160,9 @@ async function addUser(user) {
 
 async function deleteUser(user) {
     setStatus("Fetching most recent user data...");
-    return download(USERS_FILE).then((d) => {
+    return download(USERS_FILE)
+    .then((d) => {
+        userdata = d ?? {};
         userdata = d;
         delete userdata[user];
         setStatus("Updating user data...");
@@ -174,7 +177,7 @@ async function deleteUser(user) {
 // Updates form according to selected user
 async function onSelectChange() {
     let selectedUser = getSelectedUser(userSelectElem); 
-    if (selectedUser == "") {
+    if (!selectedUser) {
         clearForm(); 
     } else {
         let data = userdata[selectedUser];
@@ -350,7 +353,7 @@ clearForm()
     .then(toggleInert)
     .then(() => setStatus("Fetching userdata..."))
     .then(() => download(USERS_FILE))
-    .then((d) => {userdata = d;})
+    .then((d) => {userdata = d ?? {};})
     .then(() => updateUserSelect(userSelectElem, userdata))
     .then(() => setStatus("Fetched userdata."))
     .finally(toggleInert);

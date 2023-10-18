@@ -151,7 +151,7 @@ async function processDocument() {
         userSelectElem.addEventListener("change", onSelectChange); 
 
         download(USERS_FILE)
-        .then((d) => {userdata = d;})
+        .then((d) => {userdata = d ?? {};})
         .then(() => updateUserSelect(userSelectElem, userdata))
         // TODO way to check which user is supposed to be booked for
         // TODO or default user in options

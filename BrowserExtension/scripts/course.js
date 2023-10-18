@@ -6,15 +6,6 @@ const armButton = document.getElementById("armbutton");
 const hintElem = document.getElementById("hint");
 
 
-async function addCourse(user) {
-    // get data from form
-    let data = {};
-
-    return download(USERS_FILE).then(() => {
-        userdata[user] = data;
-    }).then(() => upload(USERS_FILE, userdata));
-}
-
 function setStatus(status, color="white") {
     let style = "font-weight:bold;background-color: " + color + ";"
     statusElem.setAttribute("style", style);
@@ -203,5 +194,5 @@ download(CHOICE_FILE)
     console.error(err);
 })
 .then(() => download(USERS_FILE))
-.then((d) => {userdata = d;})
+.then((d) => {userdata = d ?? {};})
 .then(() => updateUserSelect(userSelectElem, userdata));
