@@ -216,6 +216,30 @@ async function processDocument() {
         // signalize success
         console.log("STATE IS SUCCESS");
 
+        let bTags = document.getElementsByTagName("B");
+        let nr;
+        for (let bTag of bTags) {
+            if (bTag.innerHTML.match(/^\d+$/)) {
+                nr = bTag.innerHTML;
+                break;
+            }
+        } 
+
+        if (!nr) {
+            console.error("Could not find number of booked course!");
+            return;
+        }
+        // marked course as booked 
+        download("bookedcourses")
+        .then((d) => {
+            d = d ?? [];
+            d.push(nr);
+            return upload("bookedcourses", d);
+        })
+        .then((bookedCourses) => {
+            console.log("Successfully informed server about successful booking.");
+            console.log("Booked courses: ");console.log(bookedCourses);
+        }); 
     } else {
         // signalize error
         console.log("STATE IS ERROR");
