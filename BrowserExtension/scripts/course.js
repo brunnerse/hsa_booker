@@ -30,12 +30,8 @@ async function onSelectChange() {
 
 function getCurrentSport() {
     try {
-        let lastPath = window.location.href.match(/[A-Z][\w_]+\.html/)[0];
-        let sport = lastPath.split(".")[0].replace("_", " ");
-        return sport;
-        // or other way:
-//        let headElem = document.getElementsByClassName("bs_head")[0];
-//        return headElem.innerHTML; 
+        let headElem = document.getElementsByClassName("bs_head")[0];
+        return headElem ? headElem.innerHTML : null; 
     } catch {
         return undefined;
     }

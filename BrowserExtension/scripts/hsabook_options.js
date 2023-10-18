@@ -330,8 +330,9 @@ async function bookCourse(title) {
                         // let server know that course was booked successfully
                         download("bookedcourses")
                         .then((data) => {
+                                data = data ?? [];
                                 data.push(title);
-                                return upload("bookedcourses", data)
+                                return upload("bookedcourses", data);
                         })
                         .then((bookedCourses) => {
                             console.log("Successfully informed server about successful booking.");
@@ -743,7 +744,7 @@ function loadChoice() {
     updateStatus("Loading choice and user data...");
     return download(USERS_FILE)
     .then((data) => {
-        userdata = data;
+        userdata = data ?? {};
         updateStatus("Loaded user data.");
         console.log(userdata);
     })
@@ -754,7 +755,7 @@ function loadChoice() {
     })
     .then(() => download(CHOICE_FILE))
     .then(async (data) => {
-        choice = data;
+        choice = data ?? {};
         console.log(choice);
         updateStatus("Loaded choice.");
 
@@ -789,8 +790,8 @@ function loadChoice() {
         console.error(err)
     })
     .then(() => download("bookedcourses")) 
-    .catch(() => []) // if bookedcourses does not exist, give empty list instead
     .then((bookedArr) => {
+        bookedArr = bookedArr ?? [];
         // set state of titles in bookedArr to booked
         for (let title of bookedArr) {
             if (title != "") {
@@ -867,6 +868,7 @@ function onCloseButton(button) {
             console.log("Trying to remove course " + title + " from bookedcourses...");
             return download("bookedcourses")
             .then((bookedTitles) => {
+                bookedTitles = bookedTitles ?? [];
                 // set state of titles in bookedList to booked
                 console.log("Current bookedcourses:")
                 console.log(bookedTitles);
