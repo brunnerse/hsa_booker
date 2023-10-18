@@ -2,9 +2,46 @@ const USERS_FILE = "userdata";
 const CHOICE_FILE = "choice";
 const BOOKED_FILE = "bookedcourses";
 
+const timeout_msec = 6000;
+
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
         setTimeout(resolve, msec);
+    });
+}
+
+function requestHTML(method, url) {
+    return new Promise(function (resolve, reject) {
+        let xhr = new XMLHttpRequest();
+        // abort any ongoing request to the same url
+
+        xhr.open(method, url);
+        xhr.responseType = "document";
+        xhr.timeout = timeout_msec;
+        xhr.onloadend = function () {
+            if (this.status >= 200 && this.status < 300) {
+                resolve(xhr.response);
+            } else {
+                reject({
+                    status: this.status,
+                    statusText: xhr.statusText
+                });
+            }
+        };
+        xhr.onerror = function () {
+            delete ongoingXMLRequests[url];
+            reject({
+                status: this.status,
+                statusText: xhr.statusText
+            });
+        };
+        xhr.ontimeout = function () {
+            reject({
+                status: this.status,
+                statusText: "timeout " + xhr.statusText
+            });
+        };
+        xhr.send();
     });
 }
 
@@ -99,6 +136,8 @@ async function getOption(val) {
             return "formonly";
         else if (val == "defaultuseridx")
             return 1;
+        else if (val == "bypasscountdown")
+            return 0;
         else
             return null;
     }

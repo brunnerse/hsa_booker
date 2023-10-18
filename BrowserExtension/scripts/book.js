@@ -8,25 +8,35 @@ let STATE;
 
 
 async function circumventCountdown() {
-    let submitElem = document.getElementById("bs_submit");
-    console.assert(submitElem);
-    // Only way to do this is to circumvent the onsubmit function is to wait
-//   await sleep(7200);
-    while(submitElem.className != "sub")
-        await sleep(100);
-    return;
+    if (!(await getOption("bypasscountdown"))) {
+        // Simply wait until countdown passed 
+        //   await sleep(7200);
+        let submitElem = document.getElementById("bs_submit");
+        console.assert(submitElem);
+        while(submitElem.className != "sub")
+            await sleep(100);
+    } else {
+        // another try: injecting javascript code to set send=1
+        // also not working due to content policy
+        /*
+        var s = document.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('src', 'scripts/bookinject.js');
+        document.body.appendChild(s);
+        console.log("injected javascript");
+        */
 
-    // another way, not yet working:  Replace whole form with itself while removing the listener
-    /*
-    form.removeAttribute("data-onsubmit");
-    // Replace whole form
-    form.outerHTML = form.outerHTML;
-
-    form = document.forms[0];
-    submitElem.className = "sub";
-    onSelectChange();
-//    form.removeEventListener("submit", chkForm);
-*/
+        // Not pretty but working way:  Replace whole form with itself while removing the listener
+        let newForm = form.cloneNode(true);
+        newForm.removeAttribute("data-onsubmit");
+        let data = userdata[getSelectedUser(userSelectElem)];
+        // Replace whole form
+        form.outerHTML = newForm.outerHTML;
+        fillForm(document.forms[0], data);
+        let submitElem = document.getElementById("bs_submit");
+        console.assert(submitElem);
+        submitElem.className = "sub";
+    }
 }
 
 async function onSelectChange() {
@@ -35,45 +45,48 @@ async function onSelectChange() {
         clearForm(); 
     } else {
         let data = userdata[selectedUser];
-        // Set status select option
-        let selectElems = form.getElementsByTagName("SELECT");
-        let selectElem;
-        for (let e of selectElems)
-            if (e.name == "statusorig")
-                selectElem = e;
-        console.assert(selectElem);
-        let ok = false;
-        for (let i = 0; i < selectElem.options.length; i++) {
-            if (selectElem.options[i].value == data.statusorig) {
-                selectElem.selectedIndex = i;
-                selectElem.dispatchEvent(new Event("change"));
-                ok = true;
-                break;
-            }
-        }
-        if (!ok) {
-            throw new Error("Didn't find status element for " + data.statusorig);
-        } 
+        fillForm(form, data);
+    }
+}
 
-        removeWarnMarks();
-        // Set form input elements
-        let inputElems = form.getElementsByTagName("INPUT");
-        for (let inputElem of inputElems) {
-            if (inputElem.getAttribute("disabled") == "disabled")
-                continue;
-            // set radio button checked
-            if (inputElem.type == "radio" && data[inputElem.name])
-                inputElem.checked = (inputElem.value == data[inputElem.name]); 
-            // set accept conditions button
-            else if (inputElem["name"] == "tnbed")
-                inputElem.checked = true;
-            else {
-                // fill form data
-                if (data[inputElem["name"]])
-                    inputElem.value = data[inputElem["name"]];
-            }
+function fillForm(form, data) {
+    // Set status select option
+    let selectElems = form.getElementsByTagName("SELECT");
+    let selectElem;
+    for (let e of selectElems)
+        if (e.name == "statusorig")
+            selectElem = e;
+    console.assert(selectElem);
+    let ok = false;
+    for (let i = 0; i < selectElem.options.length; i++) {
+        if (selectElem.options[i].value == data.statusorig) {
+            selectElem.selectedIndex = i;
+            selectElem.dispatchEvent(new Event("change"));
+            ok = true;
+            break;
         }
+    }
+    if (!ok) {
+        throw new Error("Didn't find status element for " + data.statusorig);
+    } 
 
+    removeWarnMarks();
+    // Set form input elements
+    let inputElems = form.getElementsByTagName("INPUT");
+    for (let inputElem of inputElems) {
+        if (inputElem.getAttribute("disabled") == "disabled")
+            continue;
+        // set radio button checked
+        if (inputElem.type == "radio" && data[inputElem.name])
+            inputElem.checked = (inputElem.value == data[inputElem.name]); 
+        // set accept conditions button
+        else if (inputElem["name"] == "tnbed")
+            inputElem.checked = true;
+        else {
+            // fill form data
+            if (data[inputElem["name"]])
+                inputElem.value = data[inputElem["name"]];
+        }
     }
 }
 
@@ -129,6 +142,7 @@ async function processDocument() {
     } else if (nameInput.type == "text") {
         STATE = "fill";
     }
+    console.log("STATE IS " + STATE);
 
     if (STATE == "fill") {
         // Insert user select elem
@@ -163,7 +177,7 @@ async function processDocument() {
                 // find submit button and submit
                 let submitButton = document.getElementById("bs_submit");
                 console.assert(submitButton);
-                form.requestSubmit(submitButton);
+                document.forms[0].requestSubmit(submitButton);
             } else {
                 // Do nothing
             }
@@ -192,6 +206,7 @@ async function processDocument() {
         if (await getOption("submitimmediately"))  {
             // submit
             console.assert(submitButton);
+            //TODO in final version: uncomment the following line
             //form.requestSubmit(submitElem); 
         } else {
             // Do nothing
