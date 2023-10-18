@@ -16,7 +16,7 @@ if (!document.getElementById(cssId))
 
 // insert top bar
 const topbar_html = '<div id="topbar" class="bar">\
-		<div class="darkred" align="center" style="margin-top:0px;">\
+		<div class="darkred" align="center" style="margin-top:0px;height:max-content">\
 			<div align="center" style="float:left;margin-left:5%;font-size:120%;font-weight:bolder;">\
 			Book for user:\
 			</div>\
@@ -27,9 +27,9 @@ const topbar_html = '<div id="topbar" class="bar">\
 			</div>\
 			<div align="center" style="float:left;margin-left:7%;font-size:120%;font-weight:bolder;width:20%">\
 				<div id="armbuttontext" style="float:left;width:50%;text-align:right;padding-right:5%">ARM</div>\
-				<button class="roundbutton" style="color:green;float:left;margin-top:-3%;" id="armbutton" ></button>\
+				<button class="roundbutton" style="background-color:green;float:left;margin-top:-3%;" id="armbutton" ></button>\
 			</div>\
-			<div align="center" style="float:right;margin-right:5%;width:40%;">\
+			<div align="center" style="overflow:hidden;float:none;margin-right:5%;">\
 				<div class="status" id="statustext" style="background-color:white;">STATUS</div>\
 			</div>\
 		</div>\

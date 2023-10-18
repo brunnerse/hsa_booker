@@ -1,5 +1,4 @@
 .roundbutton {
-  background-color: #04AA6D;
   border: none;
   border-radius: 50%;
   color: white;
@@ -18,7 +17,7 @@
     background-color: black;
     border: thick solid black;
     border-radius: 5px;
-    height: 60px;
+    height: max-content;
     width: 100%;
 }
 

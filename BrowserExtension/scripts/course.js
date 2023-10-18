@@ -5,6 +5,48 @@ const userSelectElem = document.getElementById("userselect");
 const armButton = document.getElementById("armbutton"); 
 const hintElem = document.getElementById("hint");
 
+const refreshInterval_short = 2 * 1000;
+const refreshInterval_mid = 5 * 1000;
+const refreshInterval_long = 30 * 1000;
+const timeThreshold_short = 15 * 1000; 
+const timeThreshold_mid = 3 * 60 * 1000; 
+
+const statusUpdateInterval = 500;
+
+
+function getRemainingTimeMS(timeStr) {
+    if (!timeStr || !timeStr.match(/\d+\.\d+[\.,\s]*\d+:\d+/))
+        return null;
+    let arr = timeStr.match(/\d+[:\.]\d+/g);
+    let day = arr[0].split(".")[0];
+    let month = arr[0].split(".")[1];
+    let year = new Date(Date.now()).getUTCFullYear();
+    let bookDate = new Date(`${year}-${month}-${day}T${arr[1]}`);
+    return bookDate - new Date(Date.now());
+}
+
+function getRemainingTimeString(timeStr) {
+    let remainMS = getRemainingTimeMS(timeStr);
+    if (!remainMS)
+        return null;
+    let s = remainMS >= 0 ? "" : "- "; 
+    remainMS = remainMS >= 0 ? remainMS : -remainMS; 
+
+    let remDays = Math.floor(remainMS / (1000 * 60 * 60 * 24));
+    remainMS -= remDays * (1000 * 60 * 60 * 24);
+    let remHours = Math.floor(remainMS / (1000 * 60 * 60));
+    remainMS -= remHours * (1000 * 60 * 60);
+    let remMins = Math.floor(remainMS / (1000 * 60));
+    remainMS -= remMins * (1000 * 60);
+    let remSecs = Math.floor(remainMS / (1000));
+
+    if (remDays > 0)
+        s += remDays + "d ";
+    if (remHours > 0)
+        s += remHours + "h ";
+    s += remMins + "m " + remSecs + "s";
+    return s;
+}
 
 function setStatus(status, color="white") {
     let style = "font-weight:bold;background-color: " + color + ";"
@@ -101,9 +143,132 @@ async function onAdd(button) {
     });
 }
 
+var armed = false; 
+var refreshIntervalID;
+
 function onArm() {
-    console.log("ARM clicked.")
+    const armText =  document.getElementById("armbuttontext");
+    const armButton =  document.getElementById("armbutton");
+    armed = !armed;
+    if (armed) {
+        armText.innerHTML = "UNARM";
+        let style = armButton.getAttribute("style").replace("green", "blue");
+        armButton.setAttribute("style", style); 
+        // mark website as armed in options
+        download("armedcourses")
+        .then((d) => {
+            d = d ?? [];
+            if (!d.includes(window.location.href))
+                d.push(window.location.href);
+            return upload("armedcourses", d);
+        })
+        .then(() => { 
+            // TODO get all marked courses
+            let sport = getCurrentSport();
+            let user = getSelectedUser(userSelectElem);
+            let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
+            let finishedNrs = [];
+
+            if (nrlist.length == 0) {
+                setStatus("Unarming: No courses were marked for booking.", "yellow");
+                armButton.setAttribute("inert", ""); 
+                sleep(1500).then(onArm).then(() => armButton.removeAttribute("inert"));
+                return;
+            }
+
+            // get booking state
+            let bookingState = {};
+
+            for (let nr of nrlist) {
+                let bookButton;
+                let nrElems = document.getElementsByClassName("bs_sknr");
+                for (let nElem of nrElems) {
+                    if (nElem.tagName == "TD" && nElem.innerHTML == nr) {
+                        bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
+                        break;
+                    }
+                }
+                switch (bookButton ? bookButton.className : "") {
+                    case "bs_btn_buchen":
+                        bookingState[nr] = "ready";
+                        finishedNrs.push(nr);
+                        // TODO set status of course to booking
+                        // book course
+                        let formElem = bookButton.parentElement;
+                        while (formElem.tagName != "FORM")
+                            formElem = formElem.parentElement;
+                        formElem.requestSubmit(bookButton);
+                        break;
+                    case "bs_btn_ausgebucht":
+                    case "bs_btn_warteliste":
+                        bookingState[nr] = "full";
+                        finishedNrs.push(nr);
+                        // TODO set status of course to failed
+                        break;
+                    default:
+                        bookingState[nr] = "none";
+                }
+            }
+
+            for (let fNr of finishedNrs) {
+                nrlist.splice(nrlist.indexOf(fNr), 1);
+            }
+
+            if (nrlist.length > 0) {
+                // get time until refresh and start counter; 
+                // TODO if any titles not yet bookable
+                let bookingTime;
+                let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
+                if (bookTimeElems.length > 0) 
+                    bookingTime = bookTimeElems[0].innerHTML;
+                let refreshInterval;
+                let remainingTime = getRemainingTimeMS(bookingTime);
+                if (remainingTime && remainingTime > timeThreshold_short) {
+                    if (remainingTime > timeThreshold_mid) 
+                        refreshInterval = Math.min(refreshInterval_long, remainingTime - timeThreshold_mid);
+                    else
+                        refreshInterval = Math.min(refreshInterval_mid, remainingTime - timeThreshold_short);
+                } else {
+                    refreshInterval = refreshInterval_short;
+                }
+                // refresh window in refreshInterval seconds
+                let lastRefreshTime = Date.now();
+                refreshIntervalID = setInterval(() => {
+                    let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
+
+                    let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "<br>" : ""; 
+                    setStatus(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow");
+                    if (remTime <= 0)
+                        window.location.reload();
+                }, 333);
+            } else {
+                // call onArm again to unarm
+                setStatus("Unarming: All marked courses were processed.", "yellow");
+                armButton.setAttribute("inert", ""); 
+                sleep(1500).then(onArm).then(() => armButton.removeAttribute("inert"));
+                return;
+            }
+        });
+    } else {
+        armText.innerHTML = "ARM";
+        let style = armButton.getAttribute("style").replace("blue", "green");
+        armButton.setAttribute("style", style); 
+        // remove website from armed list in options
+        download("armedcourses")
+        .then((d) => {
+            d = d ?? [];
+            let idx = d.indexOf(window.location.href);
+            if (idx >= 0) 
+                d.splice(idx,1);
+            return upload("armedcourses", d);
+        })
+        // clear refreshInterval
+        if (refreshIntervalID)
+            clearInterval(refreshIntervalID);
+        setStatus("Unarmed.", "white");
+    }
 }
+
 
 window.onload =  
 () => {
@@ -122,8 +287,8 @@ window.onload =
     // check if URL is a course
     if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
         let course = getCurrentSport(); 
-        setStatus("Choose " + course + " course to add", "white")
-        hintElem.innerHTML = "Click on the book button to add the course for the selected user";
+        setStatus("Click ARM to book the marked courses ASAP", "white");
+        hintElem.innerHTML = "Mark the " + course + " courses that you want to be booked automatically";
         // modify page
         modifyBookButtons();
     } else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
@@ -192,3 +357,10 @@ download(CHOICE_FILE)
 .then(() => download(USERS_FILE))
 .then((d) => {userdata = d ?? {};})
 .then(() => updateUserSelect(userSelectElem, userdata));
+
+// check if website should be armed
+download("armedcourses")
+.then((d) => {
+    if (d && d.includes(window.location.href))
+        onArm();
+});
