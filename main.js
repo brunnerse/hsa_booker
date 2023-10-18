@@ -362,12 +362,9 @@ async function bookCourse(title) {
                     bookingState[title] = "error";
                     updateEntryStateTitle(title, "Booking test successful", "#00ff00");
                 } else {
-                    submitButton.setAttribute("inert", "");
-                    //form.requestSubmit(submitButton);
+                    form.requestSubmit(submitButton);
                 }
             };
-            //TODO is sleep here necessary?
-            //await sleep(1000);
             form.requestSubmit(submitButton);
         };
 
