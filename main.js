@@ -1,4 +1,5 @@
 const INACTIVE = true;
+const BYPASS_COUNTDOWN = false;  // due to server-sided check, BYPASS_COUNTDOWN must always be set to false
 const HSA_LINK_new = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
 const HSA_LINK_old = "https://web.archive.org/web/20220120140607/https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"
 var HSA_LINK = HSA_LINK_new;
@@ -277,14 +278,15 @@ async function bookCourse(title) {
             console.assert(submitButton);
 
             // lever out countdown 
-            // fastest way:
-            iFrameElem.contentWindow.send = 1;
-            submitButton.className = "sub";
-            // other way:
-            //iFrameElem.contentWindow.btime = -1; 
-            //await sleep(1000);
-            // Alternatively wait 7s until submitButton.className changed to sub to avoid attracting attention
-            // while(submitButton.className != "sub")await sleep(100);
+            //  
+            if (BYPASS_COUNTDOWN) {
+                iFrameElem.contentWindow.send = 1;
+                submitButton.className = "sub";
+            } else {
+                // wait 7s until submitButton.className changed to sub 
+                while(submitButton.className != "sub")
+                    await sleep(50);
+            }
 
             // Check if should abort once more before submitting
             if (checkAbortFun()) {
