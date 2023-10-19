@@ -1,4 +1,4 @@
-const INACTIVE = false;
+const INACTIVE = true;
 const HSA_LINK_new = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
 const HSA_LINK_old = "https://web.archive.org/web/20220120140607/https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"
 var HSA_LINK = HSA_LINK_new;
@@ -584,7 +584,7 @@ async function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     console.assert(formElem.tagName == "FORM");
     formElem.target = "frame_"+title;
     // update action
-    formElem.action += `?referer=${HSA_LINK+courses[sport]}`; 
+    formElem.action = formElem.action.split("?")[0] + `?referer=${HSA_LINK+courses[sport]}`; 
 }
 
 
