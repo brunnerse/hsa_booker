@@ -128,9 +128,11 @@ async function onAdd(button) {
         console.log(choice);
         modifyBookButtons();
         if (add && choice[sport] && choice[sport][user] && choice[sport][user].includes(nr))
-            setStatus("Added course " + nr + " for user " + user + ".", "green");
+//            setStatus("Added course " + nr + " for user " + user + ".", "green");
+              setStatus("Added course " + nr, "green");
         else if (!add && (!choice[sport] || !choice[sport][user] || !choice[sport][user].includes(nr)))
-            setStatus("Removed course " + nr + " from user " + user + ".", "green");
+//          setStatus("Removed course " + nr + " from user " + user + ".", "green");
+            setStatus("Removed course " + nr, "green");
         else
             throw new Error("Choice is unchanged");
     })
@@ -294,6 +296,7 @@ window.onload =
     } else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
         setStatus("Course overview");
         hintElem.innerHTML = "Go to a course website to add the course";
+        armButton.parentElement.setAttribute("hidden" ,"");
     } else {
         setStatus("Not a course website", "white");
     }
@@ -332,11 +335,8 @@ function modifyBookButtons() {
     }
 }
 
-console.log("USEREL:")
-console.log(userSelectElem);
 userSelectElem.addEventListener("change", onSelectChange);
 armButton.addEventListener("click", onArm);
-
 
 // fetch userdata and initialize user bar
 download(CHOICE_FILE)

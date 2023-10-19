@@ -14,7 +14,7 @@ async function circumventCountdown() {
         let submitElem = document.getElementById("bs_submit");
         console.assert(submitElem);
         while(submitElem.className != "sub")
-            await sleep(100);
+            await sleep(50);
     } else {
         // another try: injecting javascript code to set send=1
         // also not working due to content policy
@@ -145,33 +145,40 @@ async function processDocument() {
     console.log("STATE IS " + STATE);
 
     if (STATE == "fill") {
-        // Insert user select elem
-        document.getElementById("bs_form_head").innerHTML += '\
-                    <div id="bs_ag">\
-                        <div class="bs_form_row">\
-                            <div class="bs_form_sp1">User-ID:<div class="bs_form_entext">HSA Booker</div>\
-                            </div>\
-                            <div class="bs_form_sp2">\
-                                <select class="bs_form_field bs_fval_req" name="users" size="1" id="userselect">\
-                                    <option value="" selected="selected">Neuer User</option>\
-                                </select>\
-                            </div>\
-                        </div>\
-                    </div>\
-                    <div class="bs_space"></div>\
-        ';
-
-        userSelectElem = document.getElementById("userselect");
-        userSelectElem.addEventListener("change", onSelectChange); 
-
+        // download user data
         download(USERS_FILE)
         .then((d) => {userdata = d ?? {};})
-        .then(() => updateUserSelect(userSelectElem, userdata))
-        // TODO way to check which user is supposed to be booked for
-        // TODO or default user in options
-        .then(async () => setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx")))
-        .then(() => onSelectChange())
-        .then(() => circumventCountdown())
+
+        if (await getOption("multipleusers")) {
+            // Insert user select elem
+            document.getElementById("body").children[0].outerHTML += '\
+                        <div id="bs_ag">\
+                            <div class="bs_form_row">\
+                                <div class="bs_form_sp1">User-ID:<div class="bs_form_entext">HSA Booker</div>\
+                                </div>\
+                                <div class="bs_form_sp2">\
+                                    <select class="bs_form_field bs_fval_req" name="users" size="1" id="userselect">\
+                                        <option value="" selected="selected">Neuer User</option>\
+                                    </select>\
+                                </div>\
+                            </div>\
+                        </div>\
+                        <div class="bs_space"></div>\
+            ';
+
+            userSelectElem = document.getElementById("userselect");
+            userSelectElem.addEventListener("change", onSelectChange); 
+            updateUserSelect(userSelectElem, userdata)
+            // TODO way to check which user is supposed to be booked for; e.g. option?
+            setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
+            onSelectChange();
+        } else {
+            // single user; use first (and only) user in userdata
+            let data = userdata[Object.keys(userdata)[0]];
+            fillForm(form, data);
+        }
+
+        circumventCountdown()
         .then(async () => {
             if (await getOption("submitimmediately"))  {
                 // find submit button and submit
@@ -199,7 +206,7 @@ async function processDocument() {
                 submitButton = inputElem;
                 break;
             } else if (inputElem.name.startsWith("email_check")) {
-                inputElem.value = data["email"];  
+                inputElem.value = emailVal;  
             }
         }
 

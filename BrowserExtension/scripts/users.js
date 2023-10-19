@@ -147,8 +147,9 @@ async function addUser(user) {
 
     setStatus("Fetching most recent user data...");
     return download(USERS_FILE)
-    .then((d) => {
-        userdata = d ?? {};
+    .then(async (d) => {
+        // use empty user data if not stored yet or multipleusers is not enabled
+        userdata = (d && await getOption("multipleusers")) ? d : {};
         userdata[user] = data;
         setStatus("Updating user data...");
     }).then(() => upload(USERS_FILE, userdata))
@@ -262,15 +263,22 @@ document.getElementById("bs_submit").onclick = () => {
         setStatus("Form invalid: " + wrongInput + " is wrong", "red");
         return;
     }
-    let selectedUser = getSelectedUser(userSelectElem);
-    if (selectedUser == "")
-        selectedUser = prompt("Enter the User ID for the new user", "");
-    if (!selectedUser) {
-        setStatus("Entered User ID is invalid", "red");
-    } else {
-       toggleInert();
-       addUser(selectedUser).then(() => setSelectedUser(userSelectElem, selectedUser)).finally(toggleInert);
+    let selectedUser = ""; 
+    for (let inputElem of document.getElementsByTagName("INPUT")) {
+        // uncheck sex radio buttons
+        if (inputElem.name == "vorname") {
+            selectedUser = inputElem.value; 
+            break;
+        }
     }
+    
+    if (!selectedUser.match(/[A-Za-z]+/)) {
+        alert("The user name is invalid.");
+        return;
+    }
+
+    toggleInert();
+    addUser(selectedUser).then(() => setSelectedUser(userSelectElem, selectedUser)).finally(toggleInert);
 };
 
 document.getElementById("btn_cancel").onclick = () => {
@@ -314,7 +322,6 @@ statusorig.addEventListener("change", () => {
 });
 
 
-
 function isFormModified() {
     let inputElems = formElem.getElementsByTagName("INPUT");
     let selectedUser = getSelectedUser(userSelectElem);
@@ -348,6 +355,13 @@ window.onbeforeunload = function(e) {
     }
 }
 
+// deactivate deleting users when multiple users are not allowed
+getOption("multipleusers")
+.then((multiusr) => {
+    if (!multiusr) {
+        document.getElementById("deletebutton").setAttribute("hidden", "");
+    }
+});
 
 clearForm()
     .then(toggleInert)
