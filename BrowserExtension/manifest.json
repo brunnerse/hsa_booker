@@ -8,15 +8,6 @@
     	"48": "img/favicon.png"
   	},
 
-	"action": {
-		"default_popup": "hsabook.html"
-	},
-	"options_page": "hsabook_options.html", 
-	"options_ui": {
-    	"page": "hsabook_options.html",
- 	    "open_in_tab": true
-    }, 
-
 	"content_scripts": [
 		{
 			"js": ["scripts/common.js", "scripts/users_common.js", 
@@ -45,5 +36,16 @@
 	       "resources": ["styles/custom_bars.css"],
 		   "matches": [ "*://*/*" ]
 		}
-	]
+	],
+
+	"action": {
+		"default_popup": "hsabook.html"
+	},
+
+	"options_page": "hsabook_options.html", 
+	"options_ui": {
+    	"page": "hsabook_options.html",
+ 	    "open_in_tab": true
+    } 
+
 }
