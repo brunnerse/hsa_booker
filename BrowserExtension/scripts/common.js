@@ -4,6 +4,14 @@ const BOOKED_FILE = "bookedcourses";
 
 const timeout_msec = 6000;
 
+
+var baseStorage; 
+try {
+  baseStorage = browser;
+} catch { 
+    baseStorage = chrome;
+} 
+
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
         setTimeout(resolve, msec);
@@ -89,11 +97,11 @@ function getJSONFileString(obj) {
 
 function download(filename) {
     return new Promise(async function (resolve, reject) {
-        chrome.storage.sync.get(filename).then((result) => {
+        baseStorage.storage.sync.get(filename).then((result) => {
             resolve(result[filename]);
         })
         .catch((err) => {
-            console.log("[ERROR] : failed reading file " + filename);
+            console.log("[ERROR] : failed reading data " + filename);
             reject(err);
         });
     });
@@ -105,9 +113,10 @@ function upload(filename, obj) {
         o[filename] = obj;
         console.log(o);
 
-        chrome.storage.sync.set(o).then(() => resolve(o[filename]))
+        baseStorage.storage.sync.set(o)
+        .then(() => resolve(o[filename]))
         .catch((err) => {
-            console.log("[ERROR] : failed reading file " + filename);
+            console.log("[ERROR] : failed writing data " + filename);
             reject(err);
         });
     });
