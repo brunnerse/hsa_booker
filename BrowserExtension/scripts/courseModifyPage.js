@@ -25,12 +25,12 @@ const topbar_html = '<div id="topbar" class="bar">\
 					<option value="" style="background-color: gray" title="adder">Add user</option>\
 				</select>\
 			</div>\
-			<div align="center" style="float:left;margin-left:7%;font-size:120%;font-weight:bolder;width:20%">\
+			<div hidden align="center" style="float:left;margin-left:7%;font-size:120%;font-weight:bolder;width:20%">\
 				<div id="armbuttontext" style="float:left;width:50%;text-align:right;padding-right:5%">ARM</div>\
 				<button class="roundbutton" style="background-color:green;float:left;" id="armbutton" ></button>\
 			</div>\
 			<div align="center" style="overflow:hidden;float:none;margin-right:5%;padding-left:5%">\
-				<div class="status" id="statustext" style="background-color:white;">STATUS</div>\
+				<div class="status" id="statustext" style="background-color:white;"></div>\
 			</div>\
 		</div>\
 	</div>\

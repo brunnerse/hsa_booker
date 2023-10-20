@@ -48,10 +48,29 @@ function getRemainingTimeString(timeStr) {
     return s;
 }
 
+function setStatusTemp(status, color, timeMS=1500, setInert=false) {
+    const statusText = status;
+    setStatus(status, color);
+    if (setInert) {
+        armButton.setAttribute("inert", "");
+    }
+    return new Promise((resolve) => setTimeout(() => {
+        if (setInert) {
+            armButton.removeAttribute("inert");
+        }
+        // set status to empty if it wasn't changed in between
+        if (statusElem.innerHTML == statusText) {
+            setStatus("");
+        }
+        resolve();
+    }, timeMS));
+
+}
+
 function setStatus(status, color="white") {
     let style = "font-weight:bold;background-color: " + color + ";"
     statusElem.setAttribute("style", style);
-    statusElem.innerHTML = status;
+    statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
 }
 
 async function onSelectChange() {
@@ -129,18 +148,18 @@ async function onAdd(button) {
         modifyBookButtons();
         if (add && choice[sport] && choice[sport][user] && choice[sport][user].includes(nr))
 //            setStatus("Added course " + nr + " for user " + user + ".", "green");
-              setStatus("Added course " + nr, "green");
+              setStatusTemp("Added course " + nr, "green");
         else if (!add && (!choice[sport] || !choice[sport][user] || !choice[sport][user].includes(nr)))
 //          setStatus("Removed course " + nr + " from user " + user + ".", "green");
-            setStatus("Removed course " + nr, "green");
+            setStatusTemp("Removed course " + nr, "green");
         else
             throw new Error("Choice is unchanged");
     })
     .catch( (err) => {
         if (add)
-            setStatus("Failed to add title: " + err.text, "red");
+            setStatusTemp("Failed to add title: " + err.text, "red", 5000);
         else
-            setStatus("Failed to delete title: " + err.text, "red");
+            setStatusTemp("Failed to delete title: " + err.text, "red", 5000);
         console.log(err);
     });
 }
@@ -168,13 +187,14 @@ function onArm() {
             // TODO get all marked courses
             let sport = getCurrentSport();
             let user = getSelectedUser(userSelectElem);
-            let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
+            let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
+            console.log(choice);
+            console.log("nrlist: " + nrlist);
             let finishedNrs = [];
 
             if (nrlist.length == 0) {
-                setStatus("Unarming: No courses were marked for booking.", "yellow");
-                armButton.setAttribute("inert", ""); 
-                sleep(1500).then(onArm).then(() => armButton.removeAttribute("inert"));
+                setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
+                .then(onArm);
                 return;
             }
 
@@ -245,9 +265,8 @@ function onArm() {
                 }, 333);
             } else {
                 // call onArm again to unarm
-                setStatus("Unarming: All marked courses were processed.", "yellow");
-                armButton.setAttribute("inert", ""); 
-                sleep(1500).then(onArm).then(() => armButton.removeAttribute("inert"));
+                setStatusTemp("Unarming: All marked courses were processed.", "yellow", 1500, true)
+                .then(onArm);
                 return;
             }
         });
@@ -267,21 +286,14 @@ function onArm() {
         // clear refreshInterval
         if (refreshIntervalID)
             clearInterval(refreshIntervalID);
-        setStatus("Unarmed.", "white");
+        setStatusTemp("Unarmed.");
     }
 }
 
 
 window.onload =  
 () => {
-    let url;
-    try {
-        url = window.location.href;
-    } catch {
-        alert("The link you clicked on is not supported.");
-        setStatus("Not supported link");
-        return;
-    }
+    let url = window.location.href;
     // remove possible anchor from url
     url = url.split('#')[0];
     console.log("Loaded new frame:\n" + url);
@@ -290,13 +302,13 @@ window.onload =
     if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
         let course = getCurrentSport(); 
         setStatus("Click ARM to book the marked courses ASAP", "white");
+        armButton.parentElement.removeAttribute("hidden");
         hintElem.innerHTML = "Mark the " + course + " courses that you want to be booked automatically";
         // modify page
         modifyBookButtons();
     } else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
         setStatus("Course overview");
         hintElem.innerHTML = "Go to a course website to add the course";
-        armButton.parentElement.setAttribute("hidden" ,"");
     } else {
         setStatus("Not a course website", "white");
     }
@@ -342,7 +354,7 @@ armButton.addEventListener("click", onArm);
 download(CHOICE_FILE)
 .then((d) => {
     if (d && Object.keys(d).length > 0) {
-        console.log("CHOICE: ")
+        console.log("Choice is: ")
         choice = d; console.log(choice);
     } else {
         choice = {};
