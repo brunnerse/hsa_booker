@@ -12,8 +12,6 @@ const timeThreshold_mid = 3 * 60 * 1000;
 
 const statusUpdateInterval = 500;
 
-const timeout_msec = 6000;
-
 var allStatusInterval;
 
 var choice = undefined;

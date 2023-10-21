@@ -1,6 +1,8 @@
 const inputSubImm = document.getElementById("submitimmediately");
+const armButton = document.getElementById("armallbutton"); 
 
-let userdata;
+let userdata = {};
+let choice = {};
 
 async function updateUser() {
 	const storedDataElem = document.getElementById("storeduserdata");
@@ -88,6 +90,75 @@ async function loadOptions() {
 */
 }
 
+function getHref(sport) {
+	// TODO better implementation
+	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_" + 
+		sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue") +
+		 ".html";
+}
+
+
+let refreshIntervalID;
+let armed = false;
+
+function onArmAll() {
+    const armText =  document.getElementById("armbuttontext");
+    armed = !armed;
+    if (armed) {
+        armText.innerHTML = "Unarm all marked courses";
+        let style = armButton.getAttribute("style").replace("green", "blue");
+        armButton.setAttribute("style", style); 
+        // mark website as armed in options
+        download("armedcourses")
+        .then((d) => {
+			// TODO add all courses
+			let user = Object.keys(userdata)[0];
+            let courselist = [];
+			for (let sport of Object.keys(choice)) {
+				if (choice[sport][user])
+					courselist.push(sport);
+				//TODO maybe check if not all courses booked yet for that sport
+			}
+			// TODO if not all courses yet: onArm();return;
+
+			d = [];
+			courselist.forEach((sport) => d.push(getHref(sport)));
+            return upload("armedcourses", d).then(onOpenAll());
+        })
+        .then(() => { 
+            // TODO automatically unarm when all courses done
+			// or TODO just unarm instantly and maybe close the popup
+			refreshIntervalID = setInterval(() =>  {
+ 				//.then(onArm);
+                }, 500);
+            });
+    } else {
+        armText.innerHTML = "Arm all marked courses";
+        let style = armButton.getAttribute("style").replace("blue", "green");
+        armButton.setAttribute("style", style); 
+        // clear armed list 
+        upload("armedcourses", []);
+        // clear refreshInterval
+        if (refreshIntervalID)
+            clearInterval(refreshIntervalID);
+    }
+
+}
+
+function onOpenAll() {
+	download("choice").then((d) => {
+		choice = d ?? {};
+	})
+	let user = Object.keys(userdata)[0];
+	for (let sport of Object.keys(choice)) {
+		// TODO don't open the current sport again
+		if (sport[user])
+			window.open(getHref(sport)); //TODO browser refuses due to security policy
+	}
+}
+
+
+
 
 for (let inputElem of document.getElementsByTagName("INPUT")) {
 	inputElem.addEventListener("change", onOptionChange);
@@ -101,6 +172,10 @@ document.getElementById("go-to-options").addEventListener("click", () => {
 document.getElementById("go-to-options").onClick = () => {
   window.open("hsabook_options.html");
 };
+
+
+armButton.addEventListener("click", onArmAll);
+document.getElementById("openall").addEventListener("click", onOpenAll);
 
 loadOptions();
 updateUser();
