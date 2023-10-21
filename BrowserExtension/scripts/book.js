@@ -13,8 +13,14 @@ async function circumventCountdown() {
         //   await sleep(7200);
         let submitElem = document.getElementById("bs_submit");
         console.assert(submitElem);
+        let messageElem = document.createElement("DIV");
+        messageElem.className = "bs_form_row";
+        messageElem.setAttribute("style", "text-align:center;font-weight:bold;color:green;background-color:none;");
+        messageElem.innerHTML = "Submitting once the countdown is done...";
+        submitElem.parentElement.insertBefore(messageElem, submitElem);
         while(submitElem.className != "sub")
             await sleep(50);
+        submitElem.parentElement.removeChild(messageElem);
     } else {
         // another try: injecting javascript code to set send=1
         // also not working due to content policy
@@ -178,18 +184,18 @@ async function processDocument() {
             fillForm(form, data);
         }
 
-        circumventCountdown()
-        .then(async () => {
-            if (await getOption("submitimmediately"))  {
-                // find submit button and submit
-                let submitButton = document.getElementById("bs_submit");
-                console.assert(submitButton);
-                document.forms[0].requestSubmit(submitButton);
-            } else {
-                // Do nothing
+        getOption("submitimmediately")
+        .then((submitimm) => {
+            if (submitimm) {
+                circumventCountdown()
+                .then(() => {
+                    // find submit button and submit
+                    let submitButton = document.getElementById("bs_submit");
+                    console.assert(submitButton);
+                    document.forms[0].requestSubmit(submitButton);
+                });
             }
         }); 
-
     } else if (STATE == "check") {
         let inputElems = form.getElementsByTagName("INPUT");
         let emailVal = "";
