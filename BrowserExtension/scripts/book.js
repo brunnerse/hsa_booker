@@ -106,9 +106,6 @@ function removeWarnMarks() {
             removeClass(g, "warn");
     }
 }
-function removeClass(a, b) { 
-    a.className = a.className.replace(new RegExp("\\b" + b + "\\b"), " ");
-}
 
 
 async function clearForm() {

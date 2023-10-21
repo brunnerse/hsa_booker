@@ -117,10 +117,6 @@ function grossklein(a) {
     return 1 > c || 1 > b || c > b ? !1 : !0 
 }
 
-function removeClass(a, b) { 
-    a.className = a.className.replace(new RegExp("\\b" + b + "\\b"), " ");
-}
-
 async function addUser(user) {
     // get data from form
     let data = {};
@@ -144,6 +140,10 @@ async function addUser(user) {
     }
     
     const isUpdate = userdata[user] ? true : false;
+    if (!isFormModified()) {
+        setStatus("User " + user + " already saved: No changes in data", "green");
+        return;
+    }
 
     setStatus("Fetching most recent user data...");
     return download(USERS_FILE)
@@ -360,6 +360,10 @@ getOption("multipleusers")
 .then((multiusr) => {
     if (!multiusr) {
         document.getElementById("deletebutton").setAttribute("hidden", "");
+        removeClass(document.getElementById("savebutton"), "bs_right");
+        document.getElementById("savebutton").setAttribute("style", "margin: 0 auto");
+        document.getElementById("savebutton").children[0].innerHTML = "Save changes";
+        userSelectElem.parentElement.parentElement.setAttribute("hidden", "");
     }
 });
 

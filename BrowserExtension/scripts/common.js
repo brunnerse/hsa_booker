@@ -12,6 +12,15 @@ try {
     baseStorage = chrome;
 } 
 
+function removeClass(a, b) { 
+    let classes = a.className.split(" ");
+    let newClasses = []
+    for (let c of classes)
+        if (!["", b].includes(c))
+            newClasses.push(c);
+    a.className = newClasses.join(" ");
+}
+
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
         setTimeout(resolve, msec);
