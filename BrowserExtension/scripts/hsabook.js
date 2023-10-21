@@ -1,5 +1,42 @@
 const inputSubImm = document.getElementById("submitimmediately");
 
+let userdata;
+
+async function updateUser() {
+	const storedDataElem = document.getElementById("storeduserdata");
+	let d = await download(USERS_FILE);
+	if (userdata && userdata == d)
+		return;
+	userdata = d ?? {};
+
+	if (Object.keys(userdata).length == 0) {
+		storedDataElem.setAttribute("hidden", "");
+		document.getElementById("edituserbutton").children[0].innerHTML = "Add User";
+	} else {
+		storedDataElem.removeAttribute("hidden");
+		document.getElementById("edituserbutton").children[0].innerHTML = "Edit User data";
+		let data = userdata[Object.keys(userdata)[0]];
+		// Set status select input
+		let selectElem = document.getElementById("usershowelem");
+		let ok = false;
+		for (let i = 0; i < selectElem.options.length; i++) {
+			if (selectElem.options[i].value == data.statusorig) {
+				selectElem.selectedIndex = i;
+				selectElem.dispatchEvent(new Event("change"));
+				ok = true;
+				break;
+			}
+		}
+		// fill other data
+		let inputElems = storedDataElem.getElementsByTagName("INPUT");
+		for (let inputElem of inputElems) {
+			// fill form data
+			if (data[inputElem["name"]] != undefined)
+					inputElem.value = data[inputElem["name"]];
+		}
+	}
+}
+
 function onOptionChange(change) {
 	console.log(change);
 	// set changed options
@@ -27,6 +64,7 @@ function onOptionChange(change) {
 */
 	setAllOptions(optionObj);
 }
+
 
 
 async function loadOptions() {
@@ -65,3 +103,4 @@ document.getElementById("go-to-options").onClick = () => {
 };
 
 loadOptions();
+updateUser();

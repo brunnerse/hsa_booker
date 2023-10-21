@@ -1,100 +1,145 @@
 <html>
 
 <head>
-  <meta charset="utf-8" />
-  <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-  <title>HSA Booker</title>
-  <link href="/styles/modal.css" rel="stylesheet" type="text/css" />
-  <link href="/styles/attachments_hide.css" rel="stylesheet" type="text/css" />
-  <link href="/styles/attachments_list.css" rel="stylesheet" type="text/css" />
-  <link href="/styles/bootstrap.min.css" rel="stylesheet" type="text/css" />
-  <meta content="de-DE" itemprop="inLanguage" />
-  <meta content="text/css" http-equiv="Content-Style-Type" />
-  <link href="/styles/flyout_menu1.css" media="all" rel="stylesheet" type="text/css" />
-  <link href="/styles/angebote.css" media="all" rel="stylesheet" type="text/css" />
-  <link href="/styles/bs_style.css" media="all" rel="stylesheet" type="text/css" />
-  <link rel="stylesheet" href="/styles/bootstrap.min.css" type="text/css" />
+    <meta charset="utf-8" />
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <title>HSA Booker</title>
+    <link href="/styles/modal.css" rel="stylesheet" type="text/css" />
+    <link href="/styles/attachments_hide.css" rel="stylesheet" type="text/css" />
+    <link href="/styles/attachments_list.css" rel="stylesheet" type="text/css" />
+    <meta content="de-DE" itemprop="inLanguage" />
+    <meta content="text/css" http-equiv="Content-Style-Type" />
+    <link href="/styles/flyout_menu1.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/styles/angebote.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/styles/bs_style.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/styles/anmeldung.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/styles/anm_style.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/styles/custom_bars.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="/styles/bootstrap.min.css" rel="stylesheet" type="text/css" />
 </head>
 
+<style>
+    a  {
+        color: blue;
+    }
+</style>
+
 <body>
-  <div class='container-fluid noPad banner' style="width:500px" ;>
-    <div class='title'>
-      <div class='col-xs-10'>HSA Booker</div>
-      <div class='col-xs-2 logo-cont'>
-        <img class='hsa-logo img-responsive' src='/img/logo_entwurf.jpg' />
-      </div>
+    <div class='container-fluid noPad banner' style="min-width:500px" ;>
+        <div class='title'>
+            <div class='col-xs-10'>HSA Booker</div>
+            <div class='col-xs-2 logo-cont'>
+                <img class='hsa-logo img-responsive' src='/img/logo_entwurf.jpg' />
+            </div>
+        </div>
     </div>
-  </div>
-  <div class="" style="height:40px">
-    <a href="javascript:void(0)" class="custom darkred" style="width:90%;height:30px" id="go-to-options">Go to
-      interactive booker</a>
-  </div>
+    <div class="" style="height:40px">
+        <a href="javascript:void(0)" class="custom darkred" style="width:90%;height:30px;margin-left:10px;" id="go-to-options">Go to
+            interactive booker</a>
+    </div>
 
-  <h2>User data</h2>
-  <div class="" style="margin-left:5%;height:40px">
-    <a href="Users.html" style="font-weight:bold;">Edit user data</a>
-  </div>
+    <h2>Configuration</h2>
 
-  <h2>Configuration</h2>
-
-  <div class="bs_form" style="margin:5%">
-    <div class="bs_form_row">
-      <div class="bs_form_sp1">Mode:</div>
-      <div class="bs_form_sp2"><input class="bs_fval_req" type="radio" name="mode" value="formonly">
-        <label>Only fill the form</label>&nbsp;&nbsp;<label>
-          <input class="bs_fval_req" type="radio" name="mode" value="all">
-           Perform complete booking</label>&nbsp;&nbsp;<label>
-      </div>
+    <div class="bs_form_content">
+        <div class="bs_form_row">
+            <div class="" style="float:left;margin-right:5%;margin-top:2px">Mode:</div>
+            <input class="bs_fval_req" type="radio" name="mode" value="formonly">
+            <label>Only fill the form</label>
+            &nbsp;&nbsp;
+            <input class="bs_fval_req" type="radio" name="mode" value="all">
+            <label>Perform complete booking</label>&nbsp;&nbsp;
+        </div>
     </div>
 
     <div class="bs_form_row" id="submitimmediately">
-      <div class="bs_form_sp2">
-        <input type="checkbox" name="submitimmediately"/>
-        <label>Submit immediately</label>
-      </div>
+        <div class="">
+            <input type="checkbox" name="submitimmediately" />
+            <label>Submit immediately</label>
+        </div>
     </div>
     <div class="bs_form_row" id="bypasscountdown">
-      <div class="bs_form_sp2">
-        <input inert type="checkbox" name="bypasscountdown" checked="false"/>
-        <label style="color:gray">Bypass countdown restriction</label>
-      </div>
+        <div class="">
+            <input inert type="checkbox" name="bypasscountdown" checked="false" />
+            <label style="color:gray">Bypass countdown restriction</label>
+        </div>
     </div>
 
     <div class="bs_form_row">
-      <div class="bs_form_sp2">
-        <input inert type="checkbox" checked="false" name="multipleusers" checked="false"/>
-        <label style="color:gray">Allow more than one user</label>
-      </div>
+        <div class="">
+            <input inert type="checkbox" checked="false" name="multipleusers" checked="false" />
+            <label style="color:gray">Allow more than one user</label>
+        </div>
     </div>
 
     <div hidden class="bs_form_row">
-      <label>
-        <input type="checkbox" id="like" />
-        I like colors.
-      </label>
+        <label>
+            <input type="checkbox" id="selectstduser" />
+        </label>
     </div>
     <div hidden class="bs_form_row">
-      <div class="bs_form_sp1">Modus</label></div>
-      <div class="bs_form_sp2">
-        <select id="color">
-          <option value="red">red</option>
-          <option value="green">green</option>
-          <option value="blue">blue</option>
-          <option value="yellow">yellow</option>
-        </select>
-      </div>
+        <div class="bs_form_sp1">Standard user</label></div>
+        <div class="bs_form_sp2">
+            <select id="color">
+                <option value=""></option>
+            </select>
+            <!-- Standard-User auswählen; Dabei ist index 0 illegal -->
+        </div>
+    </div>
     </div>
 
 
-    <br>
-    TODO: Standard-User auswählen; Dabei ist index 0 illegal
 
-    Countdown + Aktivierung in Fenster
-    Sonst:
-    Verweis auf Options-Seite, wenn zum ersten Mal etwas auf der Seite hinzugefügt wird + in Status-Window (Reminder mit
-    Time)
+    <h2>User data</h2>
+    <div id="storeduserdata" style="margin: 0 auto" class="bs_form_content anmeldung">
+        <table align="center">
+            <tr>
+                <td><label style="font-size:85%">Vorname:</label>
+                </td>
+                <td> <input style="font-size:85%" inert class="" type="text" name="vorname" maxlength="50">
+                </td>
+            </tr>
+            <tr>
+                <td> <label style="font-size:85%;margin-top:5px;margin-bottom:5px;margin-right:20px">Familienname:</label></td>
+                <td> <input style="font-size:85%" inert class="" type="text" name="name" maxlength="60">
+                </td>
+            </tr>
+            <tr>
+                <td><label style="font-size:85%">Status:</label></td>
+                <td>
+                    <select class="bs_form_field bs_fval_req" inert name="statusorig" size="1" id="usershowelem" style="font-size:85%">
+                        <option style="font-size:85%" value="" selected="selected">NONE</option>
+                        <option style="font-size:85%" value="S-UNIA">StudentIn der UNI Augsburg</option>
+                        <option style="font-size:85%" value="S-HS">StudentIn der HS Augsburg</option>
+                        <option style="font-size:85%" value="S-Sport">SportstudentIn</option>
+                        <option style="font-size:85%" value="S-aH">StudentIn einer anderen Hochschule</option>
+                        <option style="font-size:85%" value="B-UNIA">Beschäftigte/r der UNI Augsburg</option>
+                        <option style="font-size:85%" value="B-HS">Beschäftigte/r der HS Augsburg</option>
+                        <option style="font-size:85%" value="FV">Förderverein</option>
+                    </select>
+                </td>
+
+            </tr>
+        </table>
+
+    </div>
+    <div class="bs_form_row">
+        <div class="bs_button" style="margin: 0 auto; padding:0; margin-top: 10px;" id="edituserbutton">
+            <a href="Users.html" style="font-weight:bold;">Edit user data</a>
+        </div>
+    </div>
+
+    <h2>Marked courses</h2>
+    <div class="" style="margin-left:5%;height:40px">
+        <a href="javascript:void(0)" style="font-weight:bold;">Open all marked course sites</a>
+        <div align="center" style="margin-top:5%;font-size:120%;font-weight:bolder;">
+            <div id="armbuttontext" style="float:left;text-align:right;padding-right:5%">Arm all marked courses</div>
+            <button class="roundbutton" style="background-color:green;float:left;" id="armbutton"></button>
+        </div>
+    </div>
+
 </body>
 <script src="scripts/common.js"></script>
+<script src="scripts/users_common.js"></script>
 <script src="scripts/hsabook.js"></script>
 
 </html>
