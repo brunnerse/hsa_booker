@@ -5,11 +5,8 @@ const userSelectElem = document.getElementById("userselect");
 const armButton = document.getElementById("armbutton"); 
 const hintElem = document.getElementById("hint");
 
-const refreshInterval_short = 2 * 1000;
-const refreshInterval_mid = 5 * 1000;
-const refreshInterval_long = 30 * 1000;
-const timeThreshold_short = 15 * 1000; 
-const timeThreshold_mid = 3 * 60 * 1000; 
+const refreshIntervals = [1000, 2000, 5000, 30000];
+const timeThresholds =   [0, 10000, 90000, Infinity]; 
 
 const statusUpdateInterval = 500;
 
@@ -243,16 +240,16 @@ function onArm() {
                 let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
                 if (bookTimeElems.length > 0) 
                     bookingTime = bookTimeElems[0].innerHTML;
-                let refreshInterval;
                 let remainingTime = getRemainingTimeMS(bookingTime);
-                if (remainingTime && remainingTime > timeThreshold_short) {
-                    if (remainingTime > timeThreshold_mid) 
-                        refreshInterval = Math.min(refreshInterval_long, remainingTime - timeThreshold_mid);
-                    else
-                        refreshInterval = Math.min(refreshInterval_mid, remainingTime - timeThreshold_short);
-                } else {
-                    refreshInterval = refreshInterval_short;
+                // find correct threshold for current remaining time
+                let refreshInterval = refreshIntervals[refreshIntervals.length-1];
+                for (let i = 0; i < refreshIntervals.length-1; i++) {
+                    if (remainingTime <= timeThresholds[i]) {
+                        refreshInterval = refreshIntervals[i];
+                        break;
+                    }
                 }
+
                 // refresh window in refreshInterval seconds
                 let lastRefreshTime = Date.now();
                 refreshIntervalID = setInterval(() => {

@@ -3,6 +3,7 @@ const armButton = document.getElementById("armallbutton");
 
 let userdata = {};
 let choice = {};
+let statusElements = {};
 
 async function updateUser() {
 	const storedDataElem = document.getElementById("storeduserdata");
@@ -39,6 +40,97 @@ async function updateUser() {
 	}
 }
 
+function getErrorTable(nr, details, error) {
+	const notAvailElem = document.getElementById("notavail").cloneNode(true);
+	notAvailElem.getElementsByClassName("bs_sknr")[1].innerHTML = nr;
+	notAvailElem.getElementsByClassName("bs_sdet")[1].innerHTML = details;
+	notAvailElem.getElementsByClassName("bs_sbuch")[1].innerHTML = error;
+	notAvailElem.removeAttribute("hidden");
+	return notAvailElem;
+}
+
+async function updateEntryInTable(entryElem, sport, nr, user) {
+	const title = `${sport}_${nr}_${user}`;
+	const choiceElem = document.getElementById("choice");
+
+	// check if nr is already in table
+	for (let tableEntry of choiceElem.children) {
+		if (tableEntry.getAttribute("title") == title) {
+			tableEntry.outerHTML = entryElem.innerHTML;
+			entryElem = tableEntry;
+			break;
+		}
+	}
+	entryElem.setAttribute("title", title);
+	choiceElem.appendChild(entryElem);
+
+	// replace tableRow with entryHTML input appended with the old status bar 
+	const rowElem = entryElem.getElementsByTagName("TR")[1];
+	// clear row for 100msec for visual effect of refresh
+	for (let cell of rowElem.children)
+		cell.setAttribute("style", "color: white;");
+	await sleep(100);
+	// TODO append close button and set listener
+	// element.getElementsByClassName("closebutton")[0].addListener("click", () => onCloseButton(element));
+	//TODO append status element
+//	const statusElem = entryElem.getElementsByClassName("nr_name")[0];
+//	rowElem.innerHTML = entryHTML + statusElem.outerHTML;
+
+//	statusElements[title] = rowElem.getElementsByClassName("nr_name")[0];
+//	updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
+
+}
+
+function onCloseButton(button) {
+    let parent = button.parentElement;
+    while (parent.id != "bs_content") {
+        parent = parent.parentElement;
+    }
+    let title = parent.title;
+    let [sport, nr, user] = title.split("_");
+    let longTitle = `${sport} - ${nr} (${user})`;
+
+    if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr) && confirm(`Remove course ${longTitle}?`)) {
+        delete bookingState[title];
+        choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
+        if (choice[sport][user].length == 0) {
+            delete choice[sport][user];
+            if (Object.keys(choice[sport]).length == 0)
+                delete choice[sport];
+        }
+        // update choice file
+        upload(CHOICE_FILE, choice)
+        .then((data) => { 
+            choice = data;
+        })
+        .then (() => {
+            // update bookedcourses file
+            console.log("Trying to remove course " + nr + " from bookedcourses file...");
+            return download("bookedcourses")
+            .then((bookedCourses) => {
+				if (bookedCourses.includes(nr)) {
+					bookedTitles.splice(bookedCourses.indexOf(nr), 1);
+					upload("bookedcourses", bookedTitles);
+				}
+            });
+        });
+    }
+    return false;
+}
+
+async function updateChoice() {
+	for (let sport of Object.keys(choice)) {
+		for (let user of Object.keys(choice[sport])) {
+			for (let nr of choice[sport][user]) {
+				let title = `${sport}_${nr}_${user}`;
+				let entryElem = getErrorTable(nr, title, "init");
+				console.log("update entry")
+				await updateEntryInTable(entryElem, sport, nr, user); 
+			}
+		}
+	}
+}
+
 function onOptionChange(change) {
 	console.log(change);
 	// set changed options
@@ -67,8 +159,6 @@ function onOptionChange(change) {
 	setAllOptions(optionObj);
 }
 
-
-
 async function loadOptions() {
 	for (let inputElem of document.getElementsByTagName("INPUT")) {
 		if (inputElem.type == "radio") {
@@ -89,6 +179,7 @@ async function loadOptions() {
 	}
 */
 }
+
 
 function getHref(sport) {
 	// TODO better implementation
@@ -184,3 +275,8 @@ document.getElementById("openall").addEventListener("click", onOpenAll);
 
 loadOptions();
 updateUser();
+
+download(CHOICE_FILE).then((d) => {
+	choice = d;
+	updateChoice();
+})
