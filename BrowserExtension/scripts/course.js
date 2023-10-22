@@ -148,10 +148,10 @@ async function onAdd(button) {
         modifyBookButtons();
         if (add && choice[sport] && choice[sport][user] && choice[sport][user].includes(nr))
 //            setStatus("Added course " + nr + " for user " + user + ".", "green");
-              setStatusTemp("Added course " + nr, "green");
+              setStatusTemp("Marked course " + nr + " for booking", "green");
         else if (!add && (!choice[sport] || !choice[sport][user] || !choice[sport][user].includes(nr)))
 //          setStatus("Removed course " + nr + " from user " + user + ".", "green");
-            setStatusTemp("Removed course " + nr, "green");
+            setStatusTemp("Unmarked course " + nr, "green");
         else
             throw new Error("Choice is unchanged");
     })
@@ -183,14 +183,14 @@ function onArm() {
                 d.push(window.location.href);
             return upload("armedcourses", d);
         })
-        .then(() => { 
+        .then(async () => { 
             // TODO get all marked courses
             let sport = getCurrentSport();
             let user = getSelectedUser(userSelectElem);
             let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
             console.log(choice);
             console.log("nrlist: " + nrlist);
-            let finishedNrs = [];
+            let finishedNrs = await download("bookedcourses") ?? [];
 
             if (nrlist.length == 0) {
                 setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
@@ -314,10 +314,12 @@ window.onload =
     }
 };
 
-function modifyBookButtons() {
+async function modifyBookButtons() {
     let sport = getCurrentSport();
     let user = getSelectedUser(userSelectElem);
+    let bookedCourses = await download("bookedcourses") ?? [];
     let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
+    
     // insert buttons into book table cell
     for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
         if (bookElem.tagName != "TD")
@@ -336,14 +338,21 @@ function modifyBookButtons() {
         while (aktionElem.lastChild)
             aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
-        let button = document.createElement("BUTTON");
-        button.innerHTML = nrlist.includes(nr) ? "MARKED" : "MARK FOR BOOKING"; 
-        //button.className = className;
-        button.style = "width:95%; border-radius:5px;text-align:center;" 
-            + (nrlist.includes(nr) ? "background-color: green;" : "");
-        button.type = "button";
-        aktionElem.appendChild(button);
-        button.onclick = () => onAdd(button);
+        if (bookedCourses.includes(nr)) {
+            let elem = document.createElement("DIV");
+            elem.setAttribute("style", "width:95%; border-radius:5px;text-align:center;background-color:blue;");
+            elem.innerHTML = "ALREADY BOOKED";
+            aktionElem.appendChild(elem);
+        } else {
+            let button = document.createElement("BUTTON");
+            button.innerHTML = nrlist.includes(nr) ? "MARKED" : "MARK FOR BOOKING"; 
+            //button.className = className;
+            button.style = "width:95%; border-radius:5px;text-align:center;" 
+                + (nrlist.includes(nr) ? "background-color: green;" : "");
+            button.type = "button";
+            aktionElem.appendChild(button);
+            button.onclick = () => onAdd(button);
+        }
     }
 }
 

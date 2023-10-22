@@ -146,15 +146,20 @@ function onArmAll() {
 }
 
 function onOpenAll() {
-	download("choice").then((d) => {
+	download(CHOICE_FILE).then((d) => {
 		choice = d ?? {};
-	})
-	let user = Object.keys(userdata)[0];
-	for (let sport of Object.keys(choice)) {
-		// TODO don't open the current sport again
-		if (sport[user])
-			window.open(getHref(sport)); //TODO browser refuses due to security policy
-	}
+	}).then(async ()=> {
+		let currentHref = await getCurrentTabHref(); 
+		let user = Object.keys(userdata)[0];
+		for (let sport of Object.keys(choice)) {
+			// TODO maybe get all tabs and don't reopen the ones already open
+			if (choice[sport][user]) {
+				let href = getHref(sport);
+				if (href != currentHref)
+					window.open(getHref(sport));
+			}
+		}
+	});
 }
 
 

@@ -62,6 +62,16 @@ function requestHTML(method, url) {
     });
 }
 
+function getCurrentTabHref() {
+    return new Promise((resolve) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+            // since only one tab should be active and in the current window at once
+            // the return variable should only have one entry
+            var activeTab = tabs[0];
+            resolve(activeTab.url);
+        });
+    });
+}
 
 function getJSONFileString(obj) {
     const tab="    ";
