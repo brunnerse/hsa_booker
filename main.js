@@ -1,9 +1,7 @@
 const INACTIVE = true;
-const BYPASS_COUNTDOWN = false;  // due to server-sided check, BYPASS_COUNTDOWN must always be set to false
-const HSA_LINK_new = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
-const HSA_LINK_old = "https://web.archive.org/web/20220120140607/https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"
-var HSA_LINK = HSA_LINK_new;
-
+const BYPASS_COUNTDOWN = false;  // due to a server-sided check, BYPASS_COUNTDOWN must always be set to false
+const HSA_LINK = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
+var DEBUG_ENABLED = false;
 
 const refreshInterval_short = 2 * 1000;
 const refreshInterval_mid = 5 * 1000;
@@ -662,7 +660,7 @@ async function refreshSport(sport, updateTitles=[]) {
                 // check booking button if not already booked
                 if (bookingState[title] != "booked") {
                     let bookElem = n.parentElement.getElementsByClassName("bs_sbuch")[0];
-                    let bookButton = bookElem.getElementsByTagName("INPUT")[0];
+                    let bookButton = DEBUG_ENABLED ? undefined : bookElem.getElementsByTagName("INPUT")[0];
                     switch (bookButton ? bookButton.className : "") {
                         case "bs_btn_buchen":
                             bookingState[title] = "ready";
@@ -939,12 +937,8 @@ document.getElementById("clearstatus").addEventListener("click", () => updateSta
 toggleButtonsInert(["unarm",]);
 
 document.getElementById("debug").addEventListener("click", () => {
-    if (HSA_LINK == HSA_LINK_new) {
-        HSA_LINK = HSA_LINK_old;
-    } else {
-        HSA_LINK = HSA_LINK_new;
-    }
-    console.debug("Switched HSA_LINK to " + HSA_LINK);
+    DEBUG_ENABLED = !DEBUG_ENABLED;
+    console.log("Switched DEBUG to " + (DEBUG_ENABLED ? "on" : "off"));
 });
 
 
