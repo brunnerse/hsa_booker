@@ -54,69 +54,44 @@ async function updateEntryInTable(entryElem, sport, nr, user) {
 	const choiceElem = document.getElementById("choice");
 
 	// check if nr is already in table
+	let replaceEntry;
 	for (let tableEntry of choiceElem.children) {
 		if (tableEntry.getAttribute("title") == title) {
-			tableEntry.outerHTML = entryElem.innerHTML;
-			entryElem = tableEntry;
+			replaceEntry = tableEntry;
 			break;
 		}
 	}
-	entryElem.setAttribute("title", title);
-	choiceElem.appendChild(entryElem);
-
+	if (!replaceEntry) {
+		choiceElem.appendChild(entryElem.cloneNode(true));
+		replaceEntry = choiceElem.lastChild; 
+		replaceEntry.setAttribute("title", title);
+	}
 	// replace tableRow with entryHTML input appended with the old status bar 
-	const rowElem = entryElem.getElementsByTagName("TR")[1];
+	const rowElem = replaceEntry.getElementsByTagName("TR")[1];
 	// clear row for 100msec for visual effect of refresh
 	for (let cell of rowElem.children)
 		cell.setAttribute("style", "color: white;");
 	await sleep(100);
-	// TODO append close button and set listener
-	// element.getElementsByClassName("closebutton")[0].addListener("click", () => onCloseButton(element));
-	//TODO append status element
-//	const statusElem = entryElem.getElementsByClassName("nr_name")[0];
-//	rowElem.innerHTML = entryHTML + statusElem.outerHTML;
 
-//	statusElements[title] = rowElem.getElementsByClassName("nr_name")[0];
-//	updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
+	replaceEntry.innerHTML = entryElem.innerHTML;
+	// set close button listener
+	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
+	closeButton.addEventListener("click", () => onCloseButton(closeButton));
+
+	// Create href to course in the whole row
+	let openCourseFun = () => {
+		window.open(getHref(sport)+"#K"+nr);
+	}
+	for (let elem of replaceEntry.getElementsByTagName("TR")[1].children) {
+		if (elem.children.length == 0)
+			elem.addEventListener("click", openCourseFun);
+		else
+			for (let child of elem.children)
+				child.addEventListener("click", openCourseFun);
+	}
 
 }
 
-function onCloseButton(button) {
-    let parent = button.parentElement;
-    while (parent.id != "bs_content") {
-        parent = parent.parentElement;
-    }
-    let title = parent.title;
-    let [sport, nr, user] = title.split("_");
-    let longTitle = `${sport} - ${nr} (${user})`;
-
-    if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr) && confirm(`Remove course ${longTitle}?`)) {
-        delete bookingState[title];
-        choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
-        if (choice[sport][user].length == 0) {
-            delete choice[sport][user];
-            if (Object.keys(choice[sport]).length == 0)
-                delete choice[sport];
-        }
-        // update choice file
-        upload(CHOICE_FILE, choice)
-        .then((data) => { 
-            choice = data;
-        })
-        .then (() => {
-            // update bookedcourses file
-            console.log("Trying to remove course " + nr + " from bookedcourses file...");
-            return download("bookedcourses")
-            .then((bookedCourses) => {
-				if (bookedCourses.includes(nr)) {
-					bookedTitles.splice(bookedCourses.indexOf(nr), 1);
-					upload("bookedcourses", bookedTitles);
-				}
-            });
-        });
-    }
-    return false;
-}
 
 async function updateChoice() {
 	for (let sport of Object.keys(choice)) {
@@ -130,6 +105,96 @@ async function updateChoice() {
 		}
 	}
 }
+
+async function updateChoice() {
+	for (let sport of Object.keys(choice)) {
+		requestHTML("GET", getHref(sport))
+		.then((sportDoc) => {
+			for (let user of Object.keys(choice[sport])) {
+				for (let nr of choice[sport][user]) {
+					let rowElem; 
+					for (let nrElem of sportDoc.getElementsByClassName("bs_sknr")) {
+						if (nrElem.innerHTML == nr) {
+							rowElem = nrElem.parentElement;
+							console.assert(rowElem.tagName == "TR");
+							break;
+						}
+					}
+					if (!rowElem)
+						throw new Error("NR not found");
+					let entryElem = document.getElementById("notavail").cloneNode(true);
+					let bodyElem = entryElem.getElementsByTagName("TBODY")[0];
+					bodyElem.innerHTML = rowElem.outerHTML;
+					let newRowElem = bodyElem.lastChild;
+					for (let i = newRowElem.children.length-1;i >= 0; i--) {
+						let cellElem = newRowElem.children[i];
+						if (!["bs_sknr", "bs_sbuch", "bs_sdet", "bs_stag", "bs_szeit"].includes(cellElem.className))
+							newRowElem.removeChild(cellElem);
+					}
+					// append sport to details (bs_sdet)
+					let detElem = newRowElem.getElementsByClassName("bs_sdet")[0];
+					if (detElem)
+						detElem.innerHTML = sport + " - " + detElem.innerHTML; // + " (" + user + ")";
+					updateEntryInTable(entryElem, sport, nr, user); 
+				}
+			}
+
+		})
+		.catch((err) => {
+			for (let user of Object.keys(choice[sport])) {
+				for (let nr of choice[sport][user]) {
+					let title = `${sport}_${nr}_${user}`;
+					let entryElem = getErrorTable(nr, title, err);
+					updateEntryInTable(entryElem, sport, nr, user); 
+				}
+			}
+		});
+	}
+}
+
+function onCloseButton(button) {
+    let parent = button.parentElement;
+    while (parent.className != "item-page") {
+        parent = parent.parentElement;
+    }
+    let title = parent.title;
+	console
+    let [sport, nr, user] = title.split("_");
+	console.log(sport, nr, user);
+
+    if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr)) {
+		// remove nr from choice and remove element from list
+        choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
+		parent.parentElement.removeChild(parent);
+		// clean up choice obj
+        if (choice[sport][user].length == 0) {
+            delete choice[sport][user];
+            if (Object.keys(choice[sport]).length == 0)
+                delete choice[sport];
+        }
+        // update choice file
+        upload(CHOICE_FILE, choice)
+        .then((data) => { 
+            choice = data;
+        })
+        .then (() => {
+            // update bookedcourses file
+            console.log("Trying to remove course " + nr + " from booked courses...");
+            return download(BOOKED_FILE)
+            .then((bookedCourses) => {
+				if (bookedCourses && bookedCourses.includes(nr)) {
+					bookedTitles.splice(bookedCourses.indexOf(nr), 1);
+					upload(BOOKED_FILE, bookedTitles);
+				}
+            });
+        });
+    } else {
+		console.error("Could not remove course " + nr + ": Not found in choice!");
+	}
+    return false;
+}
+
+
 
 function onOptionChange(change) {
 	console.log(change);
@@ -255,7 +320,6 @@ function onOpenAll() {
 
 
 
-
 for (let inputElem of document.getElementsByTagName("INPUT")) {
 	inputElem.addEventListener("change", onOptionChange);
 }
@@ -276,7 +340,16 @@ document.getElementById("openall").addEventListener("click", onOpenAll);
 loadOptions();
 updateUser();
 
-download(CHOICE_FILE).then((d) => {
+download(CHOICE_FILE).then(async (d) => {
 	choice = d;
+	for (let sport of Object.keys(choice)) {
+		for (let user of Object.keys(choice[sport])) {
+			for (let nr of choice[sport][user]) {
+				let title = `${sport}_${nr}_${user}`;
+				let entryElem = getErrorTable(nr, title, "init");
+				await updateEntryInTable(entryElem, sport, nr, user); 
+			}
+		}
+	}
 	updateChoice();
-})
+});
