@@ -279,7 +279,7 @@ function onArmAll() {
 
 			d = [];
 			courselist.forEach((sport) => d.push(getHref(sport)));
-            return upload("armedcourses", d).then(onOpenAll());
+            return upload("armedcourses", d).then(onOpenAll(true));
         })
         .then(() => { 
             // TODO automatically unarm when all courses done
@@ -301,18 +301,23 @@ function onArmAll() {
 
 }
 
-function onOpenAll() {
+function onOpenAll(checkAllOpenTabs=true) {
 	download(CHOICE_FILE).then((d) => {
 		choice = d ?? {};
 	}).then(async ()=> {
-		let currentHref = await getCurrentTabHref(); 
+		let hrefs = checkAllOpenTabs ? await getAllTabsHref() : [await getCurrentTabHref()]; 
+		console.log(hrefs);
+		// remove anchors from hrefs 
+		for (let i = 0; i < hrefs.length; i++)
+			hrefs[i] = hrefs[i].split("#")[0];
+
 		let user = Object.keys(userdata)[0];
 		for (let sport of Object.keys(choice)) {
-			// TODO maybe get all tabs and don't reopen the ones already open
+			// get all tabs and don't reopen the ones already open
 			if (choice[sport][user]) {
-				let href = getHref(sport);
-				if (href != currentHref)
-					window.open(getHref(sport));
+				let href = getHref(sport);		
+				if (!hrefs.includes(href)) // open href with anchor to first course nr appended
+					window.open(getHref(sport) + "#K" + Math.min(...choice[sport][user]));
 			}
 		}
 	});

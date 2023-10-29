@@ -73,6 +73,21 @@ function getCurrentTabHref() {
     });
 }
 
+function getAllTabsHref() {
+    return new Promise((resolve) => {
+        chrome.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
+        function (tabs) {
+            console.log(tabs);
+            let hrefs = [];
+            for (let tab of tabs) {
+                hrefs.push(tab.url);
+            }
+            resolve(hrefs);
+        });
+    });
+
+}
+
 function getJSONFileString(obj) {
     const tab="    ";
     let jstr = JSON.stringify(obj);
