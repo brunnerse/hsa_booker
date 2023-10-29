@@ -240,11 +240,11 @@ async function processDocument() {
             return;
         }
         // marked course as booked 
-        download("bookedcourses")
+        download(BOOKED_FILE)
         .then((d) => {
             d = d ?? [];
             d.push(nr);
-            return upload("bookedcourses", d);
+            return upload(BOOKED_FILE, d);
         })
         .then((bookedCourses) => {
             console.log("Successfully informed server about successful booking.");

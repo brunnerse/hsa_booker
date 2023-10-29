@@ -187,7 +187,7 @@ function onArm() {
             let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
             console.log(choice);
             console.log("nrlist: " + nrlist);
-            let finishedNrs = await download("bookedcourses") ?? [];
+            let finishedNrs = await download(BOOKED_FILE) ?? [];
 
             if (nrlist.length == 0) {
                 setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
@@ -314,7 +314,7 @@ window.onload =
 async function modifyBookButtons() {
     let sport = getCurrentSport();
     let user = getSelectedUser(userSelectElem);
-    let bookedCourses = await download("bookedcourses") ?? [];
+    let bookedCourses = await download(BOOKED_FILE) ?? [];
     let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
     
     // insert buttons into book table cell
