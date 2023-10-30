@@ -56,5 +56,5 @@ let tBodyElems = document.getElementsByTagName("TBODY");
 for (let tBody of tBodyElems) {
 	let tRows = tBody.getElementsByTagName("TR");
 	for (let tRow of tRows)
-		tRow.innerHTML += '<td class="aktion bs_sbuch" style="text-align:center"></td>'
+		tRow.innerHTML += '<td class="aktion"></td>'
 }

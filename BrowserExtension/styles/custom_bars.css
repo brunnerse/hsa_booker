@@ -12,6 +12,12 @@
   margin: 0px 2px;
 }
 
+.aktion {
+     vertical-align: middle;
+     text-align: center;
+     width: 105px;
+}
+
 .bar {
     display: block;
     position: fixed;

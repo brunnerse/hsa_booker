@@ -109,11 +109,6 @@ async function onAdd(button) {
     let trElem = button.parentElement.parentElement;
     let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
 
-    // confirm if course is already full
-    if (add && button.className == "bs_btn_ausgebucht")
-        if (!confirm("Course is already full. Add nevertheless?"))
-            return;
-
     setStatus("Fetching most recent choice data...");
     return download(CHOICE_FILE).then((d) => {
         choice = d ?? {};
@@ -335,20 +330,23 @@ async function modifyBookButtons() {
         while (aktionElem.lastChild)
             aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
+        let button = document.createElement("BUTTON");
+        button.innerHTML = nrlist.includes(nr) ? "MARKED" : "MARK FOR BOOKING"; 
+        button.style = "width:95%; border-radius:5px;text-align:center;" 
+            + (nrlist.includes(nr) ? "background-color: green;color:white" : ""); // TODO also if booked 
+        button.type = "button";
+        aktionElem.appendChild(button);
+        button.onclick = () => onAdd(button);
+
+        // TODO if course is booked
         if (bookedCourses.includes(nr)) {
-            let elem = document.createElement("DIV");
-            elem.setAttribute("style", "width:95%; border-radius:5px;text-align:center;background-color:blue;");
-            elem.innerHTML = "ALREADY BOOKED";
-            aktionElem.appendChild(elem);
-        } else {
-            let button = document.createElement("BUTTON");
-            button.innerHTML = nrlist.includes(nr) ? "MARKED" : "MARK FOR BOOKING"; 
-            //button.className = className;
-            button.style = "width:95%; border-radius:5px;text-align:center;" 
-                + (nrlist.includes(nr) ? "background-color: green;" : "");
-            button.type = "button";
-            aktionElem.appendChild(button);
-            button.onclick = () => onAdd(button);
+            button.setAttribute("inert", ""); 
+            button.innerHTML = "ALREADY BOOKED";
+            // Color the entire line light green
+            for (let c of bookElem.parentElement.children) {
+                let style = c.getAttribute("style") ?? "";
+                c.setAttribute("style", "background-color:lime;" + style);
+            }
         }
     }
 }
