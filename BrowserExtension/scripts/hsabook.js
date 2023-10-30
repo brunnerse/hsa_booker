@@ -346,7 +346,7 @@ loadOptions();
 updateUser();
 
 download(CHOICE_FILE).then(async (d) => {
-	choice = d;
+	choice = d ?? {};
 	for (let sport of Object.keys(choice)) {
 		for (let user of Object.keys(choice[sport])) {
 			for (let nr of choice[sport][user]) {

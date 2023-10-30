@@ -77,7 +77,7 @@ async function onSelectChange() {
             // open user edit page in new tab
             // Opening extension directly doesnt work; make alert instead
             //window.open(chrome.runtime.getURL("Users.html"));
-            alert("To add users, click on the HSA Booker icon on the top right and click \"Edit User Data\".")
+            alert("To add a user, click on the HSA Booker extension icon in the upper right corner of your browser and click \"Add User\".")
             // reset selection to the first blank one
             setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             return;
