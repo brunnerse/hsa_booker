@@ -262,15 +262,9 @@ async function bookCourse(title) {
             let submitButton = frameDoc.getElementById("bs_submit");
             console.assert(submitButton);
 
-            // lever out countdown 
-            // fastest way:
-            iFrameElem.contentWindow.send = 1;
-            submitButton.className = "sub";
-            // other way:
-            //iFrameElem.contentWindow.btime = -1; 
-            //await sleep(1000);
-            // Alternatively wait 7s until submitButton.className changed to sub to avoid attracting attention
-            // while(submitButton.className != "sub")await sleep(100);
+            // wait until countdown is over
+            while(submitButton.className != "sub")
+                await sleep(50);
 
             // Check if should abort once more before submitting
             if (checkAbortFun()) {
@@ -354,8 +348,6 @@ async function bookCourse(title) {
                     form.requestSubmit(submitButton);
                 }
             };
-            //TODO is sleep here necessary?
-            //await sleep(1000);
             form.requestSubmit(submitButton);
         };
 

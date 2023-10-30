@@ -83,11 +83,13 @@ async function updateEntryInTable(entryElem, sport, nr, user) {
 		window.open(getHref(sport)+"#K"+nr);
 	}
 	for (let elem of replaceEntry.getElementsByTagName("TR")[1].children) {
-		if (elem.children.length == 0)
+		if (!elem.className.match("bs_sbuch")) {
 			elem.addEventListener("click", openCourseFun);
-		else
-			for (let child of elem.children)
-				child.addEventListener("click", openCourseFun);
+			elem.className += " link";
+		} else {
+			elem.lastChild.addEventListener("click", openCourseFun);
+			elem.lastChild.className += " link";
+		}
 	}
 
 }
@@ -138,7 +140,6 @@ async function updateChoice() {
 					updateEntryInTable(entryElem, sport, nr, user); 
 				}
 			}
-
 		})
 		.catch((err) => {
 			for (let user of Object.keys(choice[sport])) {
