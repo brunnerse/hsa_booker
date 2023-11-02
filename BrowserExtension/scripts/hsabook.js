@@ -266,21 +266,31 @@ function onArmAll() {
         let style = armButton.getAttribute("style").replace("green", "blue");
         armButton.setAttribute("style", style); 
         // mark website as armed in options
-        download("armedcourses")
+        download(ARMED_FILE)
         .then((d) => {
-			// TODO add all courses
 			let user = Object.keys(userdata)[0];
             let courselist = [];
 			for (let sport of Object.keys(choice)) {
 				if (choice[sport][user])
 					courselist.push(sport);
-				//TODO maybe check if not all courses booked yet for that sport
+				// check if not all courses booked yet for that sport
+				listenFun = (changes) => {
+					console.log("LISTENFUN:")
+					let items = Object.keys(changes);
+					console.log(items);
+					if (items.includes(ARMED_FILE)) {
+						if (armed && changes[ARMED_FILE].newValue.length == 0) {
+							// unarm
+							onArmAll();
+							removeChangeListener(listenFun);
+						}
+					}
+				}
+				addChangeListener(listenFun);
 			}
-			// TODO if not all courses yet: onArm();return;
-
 			d = [];
-			courselist.forEach((sport) => d.push(getHref(sport)));
-            return upload("armedcourses", d).then(onOpenAll(true));
+			courselist.forEach((sport) => d.push(sport));
+            return upload(ARMED_FILE, d).then(onOpenAll(true));
         })
         .then(() => { 
             // TODO automatically unarm when all courses done
@@ -294,7 +304,7 @@ function onArmAll() {
         let style = armButton.getAttribute("style").replace("blue", "green");
         armButton.setAttribute("style", style); 
         // clear armed list 
-        upload("armedcourses", []);
+        upload(ARMED_FILE, []);
         // clear refreshInterval
         if (refreshIntervalID)
             clearInterval(refreshIntervalID);
@@ -307,7 +317,6 @@ function onOpenAll(checkAllOpenTabs=true) {
 		choice = d ?? {};
 	}).then(async ()=> {
 		let hrefs = checkAllOpenTabs ? await getAllTabsHref() : [await getCurrentTabHref()]; 
-		console.log(hrefs);
 		// remove anchors from hrefs 
 		for (let i = 0; i < hrefs.length; i++)
 			hrefs[i] = hrefs[i].split("#")[0];

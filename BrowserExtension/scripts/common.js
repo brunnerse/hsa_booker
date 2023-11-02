@@ -1,6 +1,7 @@
 const USERS_FILE = "userdata";
 const CHOICE_FILE = "choice";
 const BOOKED_FILE = "bookedcourses";
+const ARMED_FILE = "armedcourses";
 
 const timeout_msec = 6000;
 
@@ -157,7 +158,10 @@ function upload(filename, obj) {
 }
 
 function addChangeListener(fun) {
-    chrome.storage.onChanged.setListener(fun);
+    chrome.storage.sync.onChanged.addListener(fun);
+}
+function removeChangeListener(fun) {
+    chrome.storage.sync.onChanged.removeListener(fun);
 }
 
 

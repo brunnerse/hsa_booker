@@ -168,12 +168,12 @@ function onArm() {
         let style = armButton.getAttribute("style").replace("green", "blue");
         armButton.setAttribute("style", style); 
         // mark website as armed in options
-        download("armedcourses")
+        download(ARMED_FILE)
         .then((d) => {
             d = d ?? [];
-            if (!d.includes(window.location.href))
-                d.push(window.location.href);
-            return upload("armedcourses", d);
+            if (!d.includes(getCurrentSport()))
+                d.push(getCurrentSport());
+            return upload(ARMED_FILE, d);
         })
         .then(async () => { 
             // TODO get all marked courses
@@ -267,13 +267,13 @@ function onArm() {
         let style = armButton.getAttribute("style").replace("blue", "green");
         armButton.setAttribute("style", style); 
         // remove website from armed list in options
-        download("armedcourses")
+        download(ARMED_FILE)
         .then((d) => {
             d = d ?? [];
             let idx = d.indexOf(window.location.href);
             if (idx >= 0) 
                 d.splice(idx,1);
-            return upload("armedcourses", d);
+            return upload(ARMED_FILE, d);
         })
         // clear refreshInterval
         if (refreshIntervalID)
@@ -375,8 +375,26 @@ download(CHOICE_FILE)
 .then(() => updateUserSelect(userSelectElem, userdata));
 
 // check if website should be armed
-download("armedcourses")
+download(ARMED_FILE)
 .then((d) => {
-    if (d && d.includes(window.location.href))
+    if (d && d.includes(getCurrentSport()))
         onArm();
+});
+
+
+addChangeListener((changes) => {
+    console.log(changes);
+    for (let item of Object.keys(changes)) {
+        if (item == USERS_FILE) {
+            userdata = changes[item].newValue ?? {}; 
+            updateUserSelect(userSelectElem, userdata);
+        } else if (item == ARMED_FILE) {
+            let isSportIncluded = changes[item].newValue.includes(getCurrentSport());
+            if (armed != isSportIncluded)
+                onArm();
+        } else if (item == CHOICE_FILE) {
+            choice = changes[item].newValue ?? {};
+            modifyBookButtons();
+        }
+    }
 });
