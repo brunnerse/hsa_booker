@@ -78,6 +78,7 @@ function getAllTabsHref() {
     return new Promise((resolve) => {
         chrome.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
         function (tabs) {
+            console.log("ALL OPEN TABS:")
             console.log(tabs);
             let hrefs = [];
             for (let tab of tabs) {
@@ -146,6 +147,8 @@ function upload(filename, obj) {
     return new Promise(async function (resolve, reject) {
         let o = {};
         o[filename] = obj;
+
+        console.log("Uploading data:")
         console.log(o);
 
         baseStorage.storage.sync.set(o)
@@ -157,10 +160,10 @@ function upload(filename, obj) {
     });
 }
 
-function addChangeListener(fun) {
+function addStorageListener(fun) {
     chrome.storage.sync.onChanged.addListener(fun);
 }
-function removeChangeListener(fun) {
+function removeStorageListener(fun) {
     chrome.storage.sync.onChanged.removeListener(fun);
 }
 

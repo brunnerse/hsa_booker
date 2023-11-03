@@ -91,24 +91,15 @@ async function updateEntryInTable(entryElem, sport, nr, user) {
 			elem.lastChild.className += " link";
 		}
 	}
-
 }
 
 
 async function updateChoice() {
-	for (let sport of Object.keys(choice)) {
-		for (let user of Object.keys(choice[sport])) {
-			for (let nr of choice[sport][user]) {
-				let title = `${sport}_${nr}_${user}`;
-				let entryElem = getErrorTable(nr, title, "init");
-				console.log("update entry")
-				await updateEntryInTable(entryElem, sport, nr, user); 
-			}
-		}
-	}
-}
+	if (Object.keys(choice).length == 0)
+		document.getElementById("armchoice").setAttribute("hidden", "");
+	else
+		document.getElementById("armchoice").removeAttribute("hidden");
 
-async function updateChoice() {
 	for (let sport of Object.keys(choice)) {
 		requestHTML("GET", getHref(sport))
 		.then((sportDoc) => {
@@ -255,59 +246,27 @@ function getHref(sport) {
 }
 
 
-let refreshIntervalID;
 let armed = false;
 
 function onArmAll() {
-    const armText =  document.getElementById("armbuttontext");
     armed = !armed;
     if (armed) {
-        armText.innerHTML = "Unarm all marked courses";
-        let style = armButton.getAttribute("style").replace("green", "blue");
-        armButton.setAttribute("style", style); 
         // mark website as armed in options
         download(ARMED_FILE)
         .then((d) => {
+			console.log("currently armed:")
+			console.log(d);
 			let user = Object.keys(userdata)[0];
             let courselist = [];
 			for (let sport of Object.keys(choice)) {
 				if (choice[sport][user])
 					courselist.push(sport);
-				// check if not all courses booked yet for that sport
-				listenFun = (changes) => {
-					console.log("LISTENFUN:")
-					let items = Object.keys(changes);
-					console.log(items);
-					if (items.includes(ARMED_FILE)) {
-						if (armed && changes[ARMED_FILE].newValue.length == 0) {
-							// unarm
-							onArmAll();
-							removeChangeListener(listenFun);
-						}
-					}
-				}
-				addChangeListener(listenFun);
 			}
-			d = [];
-			courselist.forEach((sport) => d.push(sport));
-            return upload(ARMED_FILE, d).then(onOpenAll(true));
-        })
-        .then(() => { 
-            // TODO automatically unarm when all courses done
-			// or TODO just unarm instantly and maybe close the popup
-			refreshIntervalID = setInterval(() =>  {
- 				//.then(onArm);
-                }, 500);
-            });
+            return upload(ARMED_FILE, courselist).then(onOpenAll(true));
+        });
     } else {
-        armText.innerHTML = "Arm all marked courses";
-        let style = armButton.getAttribute("style").replace("blue", "green");
-        armButton.setAttribute("style", style); 
         // clear armed list 
         upload(ARMED_FILE, []);
-        // clear refreshInterval
-        if (refreshIntervalID)
-            clearInterval(refreshIntervalID);
     }
 
 }
@@ -332,7 +291,6 @@ function onOpenAll(checkAllOpenTabs=true) {
 		}
 	});
 }
-
 
 
 for (let inputElem of document.getElementsByTagName("INPUT")) {
@@ -361,10 +319,41 @@ download(CHOICE_FILE).then(async (d) => {
 		for (let user of Object.keys(choice[sport])) {
 			for (let nr of choice[sport][user]) {
 				let title = `${sport}_${nr}_${user}`;
-				let entryElem = getErrorTable(nr, title, "init");
+				let entryElem = getErrorTable(nr, title, "loading...");
 				await updateEntryInTable(entryElem, sport, nr, user); 
 			}
 		}
 	}
 	updateChoice();
+});
+
+addStorageListener((changes) => {
+	console.log("CHANGED:")
+    console.log(changes);
+    for (let item of Object.keys(changes)) {
+        if (item == USERS_FILE) {
+			updateUser();
+        } else if (item == ARMED_FILE) {
+			let numArmedTitles = changes[ARMED_FILE].newValue.length;
+			// set arm Button and text according to whether all are armed or not
+    		const armText =  document.getElementById("armbuttontext");
+            if (numArmedTitles == 0) {
+				console.log("Resetting arm button..")
+        		armText.innerHTML = "Arm all marked courses";
+		        let style = armButton.getAttribute("style").replace("blue", "green");
+ 	 	        armButton.setAttribute("style", style); 
+				armed = false;
+			}
+			else if (numArmedTitles == Object.keys(choice).length) {
+				console.log("Setting arm button..")
+        		armText.innerHTML = "Unarm all marked courses";
+		        let style = armButton.getAttribute("style").replace("green", "blue");
+		        armButton.setAttribute("style", style); 
+				armed = true;
+			}
+        } else if (item == CHOICE_FILE) {
+			choice = changes[item].newValue ?? {};
+			updateChoice();
+        }
+    }
 });

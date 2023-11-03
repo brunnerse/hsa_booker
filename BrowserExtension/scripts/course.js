@@ -157,7 +157,6 @@ async function onAdd(button) {
 }
 
 var armed = false; 
-var refreshIntervalID;
 
 function onArm() {
     const armText =  document.getElementById("armbuttontext");
@@ -270,7 +269,7 @@ function onArm() {
         download(ARMED_FILE)
         .then((d) => {
             d = d ?? [];
-            let idx = d.indexOf(window.location.href);
+            let idx = d.indexOf(getCurrentSport());
             if (idx >= 0) 
                 d.splice(idx,1);
             return upload(ARMED_FILE, d);
@@ -381,8 +380,7 @@ download(ARMED_FILE)
         onArm();
 });
 
-
-addChangeListener((changes) => {
+addStorageListener((changes) => {
     console.log(changes);
     for (let item of Object.keys(changes)) {
         if (item == USERS_FILE) {
