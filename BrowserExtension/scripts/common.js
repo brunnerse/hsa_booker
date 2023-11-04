@@ -6,11 +6,11 @@ const ARMED_FILE = "armedcourses";
 const timeout_msec = 6000;
 
 
-var baseStorage; 
+var base; 
 try {
-  baseStorage = browser;
+  base = browser;
 } catch { 
-    baseStorage = chrome;
+    base = chrome;
 } 
 
 function removeClass(a, b) { 
@@ -65,7 +65,7 @@ function requestHTML(method, url) {
 
 function getCurrentTabHref() {
     return new Promise((resolve) => {
-        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        base.tabs.query({ active: true, currentWindow: true }, function (tabs) {
             // since only one tab should be active and in the current window at once
             // the return variable should only have one entry
             var activeTab = tabs[0];
@@ -76,7 +76,7 @@ function getCurrentTabHref() {
 
 function getAllTabsHref() {
     return new Promise((resolve) => {
-        chrome.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
+        base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
         function (tabs) {
             console.log("ALL OPEN TABS:")
             console.log(tabs);
@@ -87,7 +87,6 @@ function getAllTabsHref() {
             resolve(hrefs);
         });
     });
-
 }
 
 function getJSONFileString(obj) {
@@ -133,7 +132,7 @@ function getJSONFileString(obj) {
 
 function download(filename) {
     return new Promise(async function (resolve, reject) {
-        baseStorage.storage.sync.get(filename).then((result) => {
+        base.storage.sync.get(filename).then((result) => {
             resolve(result[filename]);
         })
         .catch((err) => {
@@ -151,7 +150,7 @@ function upload(filename, obj) {
         console.log("Uploading data:")
         console.log(o);
 
-        baseStorage.storage.sync.set(o)
+        base.storage.sync.set(o)
         .then(() => resolve(o[filename]))
         .catch((err) => {
             console.log("[ERROR] : failed writing data " + filename);
@@ -161,10 +160,10 @@ function upload(filename, obj) {
 }
 
 function addStorageListener(fun) {
-    chrome.storage.sync.onChanged.addListener(fun);
+    base.storage.sync.onChanged.addListener(fun);
 }
 function removeStorageListener(fun) {
-    chrome.storage.sync.onChanged.removeListener(fun);
+    base.storage.sync.onChanged.removeListener(fun);
 }
 
 

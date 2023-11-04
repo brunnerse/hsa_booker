@@ -375,3 +375,10 @@ clearForm()
     .then(() => updateUserSelect(userSelectElem, userdata))
     .then(() => setStatus("Fetched userdata."))
     .finally(toggleInert);
+
+document.getElementById("backbutton").addEventListener("click", () => {
+    if (window.history.length <= 1)
+        window.close();
+    else
+        window.history.back();
+}); 
