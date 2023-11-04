@@ -208,3 +208,34 @@ async function setAllOptions(options) {
         option_var[o] = options[o];
     return upload("options", option_var);
 }
+
+
+function dateFromDDMMYY(s) {
+    let nrs = s.match(/\d+/g);
+    console.log(nrs)
+    return new Date(nrs[2], nrs[1]-1, nrs[0])
+}
+
+function getCourseNr(tRowElem) {
+    return tRowElem.getElementsByClassName("bs_sknr")[0].innerHTML;
+}
+function getCourseDateStr(tRowElem) {
+    try {
+        let dateNow = new Date(Date.now());
+        let monthNow = dateNow.getMonth();
+        let yearNow = dateNow.getUTCFullYear();
+
+        let date = tRowElem.getElementsByClassName("bs_szr")[0].innerHTML.match(/\d+\.\d+\./)[0];
+        let month = date.match(/\d+/g)[1];
+        // if start month is more than three months from now, it must mean that the course started last year
+        date += "." +  (month - monthNow > 3) ? yearNow : yearNow - 1; 
+        return date;
+    } catch (err) {
+        throw err; // TODO make silent?
+    }
+}
+
+function getCourseDate(tRowElem) {
+    return dateFromDDMMYY(getCourseDateStr(tRowElem));
+
+}

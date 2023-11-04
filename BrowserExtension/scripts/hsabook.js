@@ -104,22 +104,29 @@ async function updateChoice() {
 		requestHTML("GET", getHref(sport))
 		.then((sportDoc) => {
 			for (let user of Object.keys(choice[sport])) {
-				for (let nr of choice[sport][user]) {
-					let rowElem; 
+				for (let id of choice[sport][user]) {
+					let [nr, date] = id.split("_");
+					// find corresponding  row element matching nr
+					let tRowElem; 
 					for (let nrElem of sportDoc.getElementsByClassName("bs_sknr")) {
 						if (nrElem.innerHTML == nr) {
-							rowElem = nrElem.parentElement;
-							console.assert(rowElem.tagName == "TR");
+							tRowElem = nrElem.parentElement;
+							console.assert(tRowElem.tagName == "TR");
 							break;
 						}
 					}
-					if (!rowElem)
+					if (!tRowElem)
 						throw new Error("NR not found");
+					else if (!getCourseDateStr(tRowElem) == date)	
+						throw new Error("Course start that does not match!") //TODO: no error, just ignore it or remove from choice
+
+					// create empty entry of table and insert course data
 					let entryElem = document.getElementById("notavail").cloneNode(true);
 					let bodyElem = entryElem.getElementsByTagName("TBODY")[0];
-					bodyElem.innerHTML = rowElem.outerHTML;
+					bodyElem.innerHTML = tRowElem.outerHTML;
 					let newRowElem = bodyElem.lastChild;
-					for (let i = newRowElem.children.length-1;i >= 0; i--) {
+					// Remove some table cells from the row
+					for (let i = newRowElem.children.length-1; i >= 0; i--) {
 						let cellElem = newRowElem.children[i];
 						if (!["bs_sknr", "bs_sbuch", "bs_sdet", "bs_stag", "bs_szeit"].includes(cellElem.className))
 							newRowElem.removeChild(cellElem);
@@ -317,7 +324,22 @@ download(CHOICE_FILE).then(async (d) => {
 	choice = d ?? {};
 	for (let sport of Object.keys(choice)) {
 		for (let user of Object.keys(choice[sport])) {
-			for (let nr of choice[sport][user]) {
+			for (let idx = choice[sport][user].length-1; idx >= 0; idx--) {
+				let id = choice[sport][user][idx];
+				let [nr, dateStr] = id.split("_");
+				let date = dateFromDDMMYY(dateStr); 
+				// if start date is more than 8 months ago, remove the course from choice 
+				if (Date.now() - date > 1000*60*60*24*30*8) {
+					choice[sport][user].splice(idx, 1);
+					if (choice[sport][user].length == 0) {
+						delete choice[sport][user];
+						if (Object.keys(choice[sport].length == 0))
+							delete choice[sport];
+					}
+					await upload(CHOICE_FILE, choice);
+					continue;
+				} 
+				// Otherwise create table entry
 				let title = `${sport}_${nr}_${user}`;
 				let entryElem = getErrorTable(nr, title, "loading...");
 				await updateEntryInTable(entryElem, sport, nr, user); 

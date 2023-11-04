@@ -105,11 +105,14 @@ async function onAdd(button) {
 
     let sport = getCurrentSport();
 
-    // find nr
     let trElem = button.parentElement.parentElement;
-    let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
+    let nr = getCourseNr(trElem);
+    let date = getCourseDateStr(trElem); 
+    let courseID = nr + "_" + date;
 
-    setStatus("Fetching most recent choice data...");
+    console.log("Course " + nr + " start date is " + date);
+
+    setStatus("Updating course data...");
     return download(CHOICE_FILE).then((d) => {
         choice = d ?? {};
         if (add) {
@@ -118,31 +121,33 @@ async function onAdd(button) {
             if (!choice[sport][user])
                 choice[sport][user] = [];
             console.log(choice);
-            choice[sport][user].push(nr);
+            choice[sport][user].push(courseID);
         } else {
-            if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr)) {
-                choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
+            if (choice[sport] && choice[sport][user]) {
+                // find all course IDs starting with nr and remove them
+                for (let idx=choice[sport][user].length-1; idx >= 0; idx--) {
+                    if (choice[sport][user][idx].startsWith(nr))
+                        choice[sport][user].splice(idx, 1);
+                }
+                // clean up choice object
                 if (choice[sport][user].length == 0) {
                     delete choice[sport][user];
                     if (Object.keys(choice[sport]).length == 0)
                         delete choice[sport];
                 }
             } else  {
-                throw new Error("Course " + nr + "is not added for user");
+                throw new Error("Course " + nr + "is not marked for user " + user);
             }
         }
-        setStatus("Updating user data...");
     }).then(() => upload(CHOICE_FILE, choice))
     .then((d) => choice = d) 
     .then( () => {
         console.log("New choice data:");
         console.log(choice);
         modifyBookButtons();
-        if (add && choice[sport] && choice[sport][user] && choice[sport][user].includes(nr))
-//            setStatus("Added course " + nr + " for user " + user + ".", "green");
+        if (add && choice[sport] && choice[sport][user] && choice[sport][user].includes(courseID))
               setStatusTemp("Marked course " + nr + " for booking", "green");
-        else if (!add && (!choice[sport] || !choice[sport][user] || !choice[sport][user].includes(nr)))
-//          setStatus("Removed course " + nr + " from user " + user + ".", "green");
+        else if (!add && (!choice[sport] || !choice[sport][user] || !choice[sport][user].includes(courseID)))
             setStatusTemp("Unmarked course " + nr, "green");
         else
             throw new Error("Choice is unchanged");
@@ -163,13 +168,14 @@ function onArm() {
     const armButton =  document.getElementById("armbutton");
     armed = !armed;
     if (armed) {
+        //TODO check if another tab with the same site is open; if it is, only activate the one with the higher tab id and give a message for the other one 
         armText.innerHTML = "UNARM";
         let style = armButton.getAttribute("style").replace("green", "blue");
         armButton.setAttribute("style", style); 
         // mark website as armed in options
         download(ARMED_FILE)
         .then((d) => {
-            d = d ?? [];
+            d = d ?? []; //TODO add expiry date
             if (!d.includes(getCurrentSport()))
                 d.push(getCurrentSport());
             return upload(ARMED_FILE, d);
@@ -178,23 +184,25 @@ function onArm() {
             // TODO get all marked courses
             let sport = getCurrentSport();
             let user = getSelectedUser(userSelectElem);
-            let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
+            let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
             console.log(choice);
-            console.log("nrlist: " + nrlist);
-            let finishedNrs = await download(BOOKED_FILE) ?? [];
+            console.log("idlist: " + idlist);
+            let finishedIDs = await download(BOOKED_FILE) ?? [];
 
-            if (nrlist.length == 0) {
+            if (idlist.length == 0) {
                 setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
                 .then(onArm);
                 return;
             }
 
-            // get booking state
-            let bookingState = {};
+            // variable to check whether all marked courses are full TODO better way 
+            let allCoursesFull = true;
+            // get all course number elements in document
+            let nrElems = document.getElementsByClassName("bs_sknr");
 
-            for (let nr of nrlist) {
+            for (let id of idlist) {
+                let [nr, date] = id.split("_");
                 let bookButton;
-                let nrElems = document.getElementsByClassName("bs_sknr");
                 for (let nElem of nrElems) {
                     if (nElem.tagName == "TD" && nElem.innerHTML == nr) {
                         bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
@@ -203,9 +211,10 @@ function onArm() {
                 }
                 switch (bookButton ? bookButton.className : "") {
                     case "bs_btn_buchen":
-                        bookingState[nr] = "ready";
-                        finishedNrs.push(nr);
+                        allCoursesFull = false;
+                        finishedIDs.push(id);
                         // TODO set status of course to booking
+                        //bookingState[nr] = "ready";
                         // book course
                         let formElem = bookButton.parentElement;
                         while (formElem.tagName != "FORM")
@@ -214,34 +223,44 @@ function onArm() {
                         break;
                     case "bs_btn_ausgebucht":
                     case "bs_btn_warteliste":
-                        bookingState[nr] = "full";
-                        finishedNrs.push(nr);
+                        finishedIDs.push(id);
+                        // Color the entire line light red
+                        for (let c of bookButton.parentElement.parentElement.children) {
+                            let style = c.getAttribute("style") ?? "";
+                            c.setAttribute("style", "background-color:lightcoral;" + style);
+                        }
                         // TODO set status of course to failed
+                        //bookingState[nr] = "full";
                         break;
                     default:
-                        bookingState[nr] = "none";
+                        //bookingState[nr] = "none";
                 }
+                // TODO upload bookingState
             }
 
-            for (let fNr of finishedNrs) {
-                nrlist.splice(nrlist.indexOf(fNr), 1);
+            for (let fId of finishedIDs) {
+                idlist.splice(idlist.indexOf(fId), 1);
             }
 
             if (nrlist.length > 0) {
                 // get time until refresh and start counter; 
                 // TODO if any titles not yet bookable
-                let bookingTime;
+                let refreshInterval;
                 let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
-                if (bookTimeElems.length > 0) 
-                    bookingTime = bookTimeElems[0].innerHTML;
-                let remainingTime = getRemainingTimeMS(bookingTime);
-                // find correct threshold for current remaining time
-                let refreshInterval = refreshIntervals[refreshIntervals.length-1];
-                for (let i = 0; i < refreshIntervals.length-1; i++) {
-                    if (remainingTime <= timeThresholds[i]) {
-                        refreshInterval = refreshIntervals[i];
-                        break;
+                if (bookTimeElems.length > 0) {
+                    let bookingTime = bookTimeElems[0].innerHTML;
+                    let remainingTime = getRemainingTimeMS(bookingTime);
+                    // find correct threshold for current remaining time
+                    refreshInterval = refreshIntervals[refreshIntervals.length-1];
+                    for (let i = 0; i < refreshIntervals.length-1; i++) {
+                        if (remainingTime <= timeThresholds[i]) {
+                            refreshInterval = refreshIntervals[i];
+                            break;
+                        }
                     }
+                } else {
+                    // if no booking time is available, use a default refresh time
+                    refreshInterval = refreshIntervals[2];
                 }
 
                 // refresh window in refreshInterval seconds
@@ -251,12 +270,12 @@ function onArm() {
 
                     let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "<br>" : ""; 
                     setStatus(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow");
-                    if (remTime <= 0)
+                    if (armed && remTime <= 0)
                         window.location.reload();
                 }, 333);
             } else {
                 // call onArm again to unarm
-                setStatusTemp("Unarming: All marked courses were processed.", "yellow", 1500, true)
+                setStatusTemp("Unarming: " + (allCoursesFull ? "All marked courses are full." : "All marked courses were processed."), "yellow", 1500, true)
                 .then(onArm);
                 return;
             }
@@ -309,7 +328,7 @@ async function modifyBookButtons() {
     let sport = getCurrentSport();
     let user = getSelectedUser(userSelectElem);
     let bookedCourses = await download(BOOKED_FILE) ?? [];
-    let nrlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
+    let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
     
     // insert buttons into book table cell
     for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
@@ -321,24 +340,25 @@ async function modifyBookButtons() {
         if (["BUTTON", "INPUT"].includes(childElem.tagName)) {
             className = childElem.className;
         }
-        // get corresponding course nr
+
         let trElem = bookElem.parentElement;
-        let nr = trElem.getElementsByClassName("bs_sknr")[0].innerHTML;
+        let id = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
+
         let aktionElem = bookElem.parentElement.lastChild;
         // remove content of aktionElem
         while (aktionElem.lastChild)
             aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
-        button.innerHTML = nrlist.includes(nr) ? "MARKED" : "MARK FOR BOOKING"; 
+        button.innerHTML = idlist.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
         button.style = "width:95%; border-radius:5px;text-align:center;" 
-            + (nrlist.includes(nr) ? "background-color: green;color:white" : ""); // TODO also if booked 
+            + (idlist.includes(id) ? "background-color: green;color:white" : ""); // TODO also if booked 
         button.type = "button";
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button);
 
         // TODO if course is booked
-        if (bookedCourses.includes(nr)) {
+        if (bookedCourses.includes(id)) {
             button.setAttribute("inert", ""); 
             button.innerHTML = "ALREADY BOOKED";
             // Color the entire line light green
