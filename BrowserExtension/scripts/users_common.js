@@ -2,7 +2,6 @@ async function updateUserSelect(userSelectElem, userdata) {
     console.log("Updating user selection to:")
     console.log(userdata);
 
-
     let childrenToRemove = [];
     for (let child of userSelectElem.children) {
         if (child.value != "") {

@@ -139,10 +139,22 @@ async function addUser(user) {
         }
     }
     
-    const isUpdate = userdata[user] ? true : false;
+    let selectedUser = getSelectedUser(userSelectElem);
+    const isUpdate = selectedUser != "";
     if (!isFormModified()) {
         setStatus("User " + user + " already saved: No changes in data", "green");
         return;
+    }
+    // if prename changed, transfer choice data
+    if (selectedUser && selectedUser != user ) {
+        let choice = await download(CHOICE_FILE) ?? {};
+        for (let sport of Object.keys(choice)) {
+           if (choice[sport][selectedUser]) {
+                choice[sport][user] = choice[sport][selectedUser];
+                delete choice[sport][selectedUser];
+           } 
+        }
+        upload(CHOICE_FILE, choice);
     }
 
     setStatus("Fetching most recent user data...");
