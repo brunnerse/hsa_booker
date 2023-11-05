@@ -35,13 +35,8 @@ async function cleanupChoice() {
 				let date = dateFromDDMMYY(dateStr); 
 				// if start date is more than 8 months ago, remove the course from choice 
 				if (Date.now() - date > 1000*60*60*24*30*8) {
-					choice[sport][user].splice(idx, 1);
+					removeNrFromChoice(choice, sport, user, nr)
 					changed = true;
-					if (choice[sport][user].length == 0) {
-						delete choice[sport][user];
-						if (Object.keys(choice[sport].length == 0))
-							delete choice[sport];
-					}
 				} 
 			}
 		}

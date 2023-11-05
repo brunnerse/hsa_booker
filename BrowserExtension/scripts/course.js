@@ -9,6 +9,7 @@ let userdata = {};
 let choice = {};
 let armed = false; 
 let bookingState = {};
+let booked = {};
 
 const refreshIntervals = [1000, 2000, 5000, 30000];
 const timeThresholds =   [0, 10000, 90000, Infinity]; 
@@ -295,30 +296,38 @@ async function modifyBookButtonsAndSetStates() {
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button) 
 
-       // set state according to className of book button
-       // TODO do not reset if state booking or booked
-        switch (className) {
-            case "bs_btn_buchen":
-                bookingState[id] = "ready";
-                break;
-            case "bs_btn_ausgebucht":
-            case "bs_btn_warteliste":
-                bookingState[id] = "full";
-                break;
-            default:
-                bookingState[id] = "none";
-        };
-
-        // TODO get bookedCourses 
-        if (false && bookedCourses.includes(id)) {
+       // set state
+       if (booked[user] && booked[user][id]) {
+            bookingState[id] = booked[user][id];
             button.setAttribute("inert", ""); 
-            button.innerHTML = "ALREADY BOOKED";
-            // Color the entire line light green
-            for (let c of bookElem.parentElement.children) {
-                let style = c.getAttribute("style") ?? "";
-                c.setAttribute("style", "background-color:lime;" + style);
-            }
-        }
+       } else {
+            // set bookingState according to className of book button
+            if ("bs_btn_buchen" == className)
+                bookingState[id] = "ready";
+            else if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(className))
+                bookingState[id] = "full";
+            else 
+                bookingState[id] = "none";
+       }
+       // color line according to bookingState
+        switch (bookingState[id]) {
+            case "booked":
+                colorRow(trElem, "lime");
+                button.innerHTML = "BOOKED";
+                break;
+            case "booking":
+                colorRow(trElem, "lightblue");
+                button.innerHTML = "BOOKING...";
+                break;
+            case "full":
+                if (idlist.includes(id)) {
+                    colorRow(trElem, "salmon");
+                    button.innerHTML = "MARKED BUT FULL";
+                    break;
+                }
+            default:
+                colorRow(trElem, "none");
+        };
     }
 }
 
@@ -374,6 +383,7 @@ async function loadInitialData() {
             }
         });
     } else {
+        booked = await download(BOOKSTATE_FILE) ?? {};
         await download(CHOICE_FILE).then(updateChoice);    
         // check if website should be armed
         if (await isArmed(getCurrentSport))
@@ -390,10 +400,10 @@ async function loadInitialData() {
                     if (armed != storedAsArmed)
                         onArm();
                 } else if (item == CHOICE_FILE) {
-                    choice = changes[item].newValue ?? {};
-                    modifyBookButtonsAndSetStates();
+                    updateChoice(changes[item].newValue);
                 } else if (item == BOOKSTATE_FILE) {
-
+                    booked = changes[item].newValue ?? {};
+                    modifyBookButtonsAndSetStates();
                 }
             }
         });
