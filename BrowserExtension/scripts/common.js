@@ -1,6 +1,6 @@
 const USERS_FILE = "userdata";
 const CHOICE_FILE = "choice";
-const BOOKED_FILE = "bookedcourses";
+const BOOKSTATE_FILE = "booked";
 const ARMED_FILE = "armedcourses";
 
 const timeout_msec = 6000;
@@ -237,5 +237,58 @@ function getCourseDateStr(tRowElem) {
 
 function getCourseDate(tRowElem) {
     return dateFromDDMMYY(getCourseDateStr(tRowElem));
+}
 
+function colorRow(tRowElem, color) {
+    // Color the entire line light green
+    for (let c of tRowElem.children) {
+        let style = c.getAttribute("style") ?? "";
+        let idx = style.indexOf("background-color");
+        idx = (idx >= 0) ? idx : style.length-1; 
+        let lastIdx = style.indexOf(";", idx);
+        lastIdx = (lastIdx >= 0) ? lastIdx : style.length;
+        style = style.substr(0, idx) + 
+            (color == "none" ? "" : "background-color:"+color) +
+            style.substr(lastIdx);
+        c.setAttribute("style", style);
+    }
+}
+
+
+function storeAsArmed(sport) {
+    return storeAsArmedCourses([sport]);
+}
+// TODO expiry date
+// TODO throw error if already armed by different tab? 
+function storeAsArmedCourses(sports) {
+    // mark website as armed in options
+    return download(ARMED_FILE)
+    .then((d) => {
+        d = d ?? []; //TODO add expiry date
+        for (let s of sports) {
+            if (!d.includes(s))
+                d.push(s);
+        }
+        return upload(ARMED_FILE, d);
+    });
+}
+
+function storeAsUnarmed(sport) {
+    return download(ARMED_FILE)
+    .then((d) => {
+        if (d) {
+            let idx = d.indexOf(sport);
+            if (idx >= 0) 
+                d.splice(idx,1);
+            return upload(ARMED_FILE, d);
+        }
+    })
+}
+
+function isArmed(sport) {
+    return download(ARMED_FILE)
+    .then((d) => {
+        d = d ?? []; //TODO add expiry date; remove sport if expiry date is done
+        return d.includes(sport)
+    });
 }

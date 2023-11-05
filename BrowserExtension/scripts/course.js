@@ -162,6 +162,7 @@ async function onAdd(button) {
 }
 
 var armed = false; 
+let refreshIntervalID;
 
 function onArm() {
     const armText =  document.getElementById("armbuttontext");
@@ -172,14 +173,9 @@ function onArm() {
         armText.innerHTML = "UNARM";
         let style = armButton.getAttribute("style").replace("green", "blue");
         armButton.setAttribute("style", style); 
-        // mark website as armed in options
-        download(ARMED_FILE)
-        .then((d) => {
-            d = d ?? []; //TODO add expiry date
-            if (!d.includes(getCurrentSport()))
-                d.push(getCurrentSport());
-            return upload(ARMED_FILE, d);
-        })
+
+        // mark website as armed in storage
+        storeAsArmed(getCurrentSport())
         .then(async () => { 
             // TODO get all marked courses
             let sport = getCurrentSport();
@@ -187,7 +183,7 @@ function onArm() {
             let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
             console.log(choice);
             console.log("idlist: " + idlist);
-            let finishedIDs = await download(BOOKED_FILE) ?? [];
+            let finishedIDs = await download(BOOKSTATE_FILE) ?? [];
 
             if (idlist.length == 0) {
                 setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
@@ -242,7 +238,7 @@ function onArm() {
                 idlist.splice(idlist.indexOf(fId), 1);
             }
 
-            if (nrlist.length > 0) {
+            if (idlist.length > 0) {
                 // get time until refresh and start counter; 
                 // TODO if any titles not yet bookable
                 let refreshInterval;
@@ -285,14 +281,7 @@ function onArm() {
         let style = armButton.getAttribute("style").replace("blue", "green");
         armButton.setAttribute("style", style); 
         // remove website from armed list in options
-        download(ARMED_FILE)
-        .then((d) => {
-            d = d ?? [];
-            let idx = d.indexOf(getCurrentSport());
-            if (idx >= 0) 
-                d.splice(idx,1);
-            return upload(ARMED_FILE, d);
-        })
+        storeAsUnarmed(getCurrentSport());
         // clear refreshInterval
         if (refreshIntervalID)
             clearInterval(refreshIntervalID);
@@ -327,7 +316,7 @@ window.onload =
 async function modifyBookButtons() {
     let sport = getCurrentSport();
     let user = getSelectedUser(userSelectElem);
-    let bookedCourses = await download(BOOKED_FILE) ?? [];
+    let bookedCourses = await download(BOOKSTATE_FILE) ?? [];
     let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
     
     // insert buttons into book table cell
@@ -394,11 +383,11 @@ download(CHOICE_FILE)
 .then(() => updateUserSelect(userSelectElem, userdata));
 
 // check if website should be armed
-download(ARMED_FILE)
-.then((d) => {
-    if (d && d.includes(getCurrentSport()))
+isArmed(getCurrentSport)
+.then((v) => {
+    if (v)
         onArm();
-});
+})
 
 addStorageListener((changes) => {
     console.log(changes);

@@ -320,11 +320,11 @@ async function bookCourse(title) {
                         bookingState[title] = "booked"; 
 
                         // let server know that course was booked successfully
-                        download(BOOKED_FILE)
+                        download(BOOKSTATE_FILE)
                         .then((data) => {
                                 data = data ?? [];
                                 data.push(title);
-                                return upload(BOOKED_FILE, data);
+                                return upload(BOOKSTATE_FILE, data);
                         })
                         .then((bookedCourses) => {
                             console.log("Successfully informed server about successful booking.");
@@ -779,7 +779,7 @@ function loadChoice() {
         console.error("Failed to load choice data:")
         console.error(err)
     })
-    .then(() => download(BOOKED_FILE)) 
+    .then(() => download(BOOKSTATE_FILE)) 
     .then((bookedArr) => {
         bookedArr = bookedArr ?? [];
         // set state of titles in bookedArr to booked
@@ -856,7 +856,7 @@ function onCloseButton(button) {
         .then (() => {
             // update bookedcourses file
             console.log("Trying to remove course " + title + " from bookedcourses...");
-            return download(BOOKED_FILE)
+            return download(BOOKSTATE_FILE)
             .then((bookedTitles) => {
                 bookedTitles = bookedTitles ?? [];
                 // set state of titles in bookedList to booked
@@ -870,7 +870,7 @@ function onCloseButton(button) {
                     } else if (bookedTitles[i] == title ) {
                         // once the title was found, remove and upload, then return
                         bookedTitles.splice(i, 1);
-                        upload(BOOKED_FILE, bookedTitles)
+                        upload(BOOKSTATE_FILE, bookedTitles)
                         .then( (bookedCourses) => { 
                             console.log("Updated bookedcourses: ");
                             console.log(bookedCourses);

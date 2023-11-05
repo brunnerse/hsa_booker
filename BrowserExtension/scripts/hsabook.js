@@ -179,11 +179,11 @@ function onCloseButton(button) {
         .then (() => {
             // update bookedcourses file
             console.log("Trying to remove course " + nr + " from booked courses...");
-            return download(BOOKED_FILE)
+            return download(BOOKSTATE_FILE)
             .then((bookedCourses) => {
 				if (bookedCourses && bookedCourses.includes(nr)) {
 					bookedTitles.splice(bookedCourses.indexOf(nr), 1);
-					upload(BOOKED_FILE, bookedTitles);
+					upload(BOOKSTATE_FILE, bookedTitles);
 				}
             });
         });
@@ -258,24 +258,18 @@ let armed = false;
 function onArmAll() {
     armed = !armed;
     if (armed) {
-        // mark website as armed in options
-        download(ARMED_FILE)
-        .then((d) => {
-			console.log("currently armed:")
-			console.log(d);
-			let user = Object.keys(userdata)[0];
-            let courselist = [];
-			for (let sport of Object.keys(choice)) {
-				if (choice[sport][user])
-					courselist.push(sport);
-			}
-            return upload(ARMED_FILE, courselist).then(onOpenAll(true));
-        });
+		let user = Object.keys(userdata)[0];
+		let courselist = [];
+		for (let sport of Object.keys(choice)) {
+			if (choice[sport][user])
+				courselist.push(sport);
+		}
+		storeAsArmedCourses(courselist)
+		.then(() => onOpenAll(true));
     } else {
         // clear armed list 
         upload(ARMED_FILE, []);
     }
-
 }
 
 function onOpenAll(checkAllOpenTabs=true) {
