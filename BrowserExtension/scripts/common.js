@@ -219,17 +219,21 @@ function dateFromDDMMYY(s) {
 function getCourseNr(tRowElem) {
     return tRowElem.getElementsByClassName("bs_sknr")[0].innerHTML;
 }
+
+function getFullDateStr(daymonth) {
+        let month = daymonth.match(/\d+/g)[1];
+        let dateNow = new Date(Date.now());
+        let monthNow = dateNow.getMonth() + 1; // months are being counted from 0
+        let yearNow = dateNow.getUTCFullYear();
+        // if start month is more than three months from now, it must mean that the course started last year
+        date = daymonth + String((month - monthNow > 3) ? yearNow-1 : yearNow); 
+        return date;
+}
+
 function getCourseDateStr(tRowElem) {
     try {
-        let dateNow = new Date(Date.now());
-        let monthNow = dateNow.getMonth();
-        let yearNow = dateNow.getUTCFullYear();
-
-        let date = tRowElem.getElementsByClassName("bs_szr")[0].innerHTML.match(/\d+\.\d+\./)[0];
-        let month = date.match(/\d+/g)[1];
-        // if start month is more than three months from now, it must mean that the course started last year
-        date += "." +  (month - monthNow > 3) ? yearNow : yearNow - 1; 
-        return date;
+        let daymonth = tRowElem.getElementsByClassName("bs_szr")[0].innerHTML.match(/\d+\.\d+\./)[0];
+        return getFullDateStr(daymonth);
     } catch (err) {
         throw err; // TODO make silent?
     }
@@ -288,8 +292,8 @@ function storeAsUnarmed(sport) {
 function isArmed(sport) {
     return download(ARMED_FILE)
     .then((d) => {
-        d = d ?? []; //TODO add expiry date; remove sport if expiry date is done
-        return d.includes(sport)
+        //TODO add expiry date; remove sport if expiry date is done
+        return d && d.includes(sport)
     });
 }
 
