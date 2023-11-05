@@ -1,15 +1,32 @@
 const inputSubImm = document.getElementById("submitimmediately");
 const armButton = document.getElementById("armallbutton"); 
+const storedDataElem = document.getElementById("storeduserdata");
 
-let userdata = {};
-let choice = {};
-let statusElements = {};
+let userdata;
+let choice;
 let armed = false;
 
-async function updateUser() {
-	const storedDataElem = document.getElementById("storeduserdata");
-	let d = await download(USERS_FILE);
-	if (userdata && userdata == d)
+
+function getHref(sport) {
+	// TODO better implementation
+	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_" + 
+		sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue") +
+		 ".html";
+}
+
+function getErrorTable(nr, details, error) {
+	const notAvailElem = document.getElementById("notavail").cloneNode(true);
+	notAvailElem.getElementsByClassName("bs_sknr")[1].innerHTML = nr;
+	notAvailElem.getElementsByClassName("bs_sdet")[1].innerHTML = details;
+	notAvailElem.getElementsByClassName("bs_sbuch")[1].innerHTML = error;
+	notAvailElem.removeAttribute("hidden");
+	return notAvailElem;
+}
+
+
+async function updateUserdata(d) {
+	// if userdata didn't change, do nothing
+	if (userdata == d)
 		return;
 	userdata = d ?? {};
 
@@ -39,15 +56,6 @@ async function updateUser() {
 					inputElem.value = data[inputElem["name"]];
 		}
 	}
-}
-
-function getErrorTable(nr, details, error) {
-	const notAvailElem = document.getElementById("notavail").cloneNode(true);
-	notAvailElem.getElementsByClassName("bs_sknr")[1].innerHTML = nr;
-	notAvailElem.getElementsByClassName("bs_sdet")[1].innerHTML = details;
-	notAvailElem.getElementsByClassName("bs_sbuch")[1].innerHTML = error;
-	notAvailElem.removeAttribute("hidden");
-	return notAvailElem;
 }
 
 async function updateEntryInTable(entryElem, sport, nr, user) {
@@ -95,7 +103,9 @@ async function updateEntryInTable(entryElem, sport, nr, user) {
 }
 
 
-async function updateChoice() {
+async function updateChoice(d) {
+	choice = d ?? {};
+
 	if (Object.keys(choice).length == 0)
 		document.getElementById("armchoice").setAttribute("hidden", "");
 	else
@@ -152,6 +162,27 @@ async function updateChoice() {
 	}
 }
 
+function updateArm(armedCourses) {
+	let numArmedTitles = armedCourses.length;
+	// set arm Button and text according to whether all are armed or not
+	const armText =  document.getElementById("armbuttontext");
+	if (numArmedTitles == 0) {
+		console.log("Resetting arm button..")
+		armText.innerHTML = "Arm all marked courses";
+		let style = armButton.getAttribute("style").replace("blue", "green");
+		armButton.setAttribute("style", style); 
+		armed = false;
+	}
+	else if (numArmedTitles == Object.keys(choice).length) {
+		console.log("Setting arm button..")
+		armText.innerHTML = "Unarm all marked courses";
+		let style = armButton.getAttribute("style").replace("green", "blue");
+		armButton.setAttribute("style", style); 
+		armed = true;
+	}
+}
+
+
 function onCloseButton(button) {
     let parent = button.parentElement;
     while (parent.className != "item-page") {
@@ -195,7 +226,6 @@ function onCloseButton(button) {
 }
 
 
-
 function onOptionChange(change) {
 	console.log(change);
 	// set changed options
@@ -234,7 +264,6 @@ async function loadOptions() {
 			inputElem.value = await getOption(inputElem.name);
 		}
 	}
-
 /*	
 	if (getOption("mode") == "formonly") {
 		inputSubImm.setAttribute("hidden", "");
@@ -244,15 +273,6 @@ async function loadOptions() {
 	}
 */
 }
-
-
-function getHref(sport) {
-	// TODO better implementation
-	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_" + 
-		sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue") +
-		 ".html";
-}
-
 
 function armAll() {
 	armed = true;
@@ -279,25 +299,21 @@ function onArmAll() {
 		return unarmAll();
 }
 
-function onOpenAll(checkAllOpenTabs=true) {
-	download(CHOICE_FILE).then((d) => {
-		choice = d ?? {};
-	}).then(async ()=> {
-		let hrefs = checkAllOpenTabs ? await getAllTabsHref() : [await getCurrentTabHref()]; 
-		// remove anchors from hrefs 
-		for (let i = 0; i < hrefs.length; i++)
-			hrefs[i] = hrefs[i].split("#")[0];
+async function onOpenAll(checkAllOpenTabs=true) {
+	let hrefs = checkAllOpenTabs ? await getAllTabsHref() : [await getCurrentTabHref()]; 
+	// remove anchors from hrefs 
+	for (let i = 0; i < hrefs.length; i++)
+		hrefs[i] = hrefs[i].split("#")[0];
 
-		let user = Object.keys(userdata)[0];
-		for (let sport of Object.keys(choice)) {
-			// get all tabs and don't reopen the ones already open
-			if (choice[sport][user]) {
-				let href = getHref(sport);		
-				if (!hrefs.includes(href)) // open href with anchor to first course nr appended
-					window.open(getHref(sport) + "#K" + Math.min(...choice[sport][user]));
-			}
+	let user = Object.keys(userdata)[0];
+	for (let sport of Object.keys(choice)) {
+		// get all tabs and don't reopen the ones already open
+		if (choice[sport][user]) {
+			let href = getHref(sport);		
+			if (!hrefs.includes(href)) // open href with anchor to first course nr appended
+				window.open(getHref(sport) + "#K" + Math.min(...choice[sport][user]));
 		}
-	});
+	}
 }
 
 
@@ -319,10 +335,10 @@ armButton.addEventListener("click", onArmAll);
 document.getElementById("openall").addEventListener("click", onOpenAll);
 
 loadOptions();
-updateUser();
-
-download(CHOICE_FILE).then(async (d) => {
-	choice = d ?? {};
+download(USERS_FILE).then((d) => updateUserdata(d));
+// load choice, remove expired courses and init table entry
+download(CHOICE_FILE).then(async (choice) => {
+	choice = choice ?? {};
 	for (let sport of Object.keys(choice)) {
 		for (let user of Object.keys(choice[sport])) {
 			for (let idx = choice[sport][user].length-1; idx >= 0; idx--) {
@@ -347,36 +363,20 @@ download(CHOICE_FILE).then(async (d) => {
 			}
 		}
 	}
-	updateChoice();
+	updateChoice(choice);
 });
+download(ARMED_FILE).then((d) => updateArm(d));
 
 addStorageListener((changes) => {
 	console.log("CHANGED:")
     console.log(changes);
     for (let item of Object.keys(changes)) {
         if (item == USERS_FILE) {
-			updateUser();
+			updateUserdata(changes[USERS_FILE].newValue);
         } else if (item == ARMED_FILE) {
-			let numArmedTitles = changes[ARMED_FILE].newValue.length;
-			// set arm Button and text according to whether all are armed or not
-    		const armText =  document.getElementById("armbuttontext");
-            if (numArmedTitles == 0) {
-				console.log("Resetting arm button..")
-        		armText.innerHTML = "Arm all marked courses";
-		        let style = armButton.getAttribute("style").replace("blue", "green");
- 	 	        armButton.setAttribute("style", style); 
-				armed = false;
-			}
-			else if (numArmedTitles == Object.keys(choice).length) {
-				console.log("Setting arm button..")
-        		armText.innerHTML = "Unarm all marked courses";
-		        let style = armButton.getAttribute("style").replace("green", "blue");
-		        armButton.setAttribute("style", style); 
-				armed = true;
-			}
+			updateArm(changes[ARMED_FILE].newValue);
         } else if (item == CHOICE_FILE) {
-			choice = changes[item].newValue ?? {};
-			updateChoice();
+			updateChoice(changes[CHOICE_FILE].newValue);
         }
     }
 });
