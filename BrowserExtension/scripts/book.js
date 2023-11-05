@@ -193,6 +193,63 @@ async function processDocument() {
                 });
             }
         }); 
+
+        // set bookingState of course to booking
+        // first get nr and date
+        let spElems = document.getElementsByClassName("bs_form_sp2");
+        let nr, date;
+        for (let sp of spElems) {
+            for (let child of sp.children) {
+                if (!nr && child.innerHTML.match(/^\d+$/)) {
+                    nr = child.innerHTML;
+                } else  {
+                    let m = child.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
+                    if (!date && m) 
+                        date = getFullDateStr(m[0].split("-")[0]);
+                }
+            }
+        } 
+
+        if (nr && date) {
+            let courseID = nr + "_"+date;
+            let user = Object.keys(userdata)[0];
+            // get user from userdata; single user assumption, i.e. user is the first one
+            // mark course as booked 
+            download(BOOKSTATE_FILE)
+            .then((d) => {
+                d = d ?? {};
+                if (!d[user]) {
+                    d[user] = {};
+                }
+                if (d[user][courseID] == "booked") {
+                    console.warn("COURSE IS ALREADY MARKED AS BOOKED")
+                    clearForm();
+                } else if (d[user][courseID] == "xbooking") {
+                    console.warn("COURSE IS CURRENTLY BEING BOOKED")
+                    window.close();
+                } else {
+                    d[user][courseID] = "booking";
+                    upload(BOOKSTATE_FILE, d);
+                }
+            })
+            
+            // reset state if window is refreshed 
+            window.addEventListener("beforeunload", function (e) {
+                download(BOOKSTATE_FILE)
+                .then((d) => {
+                    if (d[user][courseID] != "booked") {
+                        delete d[user][courseID];
+                        return upload(BOOKSTATE_FILE, d);
+                    }
+                })
+                e.preventDefault();
+                e.returnValue = "The changes will be lost";
+            });
+        } else {
+            console.error("Could not find number or date of course: " + nr + ", " + date);
+            return;
+        }
+ 
     } else if (STATE == "check") {
         let inputElems = form.getElementsByTagName("INPUT");
         let emailVal = "";
@@ -226,30 +283,35 @@ async function processDocument() {
         // signalize success
         console.log("STATE IS SUCCESS");
 
-        let bTags = document.getElementsByTagName("B");
-        let nr;
-        for (let bTag of bTags) {
-            if (bTag.innerHTML.match(/^\d+$/)) {
+        let tdTags = document.getElementsByTagName("TD");
+        let nr, date;
+        for (let td of tdTags) {
+            if (td.innerHTML.match(/^\d+-\d+$/)) {
                 nr = bTag.innerHTML;
-                break;
+            } else  {
+                let m = bTag.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
+                if (m) 
+                    date = getFullDateStr(m[0].split("-")[0]);
             }
         } 
 
-        if (!nr) {
-            console.error("Could not find number of booked course!");
+        if (nr && date) {
+            let courseID = nr + "_"+date;
+            // get user from userdata; single user assumption, i.e. user is the first one
+            let user = await download(USERS_FILE).then((d) => Object.keys(d)[0]);
+            // mark course as booked 
+            download(BOOKSTATE_FILE)
+            .then((d) => {
+                d = d ?? {};
+                if (d[user])
+                    d[user] = {};
+                d[user][courseID] = "booked";
+                return upload(BOOKSTATE_FILE, d);
+            })
+        } else {
+            console.error("Could not find number or date of booked course: " + nr + ", " + date);
             return;
         }
-        // marked course as booked 
-        download(BOOKSTATE_FILE)
-        .then((d) => {
-            d = d ?? [];
-            d.push(nr);
-            return upload(BOOKSTATE_FILE, d);
-        })
-        .then((bookedCourses) => {
-            console.log("Successfully informed server about successful booking.");
-            console.log("Booked courses: ");console.log(bookedCourses);
-        }); 
     } else {
         // signalize error
         console.log("STATE IS ERROR");
