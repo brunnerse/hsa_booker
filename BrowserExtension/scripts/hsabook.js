@@ -1,6 +1,7 @@
 const inputSubImm = document.getElementById("submitimmediately");
 const armButton = document.getElementById("armallbutton"); 
 const storedDataElem = document.getElementById("storeduserdata");
+const choiceElem = document.getElementById("choice");
 
 let userdata;
 let choice;
@@ -23,44 +24,52 @@ function getErrorTable(nr, details, error) {
 	return notAvailElem;
 }
 
-
-async function updateUserdata(d) {
-	// if userdata didn't change, do nothing
-	if (userdata == d)
-		return;
-	userdata = d ?? {};
-
-	if (Object.keys(userdata).length == 0) {
-		storedDataElem.setAttribute("hidden", "");
-		document.getElementById("edituserbutton").children[0].innerHTML = "Add User";
-	} else {
-		storedDataElem.removeAttribute("hidden");
-		document.getElementById("edituserbutton").children[0].innerHTML = "Edit User data";
-		let data = userdata[Object.keys(userdata)[0]];
-		// Set status select input
-		let selectElem = document.getElementById("usershowelem");
-		let ok = false;
-		for (let i = 0; i < selectElem.options.length; i++) {
-			if (selectElem.options[i].value == data.statusorig) {
-				selectElem.selectedIndex = i;
-				selectElem.dispatchEvent(new Event("change"));
-				ok = true;
-				break;
+// remove expired courses from choice and upload it 
+async function cleanupChoice() {
+	let changed = false;
+	for (let sport of Object.keys(choice)) {
+		for (let user of Object.keys(choice[sport])) {
+			for (let idx = choice[sport][user].length-1; idx >= 0; idx--) {
+				let id = choice[sport][user][idx];
+				let [nr, dateStr] = id.split("_");
+				let date = dateFromDDMMYY(dateStr); 
+				// if start date is more than 8 months ago, remove the course from choice 
+				if (Date.now() - date > 1000*60*60*24*30*8) {
+					choice[sport][user].splice(idx, 1);
+					changed = true;
+					if (choice[sport][user].length == 0) {
+						delete choice[sport][user];
+						if (Object.keys(choice[sport].length == 0))
+							delete choice[sport];
+					}
+				} 
 			}
 		}
-		// fill other data
-		let inputElems = storedDataElem.getElementsByTagName("INPUT");
-		for (let inputElem of inputElems) {
-			// fill form data
-			if (data[inputElem["name"]] != undefined)
-					inputElem.value = data[inputElem["name"]];
+	}
+	if (changed)
+		await upload(CHOICE_FILE, choice);
+}
+
+function removeObsoleteEntries() {
+	for (let i = choiceElem.children.length - 1; i>= 0; i--) {
+		let title = choiceElem.children[i].title;
+    	let [sport, nr, user] = title.split("_");
+		found = false;
+		if (choice[sport] && choice[sport][user]) {
+			for (let id of choice[sport][user])
+				if (id.split("_")[0] == nr) {
+					found = true;
+					console.log("Found " + id + " for nr " + nr);
+					break;
+				}
 		}
+		if (!found)
+			choiceElem.removeChild(choiceElem.children[i]);
 	}
 }
 
 async function updateEntryInTable(entryElem, sport, nr, user) {
 	const title = `${sport}_${nr}_${user}`;
-	const choiceElem = document.getElementById("choice");
 
 	// check if nr is already in table
 	let replaceEntry;
@@ -103,15 +112,23 @@ async function updateEntryInTable(entryElem, sport, nr, user) {
 }
 
 
-async function updateChoice(d) {
-	choice = d ?? {};
+async function updateChoice(c) {
+	choice = c ?? {};
 
 	if (Object.keys(choice).length == 0)
 		document.getElementById("armchoice").setAttribute("hidden", "");
 	else
 		document.getElementById("armchoice").removeAttribute("hidden");
 
+	// remove table entries not in choice anymore
+	removeObsoleteEntries();
+	// add/update table entires in choice
 	for (let sport of Object.keys(choice)) {
+		// TODO display loading entry, like this?
+		//let title = `${sport}_${nr}_${user}`;
+		//let entryElem = getErrorTable(nr, title, "loading...");
+		//await updateEntryInTable(entryElem, sport, nr, user); 
+
 		requestHTML("GET", getHref(sport))
 		.then((sportDoc) => {
 			for (let user of Object.keys(choice[sport])) {
@@ -133,6 +150,8 @@ async function updateChoice(d) {
 
 					// create empty entry of table and insert course data
 					let entryElem = document.getElementById("notavail").cloneNode(true);
+					entryElem.removeAttribute("id");
+					entryElem.removeAttribute("hidden");
 					let bodyElem = entryElem.getElementsByTagName("TBODY")[0];
 					bodyElem.innerHTML = tRowElem.outerHTML;
 					let newRowElem = bodyElem.lastChild;
@@ -158,7 +177,45 @@ async function updateChoice(d) {
 					updateEntryInTable(entryElem, sport, nr, user); 
 				}
 			}
-		});
+		})
+		.then(() => {
+
+		})
+
+	}
+}
+
+async function updateUserdata(d) {
+	// if userdata didn't change, do nothing
+	if (userdata == d)
+		return;
+	userdata = d ?? {};
+
+	if (Object.keys(userdata).length == 0) {
+		storedDataElem.setAttribute("hidden", "");
+		document.getElementById("edituserbutton").children[0].innerHTML = "Add User";
+	} else {
+		storedDataElem.removeAttribute("hidden");
+		document.getElementById("edituserbutton").children[0].innerHTML = "Edit User data";
+		let data = userdata[Object.keys(userdata)[0]];
+		// Set status select input
+		let selectElem = document.getElementById("usershowelem");
+		let ok = false;
+		for (let i = 0; i < selectElem.options.length; i++) {
+			if (selectElem.options[i].value == data.statusorig) {
+				selectElem.selectedIndex = i;
+				selectElem.dispatchEvent(new Event("change"));
+				ok = true;
+				break;
+			}
+		}
+		// fill other data
+		let inputElems = storedDataElem.getElementsByTagName("INPUT");
+		for (let inputElem of inputElems) {
+			// fill form data
+			if (data[inputElem["name"]] != undefined)
+					inputElem.value = data[inputElem["name"]];
+		}
 	}
 }
 
@@ -191,12 +248,10 @@ function onCloseButton(button) {
     let title = parent.title;
 	console
     let [sport, nr, user] = title.split("_");
-	console.log(sport, nr, user);
 
     if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr)) {
 		// remove nr from choice and remove element from list
         choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
-		parent.parentElement.removeChild(parent);
 		// clean up choice obj
         if (choice[sport][user].length == 0) {
             delete choice[sport][user];
@@ -317,10 +372,10 @@ async function onOpenAll(checkAllOpenTabs=true) {
 }
 
 
+// Add listeners
 for (let inputElem of document.getElementsByTagName("INPUT")) {
 	inputElem.addEventListener("change", onOptionChange);
 }
-
 
 document.getElementById("go-to-options").addEventListener("click", () => {
     console.log("Click event!");
@@ -330,42 +385,16 @@ document.getElementById("go-to-options").onClick = () => {
   window.open("hsabook_options.html");
 };
 
-
 armButton.addEventListener("click", onArmAll);
 document.getElementById("openall").addEventListener("click", onOpenAll);
 
-loadOptions();
-download(USERS_FILE).then((d) => updateUserdata(d));
-// load choice, remove expired courses and init table entry
-download(CHOICE_FILE).then(async (choice) => {
-	choice = choice ?? {};
-	for (let sport of Object.keys(choice)) {
-		for (let user of Object.keys(choice[sport])) {
-			for (let idx = choice[sport][user].length-1; idx >= 0; idx--) {
-				let id = choice[sport][user][idx];
-				let [nr, dateStr] = id.split("_");
-				let date = dateFromDDMMYY(dateStr); 
-				// if start date is more than 8 months ago, remove the course from choice 
-				if (Date.now() - date > 1000*60*60*24*30*8) {
-					choice[sport][user].splice(idx, 1);
-					if (choice[sport][user].length == 0) {
-						delete choice[sport][user];
-						if (Object.keys(choice[sport].length == 0))
-							delete choice[sport];
-					}
-					await upload(CHOICE_FILE, choice);
-					continue;
-				} 
-				// Otherwise create table entry
-				let title = `${sport}_${nr}_${user}`;
-				let entryElem = getErrorTable(nr, title, "loading...");
-				await updateEntryInTable(entryElem, sport, nr, user); 
-			}
-		}
-	}
-	updateChoice(choice);
-});
-download(ARMED_FILE).then((d) => updateArm(d));
+// Load data sequentially
+loadOptions()
+.then(() => download(USERS_FILE).then(updateUserdata))
+.then(
+	// load choice, init table entries and remove expired courses
+	() => download(CHOICE_FILE).then(updateChoice).then(cleanupChoice))
+.then(() => download(ARMED_FILE).then(updateArm));
 
 addStorageListener((changes) => {
 	console.log("CHANGED:")
