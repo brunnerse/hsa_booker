@@ -8,7 +8,7 @@ const hintElem = document.getElementById("hint");
 let userdata = {};
 let choice = {};
 let armed = false; 
-let bookingStates = {};
+let bookingState = {};
 
 const refreshIntervals = [1000, 2000, 5000, 30000];
 const timeThresholds =   [0, 10000, 90000, Infinity]; 
@@ -87,7 +87,7 @@ async function onSelectChange() {
             return;
         }
     }
-    modifyBookButtons();
+    modifyBookButtonsAndSetStates();
 }
 
 function getCurrentSport() {
@@ -160,7 +160,6 @@ function arm() {
         let user = getSelectedUser(userSelectElem);
         let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
         console.log("idlist: " + idlist);
-        let finishedIDs = await download(BOOKSTATE_FILE) ?? [];
 
         if (idlist.length == 0) {
             setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
@@ -168,56 +167,44 @@ function arm() {
             return;
         }
 
-        // variable to check whether all marked courses are full TODO better way 
-        let allCoursesFull = true;
+        let numCoursesDone = 0;
+        let numCoursesFull = 0;
         // get all course number elements in document
         let nrElems = document.getElementsByClassName("bs_sknr");
 
         for (let id of idlist) {
             let [nr, date] = id.split("_");
-            let bookButton;
-            for (let nElem of nrElems) {
-                if (nElem.tagName == "TD" && nElem.innerHTML == nr) {
-                    bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
+   
+            let state = bookingState[id];
+            switch (state) {
+                case "full":
+                    numCoursesFull++;
+                case "booking":
+                case "booked":
+                    numCoursesDone++;
                     break;
-                }
-            }
-            switch (bookButton ? bookButton.className : "") {
-                case "bs_btn_buchen":
-                    allCoursesFull = false;
-                    finishedIDs.push(id);
-                    // TODO set status of course to booking
-                    //bookingState[nr] = "ready";
-                    // book course
+                case "ready":
+                    // book course: get form and bookbutton, then submit
+                    let [nr, date] = id.split("_");
+                    let bookButton;
+                    for (let nElem of nrElems) {
+                        if (nElem.tagName == "TD" && nElem.innerHTML == nr) {
+                            bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
+                            break;
+                        }
+                    } 
                     let formElem = bookButton.parentElement;
                     while (formElem.tagName != "FORM")
                         formElem = formElem.parentElement;
                     formElem.requestSubmit(bookButton);
-                    break;
-                case "bs_btn_ausgebucht":
-                case "bs_btn_warteliste":
-                    finishedIDs.push(id);
-                    // Color the entire line light red
-                    for (let c of bookButton.parentElement.parentElement.children) {
-                        let style = c.getAttribute("style") ?? "";
-                        c.setAttribute("style", "background-color:lightcoral;" + style);
-                    }
-                    // TODO set status of course to failed
-                    //bookingState[nr] = "full";
+                    numCoursesDone++;
                     break;
                 default:
-                    //bookingState[nr] = "none";
             }
-            // TODO upload bookingState
-        }
+        } 
 
-        for (let fId of finishedIDs) {
-            idlist.splice(idlist.indexOf(fId), 1);
-        }
-
-        if (idlist.length > 0) {
-            // get time until refresh and start counter; 
-            // TODO if any titles not yet bookable
+        if (numCoursesDone < idlist.length) {
+            // get time until refresh and start counter
             let refreshInterval;
             let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
             if (bookTimeElems.length > 0) {
@@ -245,13 +232,15 @@ function arm() {
                 setStatus(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow");
                 if (armed && remTime <= 0)
                     window.location.reload();
+                    // TODO before reloading, update arm timeout
                 else if (!armed)
                     clearInterval(refreshIntervalID);
             }, 333);
         } else {
-            // call onArm again to unarm
-            setStatusTemp("Unarming: " + (allCoursesFull ? "All marked courses are full." : "All marked courses were processed."), "yellow", 1500, true)
-            .then(onArm);
+            setStatusTemp("Unarming: " + 
+                (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed."),
+                "yellow", 1500, true)
+            .then(unarm);
             return;
         }
     });
@@ -274,7 +263,7 @@ function onArm() {
         return unarm();
 }
 
-async function modifyBookButtons() {
+async function modifyBookButtonsAndSetStates() {
     let sport = getCurrentSport();
     let user = getSelectedUser(userSelectElem);
     let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
@@ -304,7 +293,21 @@ async function modifyBookButtons() {
             + (idlist.includes(id) ? "background-color: green;color:white" : ""); // TODO also if booked 
         button.type = "button";
         aktionElem.appendChild(button);
-        button.onclick = () => onAdd(button);
+        button.onclick = () => onAdd(button) 
+
+       // set state according to className of book button
+       // TODO do not reset if state booking or booked
+        switch (className) {
+            case "bs_btn_buchen":
+                bookingState[id] = "ready";
+                break;
+            case "bs_btn_ausgebucht":
+            case "bs_btn_warteliste":
+                bookingState[id] = "full";
+                break;
+            default:
+                bookingState[id] = "none";
+        };
 
         // TODO get bookedCourses 
         if (false && bookedCourses.includes(id)) {
@@ -321,7 +324,7 @@ async function modifyBookButtons() {
 
 function updateChoice(c) {
     choice = c ?? {};
-    modifyBookButtons();
+    modifyBookButtonsAndSetStates();
 }
 
 function updateUserdata(d) {
@@ -358,7 +361,6 @@ if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeit
 }
 
 
-
 async function loadInitialData() {
     await download(USERS_FILE).then(updateUserdata);
 
@@ -389,7 +391,7 @@ async function loadInitialData() {
                         onArm();
                 } else if (item == CHOICE_FILE) {
                     choice = changes[item].newValue ?? {};
-                    modifyBookButtons();
+                    modifyBookButtonsAndSetStates();
                 } else if (item == BOOKSTATE_FILE) {
 
                 }
