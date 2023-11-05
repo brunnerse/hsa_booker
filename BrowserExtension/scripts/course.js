@@ -1,13 +1,16 @@
-let userdata;
-let choice;
+
 const statusElem = document.getElementById("statustext");
 const userSelectElem = document.getElementById("userselect"); 
 const armButton = document.getElementById("armbutton"); 
+const armText =  document.getElementById("armbuttontext");
 const hintElem = document.getElementById("hint");
+
+let userdata;
+let choice;
+var armed = false; 
 
 const refreshIntervals = [1000, 2000, 5000, 30000];
 const timeThresholds =   [0, 10000, 90000, Infinity]; 
-
 const statusUpdateInterval = 500;
 
 
@@ -161,132 +164,135 @@ async function onAdd(button) {
     });
 }
 
-var armed = false; 
-let refreshIntervalID;
+
+function arm() {
+    armed = true;
+     //TODO check if another tab with the same site is open; if it is, only activate the one with the higher tab id and give a message for the other one 
+    armText.innerHTML = "UNARM";
+    let style = armButton.getAttribute("style").replace("green", "blue");
+    armButton.setAttribute("style", style); 
+
+    // mark website as armed in storage
+    return storeAsArmed(getCurrentSport())
+    .then(async () => { 
+        // TODO get all marked courses
+        let sport = getCurrentSport();
+        let user = getSelectedUser(userSelectElem);
+        let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
+        console.log(choice);
+        console.log("idlist: " + idlist);
+        let finishedIDs = await download(BOOKSTATE_FILE) ?? [];
+
+        if (idlist.length == 0) {
+            setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
+            .then(onArm);
+            return;
+        }
+
+        // variable to check whether all marked courses are full TODO better way 
+        let allCoursesFull = true;
+        // get all course number elements in document
+        let nrElems = document.getElementsByClassName("bs_sknr");
+
+        for (let id of idlist) {
+            let [nr, date] = id.split("_");
+            let bookButton;
+            for (let nElem of nrElems) {
+                if (nElem.tagName == "TD" && nElem.innerHTML == nr) {
+                    bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
+                    break;
+                }
+            }
+            switch (bookButton ? bookButton.className : "") {
+                case "bs_btn_buchen":
+                    allCoursesFull = false;
+                    finishedIDs.push(id);
+                    // TODO set status of course to booking
+                    //bookingState[nr] = "ready";
+                    // book course
+                    let formElem = bookButton.parentElement;
+                    while (formElem.tagName != "FORM")
+                        formElem = formElem.parentElement;
+                    formElem.requestSubmit(bookButton);
+                    break;
+                case "bs_btn_ausgebucht":
+                case "bs_btn_warteliste":
+                    finishedIDs.push(id);
+                    // Color the entire line light red
+                    for (let c of bookButton.parentElement.parentElement.children) {
+                        let style = c.getAttribute("style") ?? "";
+                        c.setAttribute("style", "background-color:lightcoral;" + style);
+                    }
+                    // TODO set status of course to failed
+                    //bookingState[nr] = "full";
+                    break;
+                default:
+                    //bookingState[nr] = "none";
+            }
+            // TODO upload bookingState
+        }
+
+        for (let fId of finishedIDs) {
+            idlist.splice(idlist.indexOf(fId), 1);
+        }
+
+        if (idlist.length > 0) {
+            // get time until refresh and start counter; 
+            // TODO if any titles not yet bookable
+            let refreshInterval;
+            let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
+            if (bookTimeElems.length > 0) {
+                let bookingTime = bookTimeElems[0].innerHTML;
+                let remainingTime = getRemainingTimeMS(bookingTime);
+                // find correct threshold for current remaining time
+                refreshInterval = refreshIntervals[refreshIntervals.length-1];
+                for (let i = 0; i < refreshIntervals.length-1; i++) {
+                    if (remainingTime <= timeThresholds[i]) {
+                        refreshInterval = refreshIntervals[i];
+                        break;
+                    }
+                }
+            } else {
+                // if no booking time is available, use a default refresh time
+                refreshInterval = refreshIntervals[2];
+            }
+
+            // refresh window in refreshInterval seconds
+            let lastRefreshTime = Date.now();
+            let refreshIntervalID = setInterval(() => {
+                let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
+
+                let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "<br>" : ""; 
+                setStatus(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow");
+                if (armed && remTime <= 0)
+                    window.location.reload();
+                else if (!armed)
+                    clearInterval(refreshIntervalID);
+            }, 333);
+        } else {
+            // call onArm again to unarm
+            setStatusTemp("Unarming: " + (allCoursesFull ? "All marked courses are full." : "All marked courses were processed."), "yellow", 1500, true)
+            .then(onArm);
+            return;
+        }
+    });
+}
+
+function unarm() {
+    armed = false;
+    armText.innerHTML = "ARM";
+    let style = armButton.getAttribute("style").replace("blue", "green");
+    armButton.setAttribute("style", style); 
+    // remove website from armed list in options
+    storeAsUnarmed(getCurrentSport());
+    setStatusTemp("Unarmed.");
+}
 
 function onArm() {
-    const armText =  document.getElementById("armbuttontext");
-    const armButton =  document.getElementById("armbutton");
-    armed = !armed;
-    if (armed) {
-        //TODO check if another tab with the same site is open; if it is, only activate the one with the higher tab id and give a message for the other one 
-        armText.innerHTML = "UNARM";
-        let style = armButton.getAttribute("style").replace("green", "blue");
-        armButton.setAttribute("style", style); 
-
-        // mark website as armed in storage
-        storeAsArmed(getCurrentSport())
-        .then(async () => { 
-            // TODO get all marked courses
-            let sport = getCurrentSport();
-            let user = getSelectedUser(userSelectElem);
-            let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
-            console.log(choice);
-            console.log("idlist: " + idlist);
-            let finishedIDs = await download(BOOKSTATE_FILE) ?? [];
-
-            if (idlist.length == 0) {
-                setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
-                .then(onArm);
-                return;
-            }
-
-            // variable to check whether all marked courses are full TODO better way 
-            let allCoursesFull = true;
-            // get all course number elements in document
-            let nrElems = document.getElementsByClassName("bs_sknr");
-
-            for (let id of idlist) {
-                let [nr, date] = id.split("_");
-                let bookButton;
-                for (let nElem of nrElems) {
-                    if (nElem.tagName == "TD" && nElem.innerHTML == nr) {
-                        bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
-                        break;
-                    }
-                }
-                switch (bookButton ? bookButton.className : "") {
-                    case "bs_btn_buchen":
-                        allCoursesFull = false;
-                        finishedIDs.push(id);
-                        // TODO set status of course to booking
-                        //bookingState[nr] = "ready";
-                        // book course
-                        let formElem = bookButton.parentElement;
-                        while (formElem.tagName != "FORM")
-                            formElem = formElem.parentElement;
-                        formElem.requestSubmit(bookButton);
-                        break;
-                    case "bs_btn_ausgebucht":
-                    case "bs_btn_warteliste":
-                        finishedIDs.push(id);
-                        // Color the entire line light red
-                        for (let c of bookButton.parentElement.parentElement.children) {
-                            let style = c.getAttribute("style") ?? "";
-                            c.setAttribute("style", "background-color:lightcoral;" + style);
-                        }
-                        // TODO set status of course to failed
-                        //bookingState[nr] = "full";
-                        break;
-                    default:
-                        //bookingState[nr] = "none";
-                }
-                // TODO upload bookingState
-            }
-
-            for (let fId of finishedIDs) {
-                idlist.splice(idlist.indexOf(fId), 1);
-            }
-
-            if (idlist.length > 0) {
-                // get time until refresh and start counter; 
-                // TODO if any titles not yet bookable
-                let refreshInterval;
-                let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
-                if (bookTimeElems.length > 0) {
-                    let bookingTime = bookTimeElems[0].innerHTML;
-                    let remainingTime = getRemainingTimeMS(bookingTime);
-                    // find correct threshold for current remaining time
-                    refreshInterval = refreshIntervals[refreshIntervals.length-1];
-                    for (let i = 0; i < refreshIntervals.length-1; i++) {
-                        if (remainingTime <= timeThresholds[i]) {
-                            refreshInterval = refreshIntervals[i];
-                            break;
-                        }
-                    }
-                } else {
-                    // if no booking time is available, use a default refresh time
-                    refreshInterval = refreshIntervals[2];
-                }
-
-                // refresh window in refreshInterval seconds
-                let lastRefreshTime = Date.now();
-                refreshIntervalID = setInterval(() => {
-                    let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
-
-                    let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "<br>" : ""; 
-                    setStatus(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow");
-                    if (armed && remTime <= 0)
-                        window.location.reload();
-                }, 333);
-            } else {
-                // call onArm again to unarm
-                setStatusTemp("Unarming: " + (allCoursesFull ? "All marked courses are full." : "All marked courses were processed."), "yellow", 1500, true)
-                .then(onArm);
-                return;
-            }
-        });
-    } else {
-        armText.innerHTML = "ARM";
-        let style = armButton.getAttribute("style").replace("blue", "green");
-        armButton.setAttribute("style", style); 
-        // remove website from armed list in options
-        storeAsUnarmed(getCurrentSport());
-        // clear refreshInterval
-        if (refreshIntervalID)
-            clearInterval(refreshIntervalID);
-        setStatusTemp("Unarmed.");
-    }
+    if (!armed)
+      return arm(); 
+    else
+        return unarm();
 }
 
 

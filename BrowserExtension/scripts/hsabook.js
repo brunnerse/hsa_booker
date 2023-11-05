@@ -4,6 +4,7 @@ const armButton = document.getElementById("armallbutton");
 let userdata = {};
 let choice = {};
 let statusElements = {};
+let armed = false;
 
 async function updateUser() {
 	const storedDataElem = document.getElementById("storeduserdata");
@@ -253,23 +254,29 @@ function getHref(sport) {
 }
 
 
-let armed = false;
+function armAll() {
+	armed = true;
+	let user = Object.keys(userdata)[0];
+	let courselist = [];
+	for (let sport of Object.keys(choice)) {
+		if (choice[sport][user])
+			courselist.push(sport);
+	}
+	return storeAsArmedCourses(courselist)
+	.then(() => onOpenAll(true));
+}
+
+function unarmAll() {
+	armed = false;
+    // clear armed list 
+    return upload(ARMED_FILE, []);
+}
 
 function onArmAll() {
-    armed = !armed;
-    if (armed) {
-		let user = Object.keys(userdata)[0];
-		let courselist = [];
-		for (let sport of Object.keys(choice)) {
-			if (choice[sport][user])
-				courselist.push(sport);
-		}
-		storeAsArmedCourses(courselist)
-		.then(() => onOpenAll(true));
-    } else {
-        // clear armed list 
-        upload(ARMED_FILE, []);
-    }
+    if (!armed) 
+		return armAll();  
+    else 
+		return unarmAll();
 }
 
 function onOpenAll(checkAllOpenTabs=true) {
