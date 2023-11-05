@@ -5,9 +5,10 @@ const armButton = document.getElementById("armbutton");
 const armText =  document.getElementById("armbuttontext");
 const hintElem = document.getElementById("hint");
 
-let userdata;
-let choice;
-var armed = false; 
+let userdata = {};
+let choice = {};
+let armed = false; 
+let bookingStates = {};
 
 const refreshIntervals = [1000, 2000, 5000, 30000];
 const timeThresholds =   [0, 10000, 90000, Infinity]; 
@@ -158,7 +159,6 @@ function arm() {
         let sport = getCurrentSport();
         let user = getSelectedUser(userSelectElem);
         let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
-        console.log(choice);
         console.log("idlist: " + idlist);
         let finishedIDs = await download(BOOKSTATE_FILE) ?? [];
 
@@ -274,34 +274,9 @@ function onArm() {
         return unarm();
 }
 
-
-window.onload =  
-() => {
-    let url = window.location.href;
-    // remove possible anchor from url
-    url = url.split('#')[0];
-    console.log("Loaded new frame:\n" + url);
-
-    // check if URL is a course
-    if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
-        let course = getCurrentSport(); 
-        setStatus("Click ARM to book the marked courses ASAP", "white");
-        armButton.parentElement.removeAttribute("hidden");
-        hintElem.innerHTML = "Mark the " + course + " courses that you want to be booked automatically";
-        // modify page
-        modifyBookButtons();
-    } else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
-        setStatus("Course overview");
-        hintElem.innerHTML = "Go to a course website to add the course";
-    } else {
-        setStatus("Not a course website", "white");
-    }
-};
-
 async function modifyBookButtons() {
     let sport = getCurrentSport();
     let user = getSelectedUser(userSelectElem);
-    let bookedCourses = await download(BOOKSTATE_FILE) ?? [];
     let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
     
     // insert buttons into book table cell
@@ -331,8 +306,8 @@ async function modifyBookButtons() {
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button);
 
-        // TODO if course is booked
-        if (bookedCourses.includes(id)) {
+        // TODO get bookedCourses 
+        if (false && bookedCourses.includes(id)) {
             button.setAttribute("inert", ""); 
             button.innerHTML = "ALREADY BOOKED";
             // Color the entire line light green
@@ -344,49 +319,84 @@ async function modifyBookButtons() {
     }
 }
 
+function updateChoice(c) {
+    choice = c ?? {};
+    modifyBookButtons();
+}
+
+function updateUserdata(d) {
+	// if userdata didn't change, do nothing
+	if (userdata == d)
+		return;
+	userdata = d ?? {};
+    updateUserSelect(userSelectElem, userdata);
+}
+
+
+
+// add listeners
 userSelectElem.addEventListener("change", onSelectChange);
 armButton.addEventListener("click", onArm);
 
-// fetch userdata and initialize user bar
-download(CHOICE_FILE)
-.then((d) => {
-    if (d && Object.keys(d).length > 0) {
-        console.log("Choice is: ")
-        choice = d; console.log(choice);
+// check the current site if it is a course site
+//get url and remove possible anchor from url
+let url = window.location.href.split('#')[0];
+
+let isCourseSite = false;
+// check if URL is a course and update visible elements accordingly
+if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
+    let course = getCurrentSport(); 
+    setStatus("Click ARM to book the marked courses ASAP", "white");
+    armButton.parentElement.removeAttribute("hidden");
+    hintElem.innerHTML = "Mark the " + course + " courses that you want to be booked automatically";
+    isCourseSite = true;
+} else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
+    setStatus("Course overview");
+    hintElem.innerHTML = "Go to a course website to add the course";
+} else {
+    setStatus("Not a course website", "white");
+}
+
+
+
+async function loadInitialData() {
+    await download(USERS_FILE).then(updateUserdata);
+
+    if (!isCourseSite) {
+        // only simple storage listener listening for user data
+        addStorageListener((changes) => {
+            for (let item of Object.keys(changes)) {
+                if (item == USERS_FILE) {
+                    updateUserdata(changes[item].newValue); 
+                } 
+            }
+        });
     } else {
-        choice = {};
-        console.log("Choice not stored");
-    }
-})    
-.catch((err) => {
-    choice = {};
-    console.error("Error during reading storage:");
-    console.error(err);
-})
-.then(() => download(USERS_FILE))
-.then((d) => {userdata = d ?? {};})
-.then(() => updateUserSelect(userSelectElem, userdata));
+        await download(CHOICE_FILE).then(updateChoice);    
+        // check if website should be armed
+        if (await isArmed(getCurrentSport))
+            arm();
 
-// check if website should be armed
-isArmed(getCurrentSport)
-.then((v) => {
-    if (v)
-        onArm();
-})
+        // add storage listener for all kinds of changes
+        addStorageListener(async (changes) => {
+            console.log(changes);
+            for (let item of Object.keys(changes)) {
+                if (item == USERS_FILE) {
+                    updateUserdata(changes[item].newValue); 
+                } else if (item == ARMED_FILE) {
+                    let storedAsArmed = await isArmed(getCurrentSport()); 
+                    if (armed != storedAsArmed)
+                        onArm();
+                } else if (item == CHOICE_FILE) {
+                    choice = changes[item].newValue ?? {};
+                    modifyBookButtons();
+                } else if (item == BOOKSTATE_FILE) {
 
-addStorageListener((changes) => {
-    console.log(changes);
-    for (let item of Object.keys(changes)) {
-        if (item == USERS_FILE) {
-            userdata = changes[item].newValue ?? {}; 
-            updateUserSelect(userSelectElem, userdata);
-        } else if (item == ARMED_FILE) {
-            let isSportIncluded = changes[item].newValue.includes(getCurrentSport());
-            if (armed != isSportIncluded)
-                onArm();
-        } else if (item == CHOICE_FILE) {
-            choice = changes[item].newValue ?? {};
-            modifyBookButtons();
-        }
+                }
+            }
+        });
     }
-});
+}
+
+
+loadInitialData();
