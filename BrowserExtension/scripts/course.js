@@ -99,71 +99,50 @@ function getCurrentSport() {
 }
 
 async function onAdd(button) {
-    let add = button.innerHTML.startsWith("MARK FOR BOOKING");
+    let remove = button.innerHTML.startsWith("MARKED");
     let user = getSelectedUser(userSelectElem);
     if (!user) {
         alert("Select a user to add the course for in the top left corner first.")
         return;
     }
 
-    let sport = getCurrentSport();
-
     let trElem = button.parentElement.parentElement;
     let nr = getCourseNr(trElem);
     let date = getCourseDateStr(trElem); 
-    let courseID = nr + "_" + date;
 
     console.log("Course " + nr + " start date is " + date);
 
     setStatus("Updating course data...");
-    return download(CHOICE_FILE).then((d) => {
-        choice = d ?? {};
-        if (add) {
-            if (!choice[sport])
-                choice[sport] = {};
-            if (!choice[sport][user])
-                choice[sport][user] = [];
-            console.log(choice);
-            choice[sport][user].push(courseID);
-        } else {
-            if (choice[sport] && choice[sport][user]) {
-                // find all course IDs starting with nr and remove them
-                for (let idx=choice[sport][user].length-1; idx >= 0; idx--) {
-                    if (choice[sport][user][idx].startsWith(nr))
-                        choice[sport][user].splice(idx, 1);
-                }
-                // clean up choice object
-                if (choice[sport][user].length == 0) {
-                    delete choice[sport][user];
-                    if (Object.keys(choice[sport]).length == 0)
-                        delete choice[sport];
-                }
-            } else  {
-                throw new Error("Course " + nr + "is not marked for user " + user);
-            }
-        }
-    }).then(() => upload(CHOICE_FILE, choice))
-    .then((d) => choice = d) 
-    .then( () => {
-        console.log("New choice data:");
-        console.log(choice);
-        modifyBookButtons();
-        if (add && choice[sport] && choice[sport][user] && choice[sport][user].includes(courseID))
-              setStatusTemp("Marked course " + nr + " for booking", "green");
-        else if (!add && (!choice[sport] || !choice[sport][user] || !choice[sport][user].includes(courseID)))
-            setStatusTemp("Unmarked course " + nr, "green");
-        else
-            throw new Error("Choice is unchanged");
-    })
-    .catch( (err) => {
-        if (add)
-            setStatusTemp("Failed to add title: " + err.text, "red", 5000);
-        else
-            setStatusTemp("Failed to delete title: " + err.text, "red", 5000);
-        console.log(err);
-    });
+    if (!remove) 
+        addCourse(user, nr, date);
+     else 
+        removeCourse(user, nr, date);
 }
 
+async function addCourse(user, nr, date) {
+    let courseID = nr + "_" + date;
+    let sport = getCurrentSport();
+    if (!choice[sport])
+        choice[sport] = {};
+   if (!choice[sport][user])
+       choice[sport][user] = [];
+    if (!choice[sport][user].includes(courseID)) {
+        choice[sport][user].push(courseID);
+        await upload(CHOICE_FILE, choice);
+        setStatusTemp("Marked course " + nr + " for booking", "green");
+    } else {
+        throw new Error("Cannot add: course " + nr + "is already marked for user " + user);
+    }
+} 
+
+async function removeCourse(user, nr, date) {
+ 	if (removeNrFromChoice(choice, getCurrentSport(), user, nr)) {
+        await upload(CHOICE_FILE, choice);
+        setStatusTemp("Unmarked course " + nr, "green");
+    } else {
+        throw new Error("Cannot remove: course " + nr + "is not marked for user " + user);
+    }
+}
 
 function arm() {
     armed = true;

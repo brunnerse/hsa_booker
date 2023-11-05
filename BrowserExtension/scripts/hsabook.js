@@ -246,34 +246,22 @@ function onCloseButton(button) {
         parent = parent.parentElement;
     }
     let title = parent.title;
-	console
     let [sport, nr, user] = title.split("_");
 
-    if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr)) {
-		// remove nr from choice and remove element from list
-        choice[sport][user].splice(choice[sport][user].indexOf(nr), 1);
-		// clean up choice obj
-        if (choice[sport][user].length == 0) {
-            delete choice[sport][user];
-            if (Object.keys(choice[sport]).length == 0)
-                delete choice[sport];
-        }
-        // update choice file
-        upload(CHOICE_FILE, choice)
-        .then((data) => { 
-            choice = data;
-        })
-        .then (() => {
-            // update bookedcourses file
-            console.log("Trying to remove course " + nr + " from booked courses...");
-            return download(BOOKSTATE_FILE)
-            .then((bookedCourses) => {
+	// update choice file if removed successfully
+ 	if (removeNrFromChoice(choice, sport, user, nr)) {
+		upload(CHOICE_FILE, choice)
+		.then (() => {
+			// TODO update bookedcourses file
+			console.log("Trying to remove course " + nr + " from booked courses...");
+			return download(BOOKSTATE_FILE)
+			.then((bookedCourses) => {
 				if (bookedCourses && bookedCourses.includes(nr)) {
 					bookedTitles.splice(bookedCourses.indexOf(nr), 1);
 					upload(BOOKSTATE_FILE, bookedTitles);
 				}
-            });
-        });
+			});
+		});
     } else {
 		console.error("Could not remove course " + nr + ": Not found in choice!");
 	}

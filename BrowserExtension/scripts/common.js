@@ -292,3 +292,22 @@ function isArmed(sport) {
         return d.includes(sport)
     });
 }
+
+function removeNrFromChoice(choice, sport, user, nr) {
+    let success = false;
+    if (choice[sport] && choice[sport][user]) {
+        for (let i = choice[sport][user].length-1; i >= 0; i--) {
+            if (choice[sport][user][i].split("_")[0] == nr) {
+                choice[sport][user].splice(i, 1);
+                success = true;
+            }
+        }
+        // clean up choice obj
+        if (choice[sport][user].length == 0) {
+            delete choice[sport][user];
+            if (Object.keys(choice[sport]).length == 0)
+                delete choice[sport];
+        }
+    }
+    return success;
+}
