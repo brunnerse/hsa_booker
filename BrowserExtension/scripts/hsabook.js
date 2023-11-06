@@ -93,7 +93,8 @@ async function updateEntryInTable(entryElem, sport, nr, user) {
 
 	// Create href to course in the whole row
 	let openCourseFun = () => {
-		window.open(getHref(sport)+"#K"+nr);
+		openOrSwitchToTab(getHref(sport)+"#K"+nr);
+		window.close();
 	}
 	for (let elem of replaceEntry.getElementsByTagName("TR")[1].children) {
 		if (!elem.className.match("bs_sbuch")) {
@@ -337,21 +338,30 @@ function onArmAll() {
 		return unarmAll();
 }
 
-async function onOpenAll(checkAllOpenTabs=true) {
-	let hrefs = checkAllOpenTabs ? await getAllTabsHref() : [await getCurrentTabHref()]; 
+async function onOpenAll(checkAllOpenTabs=true, closeAfter=true) {
+	let openHrefs = checkAllOpenTabs ? await getAllTabsHref() : [await getCurrentTabHref()]; 
 	// remove anchors from hrefs 
-	for (let i = 0; i < hrefs.length; i++)
-		hrefs[i] = hrefs[i].split("#")[0];
+	for (let i = 0; i < openHrefs.length; i++)
+		openHrefs[i] = openHrefs[i].split("#")[0];
 
 	let user = Object.keys(userdata)[0];
+	let urls = [];
+
 	for (let sport of Object.keys(choice)) {
 		// get all tabs and don't reopen the ones already open
 		if (choice[sport][user]) {
 			let href = getHref(sport);		
-			if (!hrefs.includes(href)) // open href with anchor to first course nr appended
-				window.open(getHref(sport) + "#K" + Math.min(...choice[sport][user]));
+			if (!openHrefs.includes(href)) {
+				// create url with anchor to first course nr appended
+				let nrs = [];
+				choice[sport][user].forEach((id) => nrs.push(id.split("_")[0]));
+				urls.push(href + "#K" + Math.min(...nrs));
+			}
 		}
 	}
+	urls.forEach((url) => window.open(url));
+	if (closeAfter)
+		window.close();
 }
 
 
