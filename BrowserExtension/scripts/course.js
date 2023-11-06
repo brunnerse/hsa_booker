@@ -75,7 +75,7 @@ function setStatus(status, color="white") {
     statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
 }
 
-async function onSelectChange() {
+async function onSelectChange(updateButtons=true) {
     let selectedUser = getSelectedUser(userSelectElem);
     if (selectedUser == "") {
         if (userSelectElem.options[userSelectElem.selectedIndex].title == "adder") {
@@ -88,7 +88,8 @@ async function onSelectChange() {
             return;
         }
     }
-    modifyBookButtonsAndSetStates();
+    if (updateButtons)
+        modifyBookButtonsAndSetStates();
 }
 
 function getCurrentSport() {
@@ -346,10 +347,6 @@ function updateUserdata(d) {
 
 
 
-// add listeners
-userSelectElem.addEventListener("change", onSelectChange);
-armButton.addEventListener("click", onArm);
-
 // check the current site if it is a course site
 //get url and remove possible anchor from url
 let url = window.location.href.split('#')[0];
@@ -374,6 +371,9 @@ async function loadInitialData() {
     await download(USERS_FILE).then(updateUserdata);
 
     if (!isCourseSite) {
+        // add listeners
+        userSelectElem.addEventListener("change", () => onSelectChange(false));
+
         // only simple storage listener listening for user data
         addStorageListener((changes) => {
             for (let item of Object.keys(changes)) {
@@ -383,6 +383,11 @@ async function loadInitialData() {
             }
         });
     } else {
+        // add listeners
+        userSelectElem.addEventListener("change", () => onSelectChange(true));
+        armButton.addEventListener("click", onArm);
+
+        // load booked data
         booked = await download(BOOKSTATE_FILE) ?? {};
         await download(CHOICE_FILE).then(updateChoice);    
         // check if website should be armed

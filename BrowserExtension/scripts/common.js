@@ -238,12 +238,14 @@ function getCourseNr(tRowElem) {
 }
 
 function getFullDateStr(daymonth) {
-        let month = daymonth.match(/\d+/g)[1];
+        let [day, month] = daymonth.match(/\d+/g);
+        day = day.length < 2 ? "0" + day : day;
+        month = month.length < 2 ? "0" + month : month;
         let dateNow = new Date(Date.now());
         let monthNow = dateNow.getMonth() + 1; // months are being counted from 0
         let yearNow = dateNow.getUTCFullYear();
         // if start month is more than three months from now, it must mean that the course started last year
-        date = daymonth + String((month - monthNow > 3) ? yearNow-1 : yearNow); 
+        date = day + "." + month + "." + String((month - monthNow > 3) ? yearNow-1 : yearNow); 
         return date;
 }
 
