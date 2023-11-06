@@ -127,6 +127,77 @@ async function clearForm() {
 }
 
 
+function getCourseID(docState) {
+    let nr, date;
+
+    if (docState == "fill" || docState == "check") {
+        let spElems = document.getElementsByClassName("bs_form_sp2");
+        for (let sp of spElems) {
+            for (let child of sp.children) {
+                if (!nr && child.innerHTML.match(/^\d+$/)) {
+                    nr = child.innerHTML;
+                } else  {
+                    let m = child.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
+                    if (!date && m) 
+                        date = getFullDateStr(m[0].split("-")[0]);
+                }
+            }
+        } 
+    } else if (docState == "confirmed") {
+        let tdTags = document.getElementsByTagName("TD");
+        for (let td of tdTags) {
+            if (td.innerHTML.match(/^\d+-\d+$/)) {
+                nr = bTag.innerHTML;
+            } else {
+                let m = bTag.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
+                if (m)
+                    date = getFullDateStr(m[0].split("-")[0]);
+            }
+        } 
+    } 
+    if (nr && date) 
+        return nr + "_"+date;
+    console.error("Could not find number or date of course: " + nr + ", " + date);
+    return null;
+}
+
+
+function setBookingState(user, courseID, bookingstate) {
+    return download(BOOKSTATE_FILE)
+    .then((d) => {
+        d = d ?? {};
+        if (!d[user]) {
+            d[user] = {};
+        }
+        if (d[user][courseID] == "booked") {
+            console.warn("COURSE IS ALREADY MARKED AS BOOKED")
+            clearForm();
+        } else if (d[user][courseID] == "booking") {
+            console.warn("COURSE IS CURRENTLY BEING BOOKED")
+            window.close();
+        } else {
+            d[user][courseID] = bookingstate;
+            upload(BOOKSTATE_FILE, d);
+        }
+    });
+}
+
+
+// resets the booking state if window is refreshed 
+function removeBookingStateOnClose(user, courseID) {
+    window.addEventListener("beforeunload", function (e) {
+        download(BOOKSTATE_FILE)
+        .then((d) => {
+            if (d[user][courseID] != "booked") {
+                delete d[user][courseID];
+                return upload(BOOKSTATE_FILE, d);
+            }
+        })
+//       e.preventDefault();
+         e.returnValue = "debug";
+    }); 
+}
+
 async function processDocument() {
     // Check which state the site is in
     let nameInput;
@@ -147,11 +218,18 @@ async function processDocument() {
     }
     console.log("STATE IS " + STATE);
 
-    if (STATE == "fill") {
-        // download user data
-        download(USERS_FILE)
-        .then((d) => {userdata = d ?? {};})
+    const courseID = getCourseID(STATE);
+    const userdata = await download(USERS_FILE) ?? {};
+    let user = Object.keys(userdata).length > 0 ? Object.keys(userdata)[0] : null;
 
+    if (STATE == "fill") {
+        // set booking state
+        if (user && courseID) {
+            await setBookingState(user, courseID, "booking");
+            removeBookingStateOnClose(user, courseID);
+        }
+
+        /*
         if (await getOption("multipleusers")) {
             // Insert user select elem
             document.getElementById("body").children[0].outerHTML += '\
@@ -175,11 +253,10 @@ async function processDocument() {
             // TODO way to check which user is supposed to be booked for; e.g. option?
             setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             onSelectChange();
-        } else {
-            // single user; use first (and only) user in userdata
-            let data = userdata[Object.keys(userdata)[0]];
-            fillForm(form, data);
-        }
+        } 
+        */
+        if (userdata[user])
+            fillForm(form, userdata[user]);
 
         getOption("submitimmediately")
         .then((submitimm) => {
@@ -193,64 +270,12 @@ async function processDocument() {
                 });
             }
         }); 
-
-        // set bookingState of course to booking
-        // first get nr and date
-        let spElems = document.getElementsByClassName("bs_form_sp2");
-        let nr, date;
-        for (let sp of spElems) {
-            for (let child of sp.children) {
-                if (!nr && child.innerHTML.match(/^\d+$/)) {
-                    nr = child.innerHTML;
-                } else  {
-                    let m = child.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
-                    if (!date && m) 
-                        date = getFullDateStr(m[0].split("-")[0]);
-                }
-            }
-        } 
-
-        if (nr && date) {
-            let courseID = nr + "_"+date;
-            let user = Object.keys(userdata)[0];
-            // get user from userdata; single user assumption, i.e. user is the first one
-            // mark course as booked 
-            download(BOOKSTATE_FILE)
-            .then((d) => {
-                d = d ?? {};
-                if (!d[user]) {
-                    d[user] = {};
-                }
-                if (d[user][courseID] == "booked") {
-                    console.warn("COURSE IS ALREADY MARKED AS BOOKED")
-                    clearForm();
-                } else if (d[user][courseID] == "xbooking") {
-                    console.warn("COURSE IS CURRENTLY BEING BOOKED")
-                    window.close();
-                } else {
-                    d[user][courseID] = "booking";
-                    upload(BOOKSTATE_FILE, d);
-                }
-            })
-            
-            // reset state if window is refreshed 
-            window.addEventListener("beforeunload", function (e) {
-                download(BOOKSTATE_FILE)
-                .then((d) => {
-                    if (d[user][courseID] != "booked") {
-                        delete d[user][courseID];
-                        return upload(BOOKSTATE_FILE, d);
-                    }
-                })
-                e.preventDefault();
-                e.returnValue = "The changes will be lost";
-            });
-        } else {
-            console.error("Could not find number or date of course: " + nr + ", " + date);
-            return;
-        }
- 
     } else if (STATE == "check") {
+        if (user && courseID) {
+            await setBookingState(user, courseID, "booking");
+            removeBookingStateOnClose(user, courseID);
+        }
+
         let inputElems = form.getElementsByTagName("INPUT");
         let emailVal = "";
         for (let inputElem of inputElems) {
@@ -273,45 +298,20 @@ async function processDocument() {
         if (await getOption("submitimmediately"))  {
             // submit
             console.assert(submitButton);
+            submitButton.setAttribute("inert", "");
             //TODO in final version: uncomment the following line
             //form.requestSubmit(submitElem); 
         } else {
             // Do nothing
+            submitButton.setAttribute("inert", "");
         }
 
     } else if (STATE == "confirmed") {
         // signalize success
         console.log("STATE IS SUCCESS");
 
-        let tdTags = document.getElementsByTagName("TD");
-        let nr, date;
-        for (let td of tdTags) {
-            if (td.innerHTML.match(/^\d+-\d+$/)) {
-                nr = bTag.innerHTML;
-            } else  {
-                let m = bTag.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
-                if (m) 
-                    date = getFullDateStr(m[0].split("-")[0]);
-            }
-        } 
+        await setBookingState(user, courseID, "booked")
 
-        if (nr && date) {
-            let courseID = nr + "_"+date;
-            // get user from userdata; single user assumption, i.e. user is the first one
-            let user = await download(USERS_FILE).then((d) => Object.keys(d)[0]);
-            // mark course as booked 
-            download(BOOKSTATE_FILE)
-            .then((d) => {
-                d = d ?? {};
-                if (d[user])
-                    d[user] = {};
-                d[user][courseID] = "booked";
-                return upload(BOOKSTATE_FILE, d);
-            })
-        } else {
-            console.error("Could not find number or date of booked course: " + nr + ", " + date);
-            return;
-        }
     } else {
         // signalize error
         console.log("STATE IS ERROR");
