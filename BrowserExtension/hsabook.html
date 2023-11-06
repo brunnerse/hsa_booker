@@ -52,9 +52,10 @@
     </div>
 
     <div class="bs_form_row" id="submitimmediately">
-        <div class="">
+        <div class="tooltip">
             <input type="checkbox" name="submitimmediately" />
-            <label>Submit immediately</label>
+            <label class="tooltip">Submit immediately</label>
+            <div class="tooltiptext">Submit booking form automatically as soon as possible</div>
         </div>
     </div>
     <div class="bs_form_row" id="bypasscountdown">
@@ -107,7 +108,7 @@
                 <td><label style="font-size:85%">Status:</label></td>
                 <td>
                     <select class="bs_form_field bs_fval_req" inert name="statusorig" size="1" id="usershowelem" style="font-size:85%">
-                        <option style="font-size:85%" value="" selected="selected">NONE</option>
+                        <option style="font-size:85%" value="" selected="selected"></option>
                         <option style="font-size:85%" value="S-UNIA">StudentIn der UNI Augsburg</option>
                         <option style="font-size:85%" value="S-HS">StudentIn der HS Augsburg</option>
                         <option style="font-size:85%" value="S-Sport">SportstudentIn</option>
