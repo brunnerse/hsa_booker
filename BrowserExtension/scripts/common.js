@@ -267,7 +267,7 @@ function colorRow(tRowElem, color) {
     for (let c of tRowElem.children) {
         let style = c.getAttribute("style") ?? "";
         let idx = style.indexOf("background-color");
-        idx = (idx >= 0) ? idx : style.length-1; 
+        idx = (idx >= 0) ? idx : 0; 
         let lastIdx = style.indexOf(";", idx);
         lastIdx = (lastIdx >= 0) ? lastIdx : style.length;
         style = style.substr(0, idx) + 

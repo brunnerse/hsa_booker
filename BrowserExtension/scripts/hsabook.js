@@ -36,8 +36,12 @@ async function cleanupChoice() {
 				let date = dateFromDDMMYY(dateStr); 
 				// if start date is more than 8 months ago, remove the course from choice 
 				if (Date.now() - date > 1000*60*60*24*30*8) {
-					removeNrFromChoice(choice, sport, user, nr)
 					changed = true;
+					removeNrFromChoice(choice, sport, user, nr)
+					if (booked[user] && booked[user][id]) {
+						delete booked[user][id];
+						upload(BOOKSTATE_FILE, booked);
+					}
 				} 
 			}
 		}
@@ -99,7 +103,9 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		openOrSwitchToTab(getHref(sport)+"#K"+nr);
 		window.close();
 	}
-	for (let elem of replaceEntry.getElementsByTagName("TR")[1].children) {
+
+	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
+	for (let elem of newRowElem.children) {
 		if (!elem.className.match("bs_sbuch")) {
 			elem.addEventListener("click", openCourseFun);
 			elem.className += " link";
@@ -108,6 +114,20 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			elem.lastChild.className += " link";
 		}
 	}
+
+	// Color entry if booked
+	if (booked[user] && booked[user][id]) {
+		if (booked[user][id] == "booked") {
+			colorRow(newRowElem, "lime");
+			// also change booking button
+			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
+				elem.setAttribute("inert", "");
+				elem.value = "GEBUCHT"; 
+			}
+		} 
+		else if (booked[user][id] == "booking")
+			colorRow(newRowElem, "lightblue");
+	} 
 }
 
 
@@ -159,6 +179,10 @@ async function updateChoice(c) {
 						let cellElem = newRowElem.children[i];
 						if (!["bs_sknr", "bs_sbuch", "bs_sdet", "bs_stag", "bs_szeit", "bs_szr"].includes(cellElem.className))
 							newRowElem.removeChild(cellElem);
+						if (cellElem.className == "bs_szr")
+							for (let anchor of cellElem.getElementsByTagName("A"))
+								anchor.removeAttribute("href");
+
 					}
 					// append sport to details (bs_sdet)
 					let detElem = newRowElem.getElementsByClassName("bs_sdet")[0];
@@ -183,9 +207,25 @@ async function updateChoice(c) {
 	}
 }
 
-function updateBooked(b) {
+function updateBooked(b, prevB = {}) {
 	booked = b ?? {};
-	//TODO
+	// check if entry is already in table
+	for (let tableEntry of choiceElem.children) {
+		let [sport, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
+		let id = nr+"_"+date;
+		if (booked[user] && booked[user][id]) {
+			updateEntryInTable(tableEntry, sport, id, user);
+		} else if (prevB[user] && prevB[user][id]){
+			// entry was removed from booked
+			if (prevB[user][id] == "booked") {
+				updateChoice(choice); // if it was booked before, completely refresh everything
+				return;
+			} else {
+				let tRow = tableEntry.getElementsByTagName("TD")[0].parentElement;
+				colorRow(tRow, "none");
+			}
+		}
+	}
 }
 
 async function updateUserdata(d) {
@@ -256,14 +296,10 @@ function onCloseButton(button) {
  	if (removeNrFromChoice(choice, sport, user, nr)) {
 		upload(CHOICE_FILE, choice)
 		.then (() => {
-			// TODO update bookedcourses file
-			console.log("Trying to remove course " + id + " from booked courses...");
-			return download(BOOKSTATE_FILE)
-			.then((bookedCourses) => {
-				if (false) {
-					upload(BOOKSTATE_FILE, bookedTitles);
-				}
-			});
+			if (booked[user] && booked[user][id]) {
+				delete booked[user][id];
+				return upload(BOOKSTATE_FILE, booked);
+			} 
 		});
     } else {
 		console.error("Could not remove course " + nr + ": Not found in choice!");
@@ -329,7 +365,7 @@ function armAll() {
 			courselist.push(sport);
 	}
 	return storeAsArmedCourses(courselist)
-	.then(() => onOpenAll(true));
+	.then(() => onOpenAll(true, false));
 }
 
 function unarmAll() {
@@ -391,10 +427,10 @@ document.getElementById("openall").addEventListener("click", onOpenAll);
 // Load data sequentially
 loadOptions()
 .then(() => download(USERS_FILE).then(updateUserdata))
+.then(() => download(BOOKSTATE_FILE).then(updateBooked))
 .then(
 	// load choice, init table entries and remove expired courses
 	() => download(CHOICE_FILE).then(updateChoice).then(cleanupChoice))
-.then(() => download(BOOKSTATE_FILE).then(updateBooked))
 .then(() => download(ARMED_FILE).then(updateArm));
 
 
@@ -409,7 +445,7 @@ addStorageListener((changes) => {
         } else if (item == CHOICE_FILE) {
 			updateChoice(changes[CHOICE_FILE].newValue);
         } else if (item == BOOKSTATE_FILE) {
-			updateBooked(changes[BOOKSTATE_FILE].newValue);
+			updateBooked(changes[BOOKSTATE_FILE].newValue, changes[BOOKSTATE_FILE].oldValue);
         }
     }
 });

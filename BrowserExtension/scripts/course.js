@@ -102,7 +102,6 @@ function getCurrentSport() {
 }
 
 async function onAdd(button) {
-    let remove = button.innerHTML.startsWith("MARKED");
     let user = getSelectedUser(userSelectElem);
     if (!user) {
         alert("Select a user to add the course for in the top left corner first.")
@@ -113,10 +112,8 @@ async function onAdd(button) {
     let nr = getCourseNr(trElem);
     let date = getCourseDateStr(trElem); 
 
-    console.log("Course " + nr + " start date is " + date);
-
-    setStatus("Updating course data...");
-    if (!remove) 
+    setStatusTemp("Updating course data...", "white", 1000);
+    if(button.innerHTML.match(/^MARK\s/))
         addCourse(user, nr, date);
      else 
         removeCourse(user, nr, date);
@@ -134,16 +131,23 @@ async function addCourse(user, nr, date) {
         await upload(CHOICE_FILE, choice);
         setStatusTemp("Marked course " + nr + " for booking", "green");
     } else {
-        throw new Error("Cannot add: course " + nr + "is already marked for user " + user);
+        throw new Error("Cannot add: course " + nr + " is already marked for user " + user);
     }
 } 
 
 async function removeCourse(user, nr, date) {
+    // remove bookedState
+    let id = nr+"_"+date;
+    if (booked[user] && booked[user][id]) {
+        delete booked[user][id];
+        await upload(BOOKSTATE_FILE, booked);
+    } 
+    // remove from choice
  	if (removeNrFromChoice(choice, getCurrentSport(), user, nr)) {
-        await upload(CHOICE_FILE, choice);
+        await upload(CHOICE_FILE, choice);	
         setStatusTemp("Unmarked course " + nr, "green");
     } else {
-        throw new Error("Cannot remove: course " + nr + "is not marked for user " + user);
+        throw new Error("Cannot remove: course " + nr + " is not marked for user " + user);
     }
 }
 
