@@ -300,7 +300,8 @@ async function modifyBookButtonsAndSetStates() {
        // set state
        if (booked[user] && booked[user][id]) {
             bookingState[id] = booked[user][id];
-            button.setAttribute("inert", ""); 
+            if (bookingState[id] == "booked")
+                button.setAttribute("inert", ""); 
        } else {
             // set bookingState according to className of book button
             if ("bs_btn_buchen" == className)

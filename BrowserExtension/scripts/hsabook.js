@@ -3,9 +3,10 @@ const armButton = document.getElementById("armallbutton");
 const storedDataElem = document.getElementById("storeduserdata");
 const choiceElem = document.getElementById("choice");
 
-let userdata;
-let choice;
+let userdata = {};
+let choice = {};
 let armed = false;
+let booked = {};
 
 
 function getHref(sport) {
@@ -48,13 +49,14 @@ async function cleanupChoice() {
 function removeObsoleteEntries() {
 	for (let i = choiceElem.children.length - 1; i>= 0; i--) {
 		let title = choiceElem.children[i].title;
-    	let [sport, nr, user] = title.split("_");
+    	let [sport, nr, date, user] = title.split("_");
+		let entryId = nr+"_"+date;
+
 		found = false;
 		if (choice[sport] && choice[sport][user]) {
 			for (let id of choice[sport][user])
-				if (id.split("_")[0] == nr) {
+				if (id == entryId) {
 					found = true;
-					console.log("Found " + id + " for nr " + nr);
 					break;
 				}
 		}
@@ -63,10 +65,11 @@ function removeObsoleteEntries() {
 	}
 }
 
-async function updateEntryInTable(entryElem, sport, nr, user) {
-	const title = `${sport}_${nr}_${user}`;
+async function updateEntryInTable(entryElem, sport, id, user) {
+	const title = `${sport}_${id}_${user}`;
+	let nr = id.split("_")[0];
 
-	// check if nr is already in table
+	// check if entry is already in table
 	let replaceEntry;
 	for (let tableEntry of choiceElem.children) {
 		if (tableEntry.getAttribute("title") == title) {
@@ -121,9 +124,9 @@ async function updateChoice(c) {
 	// add/update table entires in choice
 	for (let sport of Object.keys(choice)) {
 		// TODO display loading entry, like this?
-		//let title = `${sport}_${nr}_${user}`;
+		//let title = `${sport}_${id}_${user}`;
 		//let entryElem = getErrorTable(nr, title, "loading...");
-		//await updateEntryInTable(entryElem, sport, nr, user); 
+		//await updateEntryInTable(entryElem, sport, id, user); 
 
 		requestHTML("GET", getHref(sport))
 		.then((sportDoc) => {
@@ -154,31 +157,35 @@ async function updateChoice(c) {
 					// Remove some table cells from the row
 					for (let i = newRowElem.children.length-1; i >= 0; i--) {
 						let cellElem = newRowElem.children[i];
-						if (!["bs_sknr", "bs_sbuch", "bs_sdet", "bs_stag", "bs_szeit"].includes(cellElem.className))
+						if (!["bs_sknr", "bs_sbuch", "bs_sdet", "bs_stag", "bs_szeit", "bs_szr"].includes(cellElem.className))
 							newRowElem.removeChild(cellElem);
 					}
 					// append sport to details (bs_sdet)
 					let detElem = newRowElem.getElementsByClassName("bs_sdet")[0];
 					if (detElem)
 						detElem.innerHTML = sport + " - " + detElem.innerHTML; // + " (" + user + ")";
-					updateEntryInTable(entryElem, sport, nr, user); 
+					updateEntryInTable(entryElem, sport, id, user); 
 				}
 			}
 		})
 		.catch((err) => {
 			for (let user of Object.keys(choice[sport])) {
-				for (let nr of choice[sport][user]) {
-					let title = `${sport}_${nr}_${user}`;
+				for (let id of choice[sport][user]) {
+					let title = `${sport}_${id}_${user}`;
 					let entryElem = getErrorTable(nr, title, err);
-					updateEntryInTable(entryElem, sport, nr, user); 
+					updateEntryInTable(entryElem, sport, id, user); 
 				}
 			}
 		})
 		.then(() => {
 
 		})
-
 	}
+}
+
+function updateBooked(b) {
+	booked = b ?? {};
+	//TODO
 }
 
 async function updateUserdata(d) {
@@ -242,18 +249,18 @@ function onCloseButton(button) {
         parent = parent.parentElement;
     }
     let title = parent.title;
-    let [sport, nr, user] = title.split("_");
+    let [sport, nr, date, user] = title.split("_");
+	let id = nr+"_"+date;
 
 	// update choice file if removed successfully
  	if (removeNrFromChoice(choice, sport, user, nr)) {
 		upload(CHOICE_FILE, choice)
 		.then (() => {
 			// TODO update bookedcourses file
-			console.log("Trying to remove course " + nr + " from booked courses...");
+			console.log("Trying to remove course " + id + " from booked courses...");
 			return download(BOOKSTATE_FILE)
 			.then((bookedCourses) => {
-				if (bookedCourses && bookedCourses.includes(nr)) {
-					bookedTitles.splice(bookedCourses.indexOf(nr), 1);
+				if (false) {
 					upload(BOOKSTATE_FILE, bookedTitles);
 				}
 			});
@@ -387,7 +394,9 @@ loadOptions()
 .then(
 	// load choice, init table entries and remove expired courses
 	() => download(CHOICE_FILE).then(updateChoice).then(cleanupChoice))
+.then(() => download(BOOKSTATE_FILE).then(updateBooked))
 .then(() => download(ARMED_FILE).then(updateArm));
+
 
 addStorageListener((changes) => {
 	console.log("CHANGED:")
@@ -399,6 +408,8 @@ addStorageListener((changes) => {
 			updateArm(changes[ARMED_FILE].newValue);
         } else if (item == CHOICE_FILE) {
 			updateChoice(changes[CHOICE_FILE].newValue);
+        } else if (item == BOOKSTATE_FILE) {
+			updateBooked(changes[BOOKSTATE_FILE].newValue);
         }
     }
 });
