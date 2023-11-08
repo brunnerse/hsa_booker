@@ -90,19 +90,19 @@ function getAllTabsHref() {
     });
 }
 
-async function openOrSwitchToTab(tabUrl) {
+async function createTabIfNotExists(tabUrl, switchToTab=true) {
     // remove anchors
     let tabUrlRaw = tabUrl.split("#")[0];
     base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
         function (tabs) {
             for (let tab of tabs) {
                 if (tab.url.split("#")[0] == tabUrlRaw) {
-                    base.tabs.update(tab.id, {active: true, url: tabUrl});
+                    base.tabs.update(tab.id, {active: switchToTab, url: tabUrl});
                     return;
                 }
             }
-            // apparently no tab with that url open; open in new window
-            window.open(tabUrl);
+            // apparently no tab with that url open; open in new tab
+            base.tabs.create({active: switchToTab, url: tabUrl});
         }
     );
 }

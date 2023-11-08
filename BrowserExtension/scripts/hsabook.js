@@ -12,7 +12,7 @@ let booked = {};
 function getHref(sport) {
 	// TODO better implementation
 	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_" + 
-		sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue") +
+		sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss") +
 		 ".html";
 }
 
@@ -100,7 +100,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 
 	// Create href to course in the whole row
 	let openCourseFun = () => {
-		openOrSwitchToTab(getHref(sport)+"#K"+nr);
+		createTabIfNotExists(getHref(sport)+"#K"+nr, true);
 		window.close();
 	}
 
@@ -362,7 +362,7 @@ function armAll() {
 			courselist.push(sport);
 	}
 	return storeAsArmedCourses(courselist)
-	.then(() => onOpenAll(true, false));
+	.then(() => onOpenAll(false));
 }
 
 function unarmAll() {
@@ -377,28 +377,22 @@ function onArmAll() {
 		return unarmAll();
 }
 
-async function onOpenAll(checkAllOpenTabs=true, closeAfter=true) {
-	let openHrefs = checkAllOpenTabs ? await getAllTabsHref() : [await getCurrentTabHref()]; 
-	// remove anchors from hrefs 
-	for (let i = 0; i < openHrefs.length; i++)
-		openHrefs[i] = openHrefs[i].split("#")[0];
-
+async function onOpenAll(closeAfter=false) {
 	let user = Object.keys(userdata)[0];
 	let urls = [];
 
 	for (let sport of Object.keys(choice)) {
 		// get all tabs and don't reopen the ones already open
 		if (choice[sport][user]) {
-			let href = getHref(sport);		
-			if (!openHrefs.includes(href)) {
-				// create url with anchor to first course nr appended
-				let nrs = [];
-				choice[sport][user].forEach((id) => nrs.push(id.split("_")[0]));
-				urls.push(href + "#K" + Math.min(...nrs));
-			}
+			// create url with anchor to first course nr appended
+			let nrs = [];
+			choice[sport][user].forEach((id) => nrs.push(id.split("_")[0]));
+			urls.push(getHref(sport) + "#K" + Math.min(...nrs));
 		}
 	}
-	urls.forEach((url) => window.open(url));
+	urls.forEach((url) => createTabIfNotExists(url, false));
+	if (!urls.includes(getCurrentTabHref()))
+		createTabIfNotExists(urls[urls.length-1], true);
 	if (closeAfter)
 		window.close();
 }
