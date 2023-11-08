@@ -161,15 +161,13 @@ function arm() {
     // mark website as armed in storage
     return storeAsArmed(getCurrentSport())
     .then(async () => { 
-        // TODO get all marked courses
         let sport = getCurrentSport();
         let user = getSelectedUser(userSelectElem);
         let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
-        console.log("idlist: " + idlist);
 
         if (idlist.length == 0) {
             setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
-            .then(onArm);
+            .then(unArm);
             return;
         }
 
@@ -231,14 +229,16 @@ function arm() {
 
             // refresh window in refreshInterval seconds
             let lastRefreshTime = Date.now();
-            let refreshIntervalID = setInterval(() => {
+            let refreshIntervalID = setInterval(async () => {
                 let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
 
                 let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "<br>" : ""; 
                 setStatus(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow");
-                if (armed && remTime <= 0)
-                    window.location.reload();
-                    // TODO before reloading, update arm timeout
+                if (armed && remTime <= 0) {
+                    // update arm timeout and then reload the window
+                    storeAsArmed(sport)
+                    .then(window.location.reload);
+                } // if course has been unarmed in the meantime, clear this interval
                 else if (!armed)
                     clearInterval(refreshIntervalID);
             }, 333);
@@ -296,7 +296,7 @@ async function modifyBookButtonsAndSetStates() {
         let button = document.createElement("BUTTON");
         button.innerHTML = idlist.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
         button.style = "width:95%; border-radius:5px;text-align:center;" 
-            + (idlist.includes(id) ? "background-color: green;color:white" : ""); // TODO also if booked 
+            + (idlist.includes(id) ? "background-color: green;color:white" : "");
         button.type = "button";
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button) 
@@ -396,17 +396,19 @@ async function loadInitialData() {
         booked = await download(BOOKSTATE_FILE) ?? {};
         await download(CHOICE_FILE).then(updateChoice);    
         // check if website should be armed
-        if (await isArmed(getCurrentSport))
+        if (await isArmed(getCurrentSport()))
             arm();
 
         // add storage listener for all kinds of changes
         addStorageListener(async (changes) => {
+            console.log("Storage change:")
             console.log(changes);
             for (let item of Object.keys(changes)) {
                 if (item == USERS_FILE) {
                     updateUserdata(changes[item].newValue); 
                 } else if (item == ARMED_FILE) {
-                    let storedAsArmed = await isArmed(getCurrentSport()); 
+                    let storedAsArmed = await isArmed(getCurrentSport(), changes[item].newValue); 
+                    console.log("ARM stored is " + storedAsArmed + ", local is " + armed)
                     if (armed != storedAsArmed)
                         onArm();
                 } else if (item == CHOICE_FILE) {
@@ -422,3 +424,12 @@ async function loadInitialData() {
 
 
 loadInitialData();
+
+// unarm when closing the window
+window.addEventListener("beforeunload", function (e) {
+    if (armed){
+        storeAsUnarmed(getCurrentSport());
+        e.preventDefault();
+        e.returnValue = "Unarm first before leaving the page!";
+    }
+}); 

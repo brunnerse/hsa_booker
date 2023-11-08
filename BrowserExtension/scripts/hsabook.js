@@ -262,26 +262,23 @@ async function updateUserdata(d) {
 	}
 }
 
-function updateArm(armedCourses) {
-	let numArmedTitles = armedCourses.length;
+async function updateArm(armedCourses) {
+	let numArmedTitles = await getNumArmedCourses(armedCourses); 
 	// set arm Button and text according to whether all are armed or not
 	const armText =  document.getElementById("armbuttontext");
 	if (numArmedTitles == 0) {
-		console.log("Resetting arm button..")
 		armText.innerHTML = "Arm all marked courses";
 		let style = armButton.getAttribute("style").replace("blue", "green");
 		armButton.setAttribute("style", style); 
 		armed = false;
 	}
 	else if (numArmedTitles == Object.keys(choice).length) {
-		console.log("Setting arm button..")
 		armText.innerHTML = "Unarm all marked courses";
 		let style = armButton.getAttribute("style").replace("green", "blue");
 		armButton.setAttribute("style", style); 
 		armed = true;
 	}
 }
-
 
 function onCloseButton(button) {
     let parent = button.parentElement;
@@ -370,8 +367,7 @@ function armAll() {
 
 function unarmAll() {
 	armed = false;
-    // clear armed list 
-    return upload(ARMED_FILE, []);
+    return storeAsUnarmedAll(); 
 }
 
 function onArmAll() {

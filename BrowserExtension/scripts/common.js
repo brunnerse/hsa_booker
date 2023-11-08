@@ -3,6 +3,7 @@ const CHOICE_FILE = "choice";
 const BOOKSTATE_FILE = "booked";
 const ARMED_FILE = "armedcourses";
 
+const armed_expiry_msec = 45000;
 const timeout_msec = 6000;
 
 
@@ -290,10 +291,11 @@ function storeAsArmedCourses(sports) {
     // mark website as armed in options
     return download(ARMED_FILE)
     .then((d) => {
-        d = d ?? []; //TODO add expiry date
+        d = d ?? {}; 
+        //add expiry date
+        let timeStamp = Date.now();
         for (let s of sports) {
-            if (!d.includes(s))
-                d.push(s);
+            d[s] = timeStamp;
         }
         return upload(ARMED_FILE, d);
     });
@@ -302,21 +304,45 @@ function storeAsArmedCourses(sports) {
 function storeAsUnarmed(sport) {
     return download(ARMED_FILE)
     .then((d) => {
-        if (d) {
-            let idx = d.indexOf(sport);
-            if (idx >= 0) 
-                d.splice(idx,1);
+        if (d && d[sport]) {
+            delete d[sport];
             return upload(ARMED_FILE, d);
         }
     })
 }
 
-function isArmed(sport) {
-    return download(ARMED_FILE)
-    .then((d) => {
-        //TODO add expiry date; remove sport if expiry date is done
-        return d && d.includes(sport)
-    });
+function storeAsUnarmedAll() {
+    return upload(ARMED_FILE, {});
+}
+
+async function isArmed(sport, armedData=null) {
+    if (!armedData)
+        armedData = await download(ARMED_FILE); 
+    if (!armedData)
+        return false;
+    let stamp = armedData[sport];
+    console.log("armed["+sport+"] is " + stamp)
+    return (stamp && ((stamp + armed_expiry_msec) >= Date.now())) ? true : false;
+}
+
+// counts the armed courses and removes all expired ones from the list
+async function getNumArmedCourses(armedData=null) {
+    if (!armedData)
+        armedData = await download(ARMED_FILE); 
+    if (!armedData) 
+        return 0;
+    let counter = 0;
+    let expired = [];
+    let minNonExpired = Date.now() - armed_expiry_msec;
+    for (let s of Object.keys(armedData)) {
+        if (armedData[s] < minNonExpired) 
+           expired.push(s); 
+    }
+    if (expired.length > 0) {
+        expired.forEach((s) => delete armedData[s]);
+        await upload(ARMED_FILE, armedData);
+    }
+    return Object.keys(armedData).length;
 }
 
 function removeNrFromChoice(choice, sport, user, nr) {
