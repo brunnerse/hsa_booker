@@ -380,19 +380,24 @@ function onArmAll() {
 async function onOpenAll(closeAfter=false) {
 	let user = Object.keys(userdata)[0];
 	let urls = [];
+	let currentTab = (await getCurrentTabHref()).split("#")[0];
+	let isCurrentTabIncluded = false;
 
 	for (let sport of Object.keys(choice)) {
 		// get all tabs and don't reopen the ones already open
 		if (choice[sport][user]) {
+			let href = getHref(sport);
+			if (href == currentTab) 
+				isCurrentTabIncluded = true;
 			// create url with anchor to first course nr appended
 			let nrs = [];
 			choice[sport][user].forEach((id) => nrs.push(id.split("_")[0]));
-			urls.push(getHref(sport) + "#K" + Math.min(...nrs));
+			urls.push(href + "#K" + Math.min(...nrs));
 		}
 	}
-	urls.forEach((url) => createTabIfNotExists(url, false));
-	if (!urls.includes(getCurrentTabHref()))
-		createTabIfNotExists(urls[urls.length-1], true);
+	let switchToLast = (closeAfter && !isCurrentTabIncluded); 
+	for (let i = 0; i < urls.length; i++)
+		createTabIfNotExists(urls[i], i == urls.length-1 && switchToLast);
 	if (closeAfter)
 		window.close();
 }
