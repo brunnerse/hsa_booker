@@ -157,7 +157,6 @@ async function addUser(user) {
         upload(CHOICE_FILE, choice);
     }
 
-    setStatus("Fetching most recent user data...");
     return download(USERS_FILE)
     .then(async (d) => {
         // use empty user data if not stored yet or multipleusers is not enabled
@@ -172,7 +171,6 @@ async function addUser(user) {
 }
 
 async function deleteUser(user) {
-    setStatus("Fetching most recent user data...");
     return download(USERS_FILE)
     .then((d) => {
         userdata = d ?? {};
@@ -250,8 +248,10 @@ async function clearForm() {
 
 
 function setStatus(status, color="white") {
-    let style = "text-align:center;height:20px;font-weight:bold;background-color: " + color + ";"
-    statusElem.setAttribute("style", style);
+    let style = statusElem.getAttribute("style") ?? "";
+    // background-color is at the end; replace it
+    style = style.split("background-color")[0] + "background-color:"+color;
+    statusElem.setAttribute("style", style); 
     statusElem.innerHTML = status;
 }
 
@@ -381,11 +381,9 @@ getOption("multipleusers")
 
 clearForm()
     .then(toggleInert)
-    .then(() => setStatus("Fetching userdata..."))
     .then(() => download(USERS_FILE))
     .then((d) => {userdata = d ?? {};})
     .then(() => updateUserSelect(userSelectElem, userdata))
-    .then(() => setStatus("Fetched userdata."))
     .finally(toggleInert);
 
 document.getElementById("backbutton").addEventListener("click", () => {

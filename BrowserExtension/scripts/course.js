@@ -50,18 +50,25 @@ function getRemainingTimeString(timeStr) {
     return s;
 }
 
+let statusId = 0;
+function setStatus(status, color="white") {
+    statusId += 1;
+    let style = "font-weight:bold;background-color: " + color + ";"
+    statusElem.setAttribute("style", style);
+    statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
+}
 function setStatusTemp(status, color, timeMS=1500, setInert=false) {
-    const statusText = status;
     setStatus(status, color);
     if (setInert) {
         armButton.setAttribute("inert", "");
     }
+    const currentId = statusId;
     return new Promise((resolve) => setTimeout(() => {
         if (setInert) {
             armButton.removeAttribute("inert");
         }
         // set status to empty if it wasn't changed in between
-        if (statusElem.innerHTML == statusText) {
+        if (statusId == currentId) {
             setStatus("");
         }
         resolve();
@@ -69,11 +76,7 @@ function setStatusTemp(status, color, timeMS=1500, setInert=false) {
 
 }
 
-function setStatus(status, color="white") {
-    let style = "font-weight:bold;background-color: " + color + ";"
-    statusElem.setAttribute("style", style);
-    statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
-}
+
 
 async function onSelectChange(updateButtons=true) {
     let selectedUser = getSelectedUser(userSelectElem);
