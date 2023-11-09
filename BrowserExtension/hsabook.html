@@ -40,7 +40,7 @@
 
     <h2>Configuration</h2>
 
-    <div class="bs_form_content">
+    <div hidden class="bs_form_content">
         <div class="bs_form_row">
             <div class="" style="float:left;margin-right:5%;margin-top:2px">Mode:</div>
             <input class="bs_fval_req" type="radio" name="mode" value="formonly">
@@ -54,18 +54,19 @@
     <div class="bs_form_row" id="submitimmediately">
         <div class="tooltip">
             <input type="checkbox" name="submitimmediately" />
-            <label class="tooltip">Submit immediately</label>
+            <label>Submit immediately</label>
             <div class="tooltiptext">Submit booking form automatically as soon as possible</div>
         </div>
     </div>
     <div class="bs_form_row" id="bypasscountdown">
-        <div class="">
+        <div class="tooltip">
             <input inert type="checkbox" name="bypasscountdown" checked="false" />
-            <label style="color:gray">Bypass countdown restriction</label>
+            <label style="color:gray">Bypass client-sided countdown restriction</label>
+            <div class="tooltiptext">This must always be unchecked as the countdown is also checked server-sided</div>
         </div>
     </div>
 
-    <div class="bs_form_row">
+    <div hidden class="bs_form_row">
         <div class="">
             <input inert type="checkbox" checked="false" name="multipleusers" checked="false" />
             <label style="color:gray">Allow more than one user</label>
@@ -132,12 +133,12 @@
     <h2>Marked courses</h2>
     <div id="armchoice" style="margin-left:5%;height:40px">
         <a class="link" style="font-weight:bold;" id="openall">Open all marked course sites</a>
-        <div align="center" style="margin-top:5%;font-size:120%;font-weight:bolder;">
+        <div class="link" id="armall" style="margin-top:5%;;font-weight:bold;">
             <div id="armbuttontext" style="float:left;text-align:right;padding-right:5%">Arm all marked courses</div>
             <button class="roundbutton" style="background-color:green;float:left;" id="armallbutton"></button>
         </div>
     </div>
-    <div id="choice">
+    <div id="choice" style="margin-left:3%;margin-top: 10px">
 
     </div>
 

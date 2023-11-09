@@ -416,7 +416,7 @@ document.getElementById("go-to-options").onClick = () => {
   window.open("hsabook_options.html");
 };
 
-armButton.addEventListener("click", onArmAll);
+document.getElementById("armall").addEventListener("click", onArmAll);
 document.getElementById("openall").addEventListener("click", onOpenAll);
 
 // Load data sequentially
