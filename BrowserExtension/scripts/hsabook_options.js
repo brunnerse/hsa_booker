@@ -202,7 +202,7 @@ async function bookCourse(title) {
         async function (event) { 
             let frameDoc = iFrameElem.contentDocument;
 
-            let user = title.split("_")[2];
+            let user = title.split("_")[3];
             let data = userdata[user];
             if (!data){
                 updateEntryStateTitleErr(title, "userdata for " + user + " not found");
@@ -221,8 +221,6 @@ async function bookCourse(title) {
                     "Form on first screen not found!");
                 return;
             }
-            // make form target external TODO
-            form.action = form.action + "?referer=https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi";
             // Set status select option
             let selectElem = form.getElementsByTagName("SELECT")[0];
             console.assert(form.getElementsByTagName("SELECT").length == 1);
@@ -284,8 +282,6 @@ async function bookCourse(title) {
                         "Form on second screen not found!");
                     return;
                 }
-                // make form target external TODO
-                form.action = "" + form.action + "?referer=https://anmeldung.sport.uni-augsburg.de/cgi/anmeldung.fcgi";
 
                 let inputElems = form.getElementsByTagName("INPUT");
                 let submitButton; 
@@ -322,8 +318,8 @@ async function bookCourse(title) {
                         // let server know that course was booked successfully
                         download(BOOKSTATE_FILE)
                         .then((data) => {
-                                data = data ?? [];
-                                data.push(title);
+                                data = data ?? {};
+                                //data.push(title);
                                 return upload(BOOKSTATE_FILE, data);
                         })
                         .then((bookedCourses) => {
@@ -357,8 +353,8 @@ async function bookCourse(title) {
 async function waitUntilReadyAndBook(sport, checkAbortFun) {
     let titles = [];
     for (let user of Object.keys(choice[sport])) {
-        for (let nr of choice[sport][user]) {
-            let t = `${sport}_${nr}_${user}`;
+        for (let id of choice[sport][user]) {
+            let t = `${sport}_${id}_${user}`;
             // Check first if title is already ready or if function should wait for title
             if (["ready", "full", "booked", "wronguserid"].includes(bookingState[t]))
                 bookCourse(t);
@@ -449,8 +445,8 @@ async function arm() {
     // check if all elements are valid
     for (let sport of Object.keys(choice)) {
         for (let user of Object.keys(choice[sport])) {
-            for (let nr of choice[sport][user]) {
-                const title = `${sport}_${nr}_${user}`;
+            for (let id of choice[sport][user]) {
+                const title = `${sport}_${id}_${user}`;
                 if (!userdata[user]) {
                     updateEntryStateTitleErr(title, "No Userdata. Cannot book course");
                 }
@@ -500,7 +496,8 @@ function updateEntryStateTitleErr(title, err) {
 
 function updateEntryStatesSport(sport, state, color="white") {
     for (let user of Object.keys(choice[sport])) {
-        for (let nr of choice[sport][user]) {
+        for (let id of choice[sport][user]) {
+            let [nr, date] = id.split("_");
             updateEntryState(sport, nr, user, state, color);
         }
     }
@@ -565,8 +562,6 @@ async function updateEntryInTable(entryHTML, sport, nr, user, BS_Code) {
     let formElem = entryElem.children[0];
     console.assert(formElem.tagName == "FORM");
     formElem.target = "frame_"+title;
-    // update action
-    formElem.action += `?referer=${HSA_LINK+courses[sport]}`; 
 }
 
 
@@ -580,7 +575,8 @@ async function refreshSport(sport, updateTitles=[]) {
         } catch (err) {
             updateStatus("[ERROR] Course " + sport + " HTML request failed : " + JSON.stringify(err));
             for (let user of Object.keys(choice[sport])) {
-                for (let nr of choice[sport][user])  {
+                for (let id of choice[sport][user])  {
+                    let [nr, date] = id.split("_");
                     let title = `${sport}_${nr}_${user}`;
                     if (bookingState[title] != "booked") {
                         bookingState[title] = "failed";
@@ -594,20 +590,22 @@ async function refreshSport(sport, updateTitles=[]) {
         }
     } else {
         for (let user of Object.keys(choice[sport])) {
-            for (let nr of choice[sport][user])  {
-                let title = `${sport}_${nr}_${user}`;
+            for (let id of choice[sport][user])  {
+                let [nr, date] = id.split("_");
+                let title = `${sport}_${id}_${user}`;
                 if (bookingState[title] != "booked") {
                     bookingState[title] = "missing";
                 }
                 entryElem = getErrorTable(nr, `[${nr}] ${sport} (${user})`, "Course missing");
-                updateEntryInTable(entryElem, sport, nr, user, "None");
+                updateEntryInTable(entryElem, sport, id, user, "None");
             }
         }
         throw new Error("Course " + sport + " missing");
     }
 
     for (let user of Object.keys(choice[sport])) {
-        for (let nr of choice[sport][user]) {
+        for (let id of choice[sport][user]) {
+            let [nr, date] = id.split("_");
             let entryElem;
             let title = `${sport}_${nr}_${user}`;
             let BS_Code = "None";
@@ -694,8 +692,8 @@ async function refreshChoice() {
         let intervalID = setInterval(
             () => { 
                 for (let user of Object.keys(choice[sport])) 
-                    for (let nr of choice[sport][user]) 
-                        updateTitleWithTime(`${sport}_${nr}_${user}`, timeout_msec - (Date.now() - startTime),
+                    for (let id of choice[sport][user]) 
+                        updateTitleWithTime(`${sport}_${id}_${user}`, timeout_msec - (Date.now() - startTime),
                              "Refresh (Timeout in ", ")");
             }, statusUpdateInterval);
 
@@ -719,8 +717,8 @@ function startAllStatusInterval() {
         () => { 
             for (let sport of Object.keys(choice)) {
                 for (let user of Object.keys(choice[sport])) {
-                    for (let nr of choice[sport][user]) { 
-                        let title =  `${sport}_${nr}_${user}`;
+                    for (let id of choice[sport][user]) { 
+                        let title =  `${sport}_${id}_${user}`;
                         if (bookingTime[title]) 
                             updateEntryStateTitle(title, getRemainingTimeString(bookingTime[title]));
                     }
@@ -757,10 +755,10 @@ function loadChoice() {
         document.getElementById("choice").innerHTML = "";
         for (let sport of Object.keys(choice)) {
             for (let user of Object.keys(choice[sport])) {
-                for (let nr of choice[sport][user]) {
-                    let title = `${sport}_${nr}_${user}`;
-                    let entryElem = getErrorTable(nr, title, "init");
-                    updateEntryInTable(entryElem, sport, nr, user, "None"); 
+                for (let id of choice[sport][user]) {
+                    let title = `${sport}_${id}_${user}`;
+                    let entryElem = getErrorTable(id, title, "init");
+                    updateEntryInTable(entryElem, sport, id, user, "None"); 
 
                     // Create iframe for booking; one one the left side, the next on the right side
                     let htmlFrame = 
@@ -781,14 +779,16 @@ function loadChoice() {
     })
     .then(() => download(BOOKSTATE_FILE)) 
     .then((bookedArr) => {
-        bookedArr = bookedArr ?? [];
+        bookedArr = bookedArr ?? {};
         // set state of titles in bookedArr to booked
-        for (let title of bookedArr) {
+        /*
+        for (let title of Object.keys(bookedArr[userdata[0]])) {
             if (title != "") {
                 bookingState[title] = "booked";
                 updateEntryStateTitle(title, bookingState[title], getColorForBookingState(bookingState[title]));
             }
         } 
+        */
     });
 }
 
@@ -818,7 +818,7 @@ function onCloseButton(button) {
         parent = parent.parentElement;
     }
     let title = parent.title;
-    let [sport, nr, user] = title.split("_");
+    let [sport, nr, date, user] = title.split("_");
     let longTitle = `${sport} - ${nr} (${user})`;
 
     if (choice[sport] && choice[sport][user] && choice[sport][user].includes(nr) && confirm(`Remove course ${longTitle}?`)) {
@@ -858,10 +858,11 @@ function onCloseButton(button) {
             console.log("Trying to remove course " + title + " from bookedcourses...");
             return download(BOOKSTATE_FILE)
             .then((bookedTitles) => {
-                bookedTitles = bookedTitles ?? [];
+                bookedTitles = bookedTitles ?? {};
                 // set state of titles in bookedList to booked
                 console.log("Current bookedcourses:")
                 console.log(bookedTitles);
+                /*
                 for (let i = 0; i < bookedTitles.length; i++) {
                     // remove any whitespace titles
                     if (bookedTitles[i].match(/^\s*$/))  {
@@ -883,6 +884,7 @@ function onCloseButton(button) {
                     }
                 }
                 console.log("Course " + title + " was not stored in bookedcourses file: No update necessary");
+                */
             })
             .catch((err) => {
                 console.log("bookedcourses file does not exist");
@@ -926,7 +928,7 @@ document.getElementById("debug").addEventListener("click", () => {
 loadCourses()
 .then(loadChoice)
 .then(refreshChoice)
-.catch((error) => console.error("Load and refresh of choice failed: " + error.message));
+//.catch((error) => console.error("Load and refresh of choice failed: " + error.message));
 
 if (INACTIVE)
     document.title += " - inactive";
