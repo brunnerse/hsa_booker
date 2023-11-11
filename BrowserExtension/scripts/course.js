@@ -5,6 +5,10 @@ const armButton = document.getElementById("armbutton");
 const armText =  document.getElementById("armbuttontext");
 const hintElem = document.getElementById("hint");
 
+// store current url without anchor 
+const currentUrl = window.location.href.split('#')[0];
+const currentSport = getCurrentSport();
+
 let userdata = {};
 let choice = {};
 let armed = false; 
@@ -77,7 +81,6 @@ function setStatusTemp(status, color, timeMS=1500, setInert=false) {
 }
 
 
-
 async function onSelectChange(updateButtons=true) {
     let selectedUser = getSelectedUser(userSelectElem);
     if (selectedUser == "") {
@@ -104,6 +107,9 @@ function getCurrentSport() {
     }
 }
 
+async function closeIfDuplicate() {
+}
+
 async function onAdd(button) {
     let user = getSelectedUser(userSelectElem);
     if (!user) {
@@ -124,7 +130,7 @@ async function onAdd(button) {
 
 async function addCourse(user, nr, date) {
     let courseID = nr + "_" + date;
-    let sport = getCurrentSport();
+    let sport = currentSport;
     if (!choice[sport])
         choice[sport] = {};
    if (!choice[sport][user])
@@ -146,7 +152,7 @@ async function removeCourse(user, nr, date) {
         await upload(BOOKSTATE_FILE, booked);
     } 
     // remove from choice
- 	if (removeNrFromChoice(choice, getCurrentSport(), user, nr)) {
+ 	if (removeNrFromChoice(choice, currentSport, user, nr)) {
         await upload(CHOICE_FILE, choice);	
         setStatusTemp("Unmarked course " + nr, "green");
     } else {
@@ -162,9 +168,9 @@ function arm() {
     armButton.setAttribute("style", style); 
 
     // mark website as armed in storage
-    return storeAsArmed(getCurrentSport())
+    return storeAsArmed(currentSport)
     .then(async () => { 
-        let sport = getCurrentSport();
+        let sport = currentSport;
         let user = getSelectedUser(userSelectElem);
         let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
 
@@ -261,7 +267,7 @@ function unarm() {
     let style = armButton.getAttribute("style").replace("blue", "green");
     armButton.setAttribute("style", style); 
     // remove website from armed list in options
-    storeAsUnarmed(getCurrentSport());
+    storeAsUnarmed(currentSport);
     setStatusTemp("Unarmed.");
 }
 
@@ -273,7 +279,7 @@ function onArm() {
 }
 
 async function modifyBookButtonsAndSetStates() {
-    let sport = getCurrentSport();
+    let sport = currentSport;
     let user = getSelectedUser(userSelectElem);
     let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
     
@@ -356,18 +362,15 @@ function updateUserdata(d) {
 
 
 // check the current site if it is a course site
-//get url and remove possible anchor from url
-let url = window.location.href.split('#')[0];
-
 let isCourseSite = false;
 // check if URL is a course and update visible elements accordingly
-if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
-    let course = getCurrentSport(); 
+if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
+    let course = currentSport; 
     setStatus("Click ARM to book the marked courses ASAP", "white");
     armButton.parentElement.removeAttribute("hidden");
     hintElem.innerHTML = "Mark the " + course + " courses that you want to be booked automatically";
     isCourseSite = true;
-} else if (url.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
+} else if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
     setStatus("Course overview");
     hintElem.innerHTML = "Go to a course website to add the course";
 } else {
@@ -399,7 +402,7 @@ async function loadInitialData() {
         booked = await download(BOOKSTATE_FILE) ?? {};
         await download(CHOICE_FILE).then(updateChoice);    
         // check if website should be armed
-        if (await isArmed(getCurrentSport()))
+        if (await isArmed(currentSport))
             arm();
 
         // add storage listener for all kinds of changes
@@ -410,7 +413,7 @@ async function loadInitialData() {
                 if (item == USERS_FILE) {
                     updateUserdata(changes[item].newValue); 
                 } else if (item == ARMED_FILE) {
-                    let storedAsArmed = await isArmed(getCurrentSport(), changes[item].newValue); 
+                    let storedAsArmed = await isArmed(currentSport, changes[item].newValue); 
                     console.log("ARM stored is " + storedAsArmed + ", local is " + armed)
                     if (armed != storedAsArmed)
                         onArm();
@@ -431,7 +434,7 @@ loadInitialData();
 // unarm when closing the window
 window.addEventListener("beforeunload", function (e) {
     if (armed){
-        storeAsUnarmed(getCurrentSport());
+        storeAsUnarmed(currentSport);
         e.preventDefault();
         e.returnValue = "Unarm first before leaving the page!";
     }
