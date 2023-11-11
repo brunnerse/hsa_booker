@@ -78,17 +78,43 @@ function getCurrentTabHref() {
 function getAllTabsHref() {
     return new Promise((resolve) => {
         base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
-        function (tabs) {
-            console.log("ALL OPEN TABS:")
-            console.log(tabs);
-            let hrefs = [];
-            for (let tab of tabs) {
-                hrefs.push(tab.url);
-            }
-            resolve(hrefs);
-        });
+            function (tabs) {
+                let hrefs = [];
+                for (let tab of tabs) {
+                    hrefs.push(tab.url);
+                }
+                resolve(hrefs);
+            });
     });
 }
+
+// closes every tab matching urlPattern except the active one / the first one if no tab is active
+async function closeDuplicates(urlPattern) {
+    return new Promise((resolve) => {
+        base.tabs.query({ url: urlPattern},
+            function (tabs) {
+                console.log("OPEN TABS: ");
+                console.log(tabs);
+                let removeIDs = [];
+                let isATabActive = false;
+                for (let i = 1; i < tabs.length; i++) {
+                    if (!isATabActive && tabs[i].isActive) {
+                        removeIDs.push(tabs[0].id);
+                        isATabActive = true;
+                    } 
+                    else
+                        removeIDs.push(tabs[i].id);
+                }
+                base.tabs.remove(removeIDs, resolve);
+            });
+    });
+}
+
+async function closeDuplicates() {
+    tabs = await getTabIDs(currentUrl+"*");
+
+}
+
 
 async function createTabIfNotExists(tabUrl, switchToTab=true) {
     // remove anchors

@@ -107,9 +107,6 @@ function getCurrentSport() {
     }
 }
 
-async function closeIfDuplicate() {
-}
-
 async function onAdd(button) {
     let user = getSelectedUser(userSelectElem);
     if (!user) {
@@ -161,6 +158,8 @@ async function removeCourse(user, nr, date) {
 }
 
 function arm() {
+    closeDuplicates(currentUrl+"*");
+
     armed = true;
      //TODO check if another tab with the same site is open; if it is, only activate the one with the higher tab id and give a message for the other one 
     armText.innerHTML = "UNARM";
