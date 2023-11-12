@@ -9,17 +9,18 @@ let STATE;
 
 async function circumventCountdown() {
     if (!(await getOption("bypasscountdown"))) {
-        // Simply wait until countdown passed 
-        //   await sleep(7200);
         let submitElem = document.getElementById("bs_submit");
         console.assert(submitElem);
+        // insert message that form will be submitted
         let messageElem = document.createElement("DIV");
         messageElem.className = "bs_form_row";
         messageElem.setAttribute("style", "text-align:center;font-weight:bold;color:green;background-color:none;");
         messageElem.innerHTML = "Submitting once the countdown is done...";
         submitElem.parentElement.insertBefore(messageElem, submitElem);
+        // wait until countdown passed
         while(submitElem.className != "sub")
             await sleep(50);
+        // remove message
         submitElem.parentElement.removeChild(messageElem);
     } else {
         // another try: injecting javascript code to set send=1
@@ -86,14 +87,12 @@ function fillForm(form, data) {
         if (inputElem.type == "radio" && data[inputElem.name])
             inputElem.checked = (inputElem.value == data[inputElem.name]); 
         // set accept conditions button
-        else if (inputElem["name"] == "tnbed")
+        else if (inputElem.name == "tnbed")
             inputElem.checked = true;
-        else {
-            // fill form data
-            if (data[inputElem["name"]])
-                inputElem.value = data[inputElem["name"]];
-        }
-    }
+        else if (data[inputElem.name]){
+            inputElem.value = data[inputElem["name"]];
+        } 
+   }
 }
 
 function removeWarnMarks() {
@@ -111,7 +110,7 @@ function removeWarnMarks() {
 async function clearForm() {
     removeWarnMarks();
     let form = document.getElementById("bs_form_main");
-    let inputElems = form.getElementsByTagName("INPUT");
+    let inputElems = form ? form.getElementsByTagName("INPUT") : [];
     for (let inputElem of inputElems) {
         // uncheck sex radio buttons
         if (inputElem.type == "radio")
@@ -122,8 +121,10 @@ async function clearForm() {
         }
     }
     let selectElem = form.getElementsByTagName("SELECT")[0];
-    selectElem.selectedIndex = 0;
-    selectElem.dispatchEvent(new Event("change"));
+    if (selectElem) {
+        selectElem.selectedIndex = 0;
+        selectElem.dispatchEvent(new Event("change"));
+    }
 }
 
 
@@ -258,6 +259,16 @@ async function processDocument() {
         if (userdata[user])
             fillForm(form, userdata[user]);
 
+        // sometimes password fields are automatically set by browser autofill;
+        // wait two seconds for autofill, then reset their value
+        sleep(2000).then(() => {
+            for (let inputElem of form.getElementsByTagName("INPUT")) {
+                    if (inputElem.name.startsWith("pw")) {
+                    inputElem.value = "";
+                }
+            }
+        });
+
         getOption("submitimmediately")
         .then((submitimm) => {
             if (submitimm) {
@@ -289,7 +300,6 @@ async function processDocument() {
         for (let inputElem of inputElems) {
             if (inputElem.title == "fee-based order") {
                 submitButton = inputElem;
-                break;
             } else if (inputElem.name.startsWith("email_check")) {
                 inputElem.value = emailVal;  
             }
