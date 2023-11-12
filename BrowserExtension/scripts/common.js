@@ -110,12 +110,6 @@ async function closeDuplicates(urlPattern) {
     });
 }
 
-async function closeDuplicates() {
-    tabs = await getTabIDs(currentUrl+"*");
-
-}
-
-
 async function createTabIfNotExists(tabUrl, switchToTab=true) {
     // remove anchors
     let tabUrlRaw = tabUrl.split("#")[0];

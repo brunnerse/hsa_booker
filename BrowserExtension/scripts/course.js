@@ -157,9 +157,7 @@ async function removeCourse(user, nr, date) {
     }
 }
 
-function arm() {
-    closeDuplicates(currentUrl+"*");
-
+async function arm() {
     armed = true;
      //TODO check if another tab with the same site is open; if it is, only activate the one with the higher tab id and give a message for the other one 
     armText.innerHTML = "UNARM";
@@ -270,7 +268,7 @@ function unarm() {
     setStatusTemp("Unarmed.");
 }
 
-function onArm() {
+async function onArm() {
     if (!armed)
       return arm(); 
     else
@@ -309,7 +307,7 @@ async function modifyBookButtonsAndSetStates() {
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button) 
 
-       // set state
+       // set booking state if stored
        if (booked[user] && booked[user][id]) {
             bookingState[id] = booked[user][id];
             if (bookingState[id] == "booked")
@@ -332,6 +330,10 @@ async function modifyBookButtonsAndSetStates() {
             case "booking":
                 colorRow(trElem, "lightblue");
                 button.innerHTML = "BOOKING...";
+                break;
+            case "error":
+                colorRow(trElem, "darkorange");
+                button.innerHTML = "BOOKING ERROR";
                 break;
             case "full":
                 if (idlist.includes(id)) {

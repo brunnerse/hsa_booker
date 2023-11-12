@@ -127,6 +127,13 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		} 
 		else if (booked[user][id] == "booking")
 			colorRow(newRowElem, "lightblue");
+		else if (booked[user][id] == "error") {
+			colorRow(newRowElem, "darkorange");
+			// also change booking button
+			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
+				elem.value = "FEHLER"; 
+			}
+		}
 	} 
 }
 

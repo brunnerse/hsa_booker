@@ -131,7 +131,7 @@ async function clearForm() {
 function getCourseID(docState) {
     let nr, date;
 
-    if (docState == "fill" || docState == "check") {
+    if (docState == "fill" || docState == "check" || docState == "error") {
         let spElems = document.getElementsByClassName("bs_form_sp2");
         for (let sp of spElems) {
             for (let child of sp.children) {
@@ -320,11 +320,13 @@ async function processDocument() {
         // signalize success
         console.log("STATE IS SUCCESS");
 
-        await setBookingState(user, courseID, "booked")
+        await setBookingState(user, courseID, "booked", closeIfAlreadyBooking=false)
 
     } else {
         // signalize error
         console.log("STATE IS ERROR");
+
+        await setBookingState(user, courseID, "error", false);
     }
 }
 
