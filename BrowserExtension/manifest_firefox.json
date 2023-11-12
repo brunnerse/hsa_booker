@@ -42,7 +42,7 @@
 	},
 
 	"options_ui": {
-    	"page": "hsabook_options.html",
+    	"page": "hsabook.html",
  	    "open_in_tab": true
     },
 	

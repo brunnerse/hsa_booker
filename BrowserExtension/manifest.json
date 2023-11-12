@@ -43,9 +43,8 @@
 		"default_popup": "hsabook.html"
 	},
 
-	"options_page": "hsabook_options.html", 
 	"options_ui": {
-    	"page": "hsabook_options.html",
+    	"page": "hsabook.html",
  	    "open_in_tab": true
     } 
 
