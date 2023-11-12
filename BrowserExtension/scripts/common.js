@@ -4,6 +4,7 @@ const BOOKSTATE_FILE = "booked";
 const ARMED_FILE = "armedcourses";
 
 const armed_expiry_msec = 45000;
+const booking_expiry_msec = 2500;
 const timeout_msec = 6000;
 
 
@@ -341,7 +342,6 @@ async function isArmed(sport, armedData=null) {
     if (!armedData)
         return false;
     let stamp = armedData[sport];
-    console.log("armed["+sport+"] is " + stamp)
     return (stamp && ((stamp + armed_expiry_msec) >= Date.now())) ? true : false;
 }
 
@@ -382,4 +382,22 @@ function removeNrFromChoice(choice, sport, user, nr) {
         }
     }
     return success;
+}
+
+function getBookingStateFromData(bookStruct, user, id) {
+    if (!bookStruct || !bookStruct[user] || !bookStruct[user][id]) {
+        return null;
+    }
+    let [state, stamp] = bookStruct[user][id].split("_");
+    stamp = parseInt(stamp);
+    if (state == "booking")
+        return ((stamp + booking_expiry_msec) >= Date.now()) ? state : null;
+    else
+        return state;
+}
+
+// check if state changed or if is just a timestamp update
+function bookingDataChanged(newData, oldData, sport="") {
+    //TODO
+    return true;
 }

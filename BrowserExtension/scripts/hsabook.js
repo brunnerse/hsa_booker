@@ -116,27 +116,25 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	}
 
 	// Color entry if booked
-	if (booked[user] && booked[user][id]) {
-		if (booked[user][id] == "booked") {
-			colorRow(newRowElem, "lime");
-			// also change booking button
-			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-				elem.setAttribute("inert", "");
-				elem.value = "GEBUCHT"; 
-			}
-		} 
-		else if (booked[user][id] == "booking")
-			colorRow(newRowElem, "lightblue");
-		else if (booked[user][id] == "error") {
-			colorRow(newRowElem, "darkorange");
-			// also change booking button
-			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-				elem.value = "FEHLER"; 
-			}
+	let bookingState = getBookingStateFromData(booked, user, id);
+	if (bookingState == "booked") {
+		colorRow(newRowElem, "lime");
+		// also change booking button
+		for (let elem of newRowElem.getElementsByTagName("INPUT")) {
+			elem.setAttribute("inert", "");
+			elem.value = "GEBUCHT"; 
 		}
 	} 
+	else if (bookingState == "booking")
+		colorRow(newRowElem, "lightblue");
+	else if (bookingState == "error") {
+		colorRow(newRowElem, "darkorange");
+		// also change booking button
+		for (let elem of newRowElem.getElementsByTagName("INPUT")) {
+			elem.value = "FEHLER"; 
+		}
+	}
 }
-
 
 async function updateChoice(c) {
 	choice = c ?? {};
@@ -217,6 +215,8 @@ async function updateChoice(c) {
 function updateBooked(b, prevB = {}) {
 	booked = b ?? {};
 	// check if entry is already in table
+	if (!bookingDataChanged(b, prevB))
+		return;
 	for (let tableEntry of choiceElem.children) {
 		let [sport, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
 		let id = nr+"_"+date;

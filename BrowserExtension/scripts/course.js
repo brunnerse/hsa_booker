@@ -308,11 +308,8 @@ async function modifyBookButtonsAndSetStates() {
         button.onclick = () => onAdd(button) 
 
        // set booking state if stored
-       if (booked[user] && booked[user][id]) {
-            bookingState[id] = booked[user][id];
-            if (bookingState[id] == "booked")
-                button.setAttribute("inert", ""); 
-       } else {
+       bookingState[id] = getBookingStateFromData(booked, user, id);
+       if (!bookingState[id]) {
             // set bookingState according to className of book button
             if ("bs_btn_buchen" == className)
                 bookingState[id] = "ready";
@@ -422,7 +419,9 @@ async function loadInitialData() {
                     updateChoice(changes[item].newValue);
                 } else if (item == BOOKSTATE_FILE) {
                     booked = changes[item].newValue ?? {};
-                    modifyBookButtonsAndSetStates();
+                    // check if changes affect this sport 
+                    if (bookingDataChanged(booked, changes[item].oldValue, currentSport))
+                        modifyBookButtonsAndSetStates();
                 }
             }
         });

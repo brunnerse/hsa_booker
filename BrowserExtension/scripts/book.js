@@ -175,38 +175,35 @@ function getCourseID(docState) {
 
 function getBookingState(user, courseID) {
     return download(BOOKSTATE_FILE)
-    .then((d) => {
-        return (d && d[user])? d[user][courseID] : null;
-    });
+    .then((d) => getBookingStateFromData(d, user, courseID)); 
 }
 
 function setBookingState(user, courseID, bookingstate, avoidIfBooking=true) {
     return download(BOOKSTATE_FILE)
     .then((d) => {
         d = d ?? {};
-        if (!d[user]) {
+        if (!d[user]) 
             d[user] = {};
-        }
-        let prevBookingState = d[user][courseID];
+        let prevBookingState = getBookingStateFromData(d, user, courseID); 
         if (!avoidIfBooking || !["booked", "booking"].includes(prevBookingState)){
-            d[user][courseID] = bookingstate;
+            d[user][courseID] = bookingstate + "_" + Date.now();
             upload(BOOKSTATE_FILE, d);
-        }
+        } else 
+            console.warn("Not updating bookingstate: state is already set to " + prevBookingState);
         return prevBookingState;
     });
 }
 
-
-// resets the booking state if window is refreshed 
+// resets the booking state if window is refreshed/closed 
 function removeBookingStateOnClose(user, courseID) {
     window.addEventListener("beforeunload", function (e) {
         download(BOOKSTATE_FILE)
         .then((d) => {
-            if (d[user][courseID] != "booked") {
+            if (getBookingStateFromData(d, user, courseID) == "booking") {
                 delete d[user][courseID];
                 return upload(BOOKSTATE_FILE, d);
             }
-        })
+        });
     }); 
 }
 
@@ -236,15 +233,18 @@ async function processDocument() {
 
     if (STATE == "fill") {
         console.assert(submitElem);
+
+        let alreadyBooked = false;
         // set booking state
         if (user && courseID) {
             let prevBookingState = await setBookingState(user, courseID, "booking");
             if (prevBookingState == "booked") {
                 console.warn("COURSE IS ALREADY MARKED AS BOOKED")
                 setBookingMessage("ALERT: COURSE HAS ALREADY BEEN BOOKED", "darkorange");
+                alreadyBooked = true;
             } else if (prevBookingState == "booking") {
                 setBookingMessage("COURSE IS CURRENTLY BEING BOOKED, CLOSING...", "red");
-                await sleep(2000);
+                await sleep(1000);
                 window.close();
             }
         }
@@ -289,16 +289,18 @@ async function processDocument() {
             }
         });
 
-        getOption("submitimmediately")
-        .then((submitimm) => {
-            if (submitimm) {
-                circumventCountdown()
-                .then(() => {
-                    // find submit button and submit
-                    document.forms[0].requestSubmit(submitElem);
-                });
-            }
-        }); 
+        if (!alreadyBooked) {
+            getOption("submitimmediately")
+            .then((submitimm) => {
+                if (submitimm) {
+                    circumventCountdown()
+                    .then(() => {
+                        // find submit button and submit
+                        document.forms[0].requestSubmit(submitElem);
+                    });
+                }
+            }); 
+        }
     } else if (STATE == "check") {
         if (user && courseID) {
             // set booking state again
