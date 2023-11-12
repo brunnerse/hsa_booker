@@ -121,6 +121,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	}
 
 	// Color entry if booked
+	bookingState[id] = getBookingStateFromData(booked, user, id);
 	if (bookingState[id] == "booked") {
 		colorRow(newRowElem, "lime");
 		// also change booking button
@@ -218,20 +219,22 @@ async function updateChoice(c) {
 
 function updateBooked(b, prevB = {}) {
 	booked = b ?? {};
-	// check if entry is already in table
+	// check if data changes are relevant
 	if (!bookingDataChanged(b, prevB))
 		return;
+
 	for (let tableEntry of choiceElem.children) {
 		let [sport, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
 		let id = nr+"_"+date;
 
-		let prevBookingState = bookingState[id];
+		let prevBookingState = bookingState[id]; 
 		bookingState[id] = getBookingStateFromData(booked, user, id);
 		if (bookingState[id]) {
 			updateEntryInTable(tableEntry, sport, id, user);
 		} else if (prevBookingState) { // entry's booking state was removed
 			if (prevBookingState == "booked") {
 				updateChoice(choice); // if it was booked before, completely refresh everything
+				return; // due to complete refresh, the other tasks don't have to be checked
 			} else {
 				let tRow = tableEntry.getElementsByTagName("TD")[0].parentElement;
 				colorRow(tRow, "none");
@@ -318,7 +321,6 @@ function onCloseButton(button) {
 
 
 function onOptionChange(change) {
-	console.log(change);
 	// set changed options
 	let optionObj = {};
 	for (let inputElem of document.getElementsByTagName("INPUT")) {
@@ -421,7 +423,6 @@ for (let inputElem of document.getElementsByTagName("INPUT")) {
 }
 
 document.getElementById("go-to-options").addEventListener("click", () => {
-    console.log("Click event!");
     window.open("hsabook_options.html");
 })
 document.getElementById("go-to-options").onClick = () => {
@@ -442,7 +443,7 @@ loadOptions()
 
 
 addStorageListener((changes) => {
-	console.log("CHANGED:")
+	console.log("[Storage Listener] Changed:")
     console.log(changes);
     for (let item of Object.keys(changes)) {
         if (item == USERS_FILE) {
@@ -462,7 +463,6 @@ setInterval(() => {
 	if (Object.keys(userdata).length < 1)
 		return;
 	let user = Object.keys(userdata)[0];
-	console.log(bookingState)
 	let changed = false;
 	for (let id of Object.keys(bookingState)) {
 		if (bookingState[id] == "booking") {

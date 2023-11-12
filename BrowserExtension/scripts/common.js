@@ -94,8 +94,6 @@ async function closeDuplicates(urlPattern) {
     return new Promise((resolve) => {
         base.tabs.query({ url: urlPattern},
             function (tabs) {
-                console.log("OPEN TABS: ");
-                console.log(tabs);
                 let removeIDs = [];
                 let isATabActive = false;
                 for (let i = 1; i < tabs.length; i++) {
@@ -186,8 +184,8 @@ function upload(filename, obj) {
         let o = {};
         o[filename] = obj;
 
-        console.log("Uploading data:")
-        console.log(o);
+        //console.log("Uploading data:")
+        //console.log(o);
 
         base.storage.sync.set(o)
         .then(() => resolve(o[filename]))
@@ -251,7 +249,6 @@ async function setAllOptions(options) {
 
 function dateFromDDMMYY(s) {
     let nrs = s.match(/\d+/g);
-    console.log(nrs)
     return new Date(nrs[2], nrs[1]-1, nrs[0])
 }
 
@@ -397,7 +394,24 @@ function getBookingStateFromData(bookStruct, user, id) {
 }
 
 // check if state changed or if is just a timestamp update
-function bookingDataChanged(newData, oldData, sport="") {
-    //TODO
-    return true;
+function bookingDataChanged(newData, oldData) {
+    for (let user of Object.keys(newData)) {
+        if (!oldData[user])
+            return true;
+        for (let id of Object.keys(newData[user])) {
+            let [newState, newStamp] = newData[user][id].split("_");
+            if (!oldData[user][id])
+                return true;
+            let [oldState, oldStamp] = oldData[user][id].split("_");
+            if (oldState != newState)
+                return true;
+            else if (oldState == "booking") {
+                // in state booking, if oldStamp was expired the state has changed 
+                // as newStamp certainly is not expired 
+                if (parseInt(oldStamp) + booking_expiry_msec < Date.now())
+                    return true;
+            } 
+        }
+    }
+    return false;
 }

@@ -194,6 +194,7 @@ async function arm() {
                     numCoursesDone++;
                     break;
                 case "ready":
+                case "error":
                     // book course: get form and bookbutton, then submit
                     let [nr, date] = id.split("_");
                     let bookButton;
@@ -216,9 +217,10 @@ async function arm() {
         if (numCoursesDone < idlist.length) {
             // get time until refresh and start counter
             let refreshInterval;
+            let bookingTime;
             let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
             if (bookTimeElems.length > 0) {
-                let bookingTime = bookTimeElems[0].innerHTML;
+                bookingTime = bookTimeElems[0].innerHTML;
                 let remainingTime = getRemainingTimeMS(bookingTime);
                 // find correct threshold for current remaining time
                 refreshInterval = refreshIntervals[refreshIntervals.length-1];
@@ -420,7 +422,7 @@ async function loadInitialData() {
                 } else if (item == BOOKSTATE_FILE) {
                     booked = changes[item].newValue ?? {};
                     // check if changes affect this sport 
-                    if (bookingDataChanged(booked, changes[item].oldValue, currentSport))
+                    if (bookingDataChanged(booked, changes[item].oldValue))
                         modifyBookButtonsAndSetStates();
                 }
             }
@@ -451,7 +453,7 @@ loadInitialData();
 // unarm when closing the window
 window.addEventListener("beforeunload", function (e) {
     if (armed){
-        storeAsUnarmed(currentSport);
+        unarm(); 
         e.preventDefault();
         e.returnValue = "Unarm first before leaving the page!";
     }
