@@ -1,4 +1,5 @@
 let form = document.forms[0];
+let submitElem = document.getElementById("bs_submit");
 
 let userdata = {};
 
@@ -6,22 +7,32 @@ const STATES = ["fill", "check", "confirmed", "error"];
 
 let STATE;
 
+async function setBookingMessage(message, color="black") {
+    console.assert(submitElem);
+    // get message element or create it if it doesnt exist yet
+    let messageElem = document.getElementById("bookingmessage");
+    if (message == "") {
+        if (messageElem)
+            submitElem.parentElement.removeChild(messageElem);
+        return;
+    }
+    if (!messageElem) {
+        messageElem = document.createElement("DIV");
+        messageElem.className = "bs_form_row";
+        messageElem.id = "bookingmessage";
+        submitElem.parentElement.insertBefore(messageElem, submitElem);
+    }
+    messageElem.setAttribute("style", `text-align:center;font-weight:bold;color:${color};background-color:none;`);
+    messageElem.innerHTML =  message;
+}
 
 async function circumventCountdown() {
     if (!(await getOption("bypasscountdown"))) {
-        let submitElem = document.getElementById("bs_submit");
-        console.assert(submitElem);
         // insert message that form will be submitted
-        let messageElem = document.createElement("DIV");
-        messageElem.className = "bs_form_row";
-        messageElem.setAttribute("style", "text-align:center;font-weight:bold;color:green;background-color:none;");
-        messageElem.innerHTML = "Submitting once the countdown is done...";
-        submitElem.parentElement.insertBefore(messageElem, submitElem);
+        setBookingMessage("Submitting once the countdown is done...", "green");
         // wait until countdown passed
         while(submitElem.className != "sub")
             await sleep(50);
-        // remove message
-        submitElem.parentElement.removeChild(messageElem);
     } else {
         // another try: injecting javascript code to set send=1
         // also not working due to content policy
@@ -162,24 +173,26 @@ function getCourseID(docState) {
     return null;
 }
 
+function getBookingState(user, courseID) {
+    return download(BOOKSTATE_FILE)
+    .then((d) => {
+        return (d && d[user])? d[user][courseID] : null;
+    });
+}
 
-function setBookingState(user, courseID, bookingstate) {
+function setBookingState(user, courseID, bookingstate, avoidIfBooking=true) {
     return download(BOOKSTATE_FILE)
     .then((d) => {
         d = d ?? {};
         if (!d[user]) {
             d[user] = {};
         }
-        if (d[user][courseID] == "booked") {
-            console.warn("COURSE IS ALREADY MARKED AS BOOKED")
-            clearForm();
-        } else if (d[user][courseID] == "booking") {
-            console.warn("COURSE IS CURRENTLY BEING BOOKED")
-            window.close();
-        } else {
+        let prevBookingState = d[user][courseID];
+        if (!avoidIfBooking || !["booked", "booking"].includes(prevBookingState)){
             d[user][courseID] = bookingstate;
             upload(BOOKSTATE_FILE, d);
         }
+        return prevBookingState;
     });
 }
 
@@ -194,8 +207,6 @@ function removeBookingStateOnClose(user, courseID) {
                 return upload(BOOKSTATE_FILE, d);
             }
         })
-//       e.preventDefault();
-         e.returnValue = "debug";
     }); 
 }
 
@@ -224,11 +235,20 @@ async function processDocument() {
     let user = Object.keys(userdata).length > 0 ? Object.keys(userdata)[0] : null;
 
     if (STATE == "fill") {
+        console.assert(submitElem);
         // set booking state
         if (user && courseID) {
-            await setBookingState(user, courseID, "booking");
-            removeBookingStateOnClose(user, courseID);
+            let prevBookingState = await setBookingState(user, courseID, "booking");
+            if (prevBookingState == "booked") {
+                console.warn("COURSE IS ALREADY MARKED AS BOOKED")
+                setBookingMessage("ALERT: COURSE HAS ALREADY BEEN BOOKED", "darkorange");
+            } else if (prevBookingState == "booking") {
+                setBookingMessage("COURSE IS CURRENTLY BEING BOOKED, CLOSING...", "red");
+                await sleep(2000);
+                window.close();
+            }
         }
+        removeBookingStateOnClose(user, courseID);
 
         /*
         if (await getOption("multipleusers")) {
@@ -275,14 +295,13 @@ async function processDocument() {
                 circumventCountdown()
                 .then(() => {
                     // find submit button and submit
-                    let submitButton = document.getElementById("bs_submit");
-                    console.assert(submitButton);
-                    document.forms[0].requestSubmit(submitButton);
+                    document.forms[0].requestSubmit(submitElem);
                 });
             }
         }); 
     } else if (STATE == "check") {
         if (user && courseID) {
+            // set booking state again
             await setBookingState(user, courseID, "booking");
             removeBookingStateOnClose(user, courseID);
         }
@@ -320,13 +339,15 @@ async function processDocument() {
         // signalize success
         console.log("STATE IS SUCCESS");
 
-        await setBookingState(user, courseID, "booked", closeIfAlreadyBooking=false)
+        await setBookingState(user, courseID, "booked", false)
 
     } else {
         // signalize error
         console.log("STATE IS ERROR");
-
-        await setBookingState(user, courseID, "error", false);
+        if (user && courseID) {
+            if (await getBookingState(user, courseID) != "booked")
+                await setBookingState(user, courseID, "error", false);
+        }
     }
 }
 
