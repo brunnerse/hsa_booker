@@ -178,14 +178,14 @@ function getBookingState(user, courseID) {
     .then((d) => getBookingStateFromData(d, user, courseID)); 
 }
 
-function setBookingState(user, courseID, bookingstate, avoidIfBooking=true) {
+function setBookingState(user, courseID, bookingstate, avoidIfBooked=true) {
     return download(BOOKSTATE_FILE)
     .then((d) => {
         d = d ?? {};
         if (!d[user]) 
             d[user] = {};
         let prevBookingState = getBookingStateFromData(d, user, courseID); 
-        if (!avoidIfBooking || !["booked", "booking"].includes(prevBookingState)){
+        if (!avoidIfBooked || !["booked"].includes(prevBookingState)){
             d[user][courseID] = bookingstate + "_" + Date.now();
             upload(BOOKSTATE_FILE, d);
         } else 
@@ -234,22 +234,6 @@ async function processDocument() {
     if (STATE == "fill") {
         console.assert(submitElem);
 
-        let alreadyBooked = false;
-        // set booking state
-        if (user && courseID) {
-            let prevBookingState = await setBookingState(user, courseID, "booking");
-            if (prevBookingState == "booked") {
-                console.warn("COURSE IS ALREADY MARKED AS BOOKED")
-                setBookingMessage("ALERT: COURSE HAS ALREADY BEEN BOOKED", "darkorange");
-                alreadyBooked = true;
-            } else if (prevBookingState == "booking") {
-                setBookingMessage("COURSE IS CURRENTLY BEING BOOKED, CLOSING...", "red");
-                await sleep(1000);
-                window.close();
-            }
-        }
-        removeBookingStateOnClose(user, courseID);
-
         /*
         if (await getOption("multipleusers")) {
             // Insert user select elem
@@ -289,23 +273,45 @@ async function processDocument() {
             }
         });
 
-        if (!alreadyBooked) {
-            getOption("submitimmediately")
-            .then((submitimm) => {
-                if (submitimm) {
-                    circumventCountdown()
-                    .then(() => {
-                        // find submit button and submit
-                        document.forms[0].requestSubmit(submitElem);
-                    });
-                }
-            }); 
+        // set booking state
+        if (user && courseID) {
+            let prevBookingState = await setBookingState(user, courseID, "booking");
+            if (prevBookingState == "booked") {
+                console.warn("COURSE IS ALREADY MARKED AS BOOKED")
+                setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
+                return;
+            } else if (prevBookingState == "booking") {
+                setBookingMessage("COURSE IS ALREADY BEING BOOKED, CLOSING...", "red");
+                await sleep(1000);
+                window.close();
+                return;
+            }
+
+            removeBookingStateOnClose(user, courseID);
+            // update booking state timestamp constantly to show the site didn't timeout
+            setInterval(()=> {
+                    setBookingState(user, courseID, "booking");
+                }, booking_expiry_msec - 500);
         }
+
+        getOption("submitimmediately")
+        .then((submitimm) => {
+            if (submitimm) {
+                circumventCountdown()
+                .then(() => {
+                    // find submit button and submit
+                    document.forms[0].requestSubmit(submitElem);
+                });
+            }
+        }); 
     } else if (STATE == "check") {
         if (user && courseID) {
-            // set booking state again
-            await setBookingState(user, courseID, "booking");
+            setBookingState(user, courseID, "booking");
             removeBookingStateOnClose(user, courseID);
+            // update booking state timestamp constantly to show the site didn't timeout
+            setInterval(()=> {
+                    setBookingState(user, courseID, "booking");
+                }, booking_expiry_msec - 500);
         }
 
         let inputElems = form.getElementsByTagName("INPUT");
@@ -340,15 +346,13 @@ async function processDocument() {
     } else if (STATE == "confirmed") {
         // signalize success
         console.log("STATE IS SUCCESS");
-
-        await setBookingState(user, courseID, "booked", false)
+        await setBookingState(user, courseID, "booked", false);
 
     } else {
         // signalize error
         console.log("STATE IS ERROR");
         if (user && courseID) {
-            if (await getBookingState(user, courseID) != "booked")
-                await setBookingState(user, courseID, "error", false);
+            setBookingState(user, courseID, "error");
         }
     }
 }

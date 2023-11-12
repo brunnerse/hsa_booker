@@ -425,6 +425,23 @@ async function loadInitialData() {
                 }
             }
         });
+
+        // Create function that periodically checks whether a booking state has expired
+        setInterval(() => {
+            let user = getSelectedUser(userSelectElem);
+            let changed = false;
+            for (let id of Object.keys(bookingState)) {
+                if (bookingState[id] == "booking") {
+                    let storedState = getBookingStateFromData(booked, user, id); 
+                    if (storedState != "booking") {
+                        bookingState[id] = storedState; 
+                        changed = true;
+                    }
+                }
+            }
+            if (changed)
+                modifyBookButtonsAndSetStates();
+        }, 1000);
     }
 }
 

@@ -7,6 +7,7 @@ let userdata = {};
 let choice = {};
 let armed = false;
 let booked = {};
+let bookingState = {};
 
 
 function getHref(sport) {
@@ -92,6 +93,8 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	for (let cell of rowElem.children)
 		cell.setAttribute("style", "color: white;");
 	await sleep(100);
+	for (let cell of rowElem.children)
+		cell.removeAttribute("style");
 
 	replaceEntry.innerHTML = entryElem.innerHTML;
 	// set close button listener
@@ -108,16 +111,17 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	for (let elem of newRowElem.children) {
 		if (!elem.className.match("bs_sbuch")) {
 			elem.addEventListener("click", openCourseFun);
-			elem.className += " link";
+			if (!elem.className.includes("link"))
+				elem.className += " link";
 		} else {
 			elem.lastChild.addEventListener("click", openCourseFun);
-			elem.lastChild.className += " link";
+			if (!elem.lastChild.className.includes("link"))
+				elem.lastChild.className += " link";
 		}
 	}
 
 	// Color entry if booked
-	let bookingState = getBookingStateFromData(booked, user, id);
-	if (bookingState == "booked") {
+	if (bookingState[id] == "booked") {
 		colorRow(newRowElem, "lime");
 		// also change booking button
 		for (let elem of newRowElem.getElementsByTagName("INPUT")) {
@@ -125,9 +129,9 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			elem.value = "GEBUCHT"; 
 		}
 	} 
-	else if (bookingState == "booking")
+	else if (bookingState[id] == "booking")
 		colorRow(newRowElem, "lightblue");
-	else if (bookingState == "error") {
+	else if (bookingState[id] == "error") {
 		colorRow(newRowElem, "darkorange");
 		// also change booking button
 		for (let elem of newRowElem.getElementsByTagName("INPUT")) {
@@ -220,13 +224,14 @@ function updateBooked(b, prevB = {}) {
 	for (let tableEntry of choiceElem.children) {
 		let [sport, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
 		let id = nr+"_"+date;
-		if (booked[user] && booked[user][id]) {
+
+		let prevBookingState = bookingState[id];
+		bookingState[id] = getBookingStateFromData(booked, user, id);
+		if (bookingState[id]) {
 			updateEntryInTable(tableEntry, sport, id, user);
-		} else if (prevB[user] && prevB[user][id]){
-			// entry was removed from booked
-			if (prevB[user][id] == "booked") {
+		} else if (prevBookingState) { // entry's booking state was removed
+			if (prevBookingState == "booked") {
 				updateChoice(choice); // if it was booked before, completely refresh everything
-				return;
 			} else {
 				let tRow = tableEntry.getElementsByTagName("TD")[0].parentElement;
 				colorRow(tRow, "none");
@@ -451,3 +456,23 @@ addStorageListener((changes) => {
         }
     }
 });
+
+// Create function that periodically checks whether a booking state has expired
+setInterval(() => {
+	if (Object.keys(userdata).length < 1)
+		return;
+	let user = Object.keys(userdata)[0];
+	console.log(bookingState)
+	let changed = false;
+	for (let id of Object.keys(bookingState)) {
+		if (bookingState[id] == "booking") {
+			let storedState = getBookingStateFromData(booked, user, id); 
+			if (storedState != "booking") {
+				changed = true;
+				console.log("CHANGED TO " + storedState)
+			}
+		}
+	}
+	if (changed)
+		updateBooked(booked);
+}, 1000);
