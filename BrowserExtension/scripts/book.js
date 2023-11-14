@@ -1,6 +1,8 @@
 let form = document.forms[0];
 let submitElem = document.getElementById("bs_submit");
 
+const loadTime = Date.now();
+
 let userdata = {};
 
 const STATES = ["fill", "check", "confirmed", "error"];
@@ -26,35 +28,26 @@ async function setBookingMessage(message, color="black") {
     messageElem.innerHTML =  message;
 }
 
-async function circumventCountdown() {
-    if (!(await getOption("bypasscountdown"))) {
-        // insert message that form will be submitted
-        setBookingMessage("Submitting once the countdown is done...", "green");
-        // wait until countdown passed
-        while(submitElem.className != "sub")
-            await sleep(50);
-    } else {
-        // another try: injecting javascript code to set send=1
-        // also not working due to content policy
-        /*
-        var s = document.createElement('script');
-        s.setAttribute('type', 'text/javascript');
-        s.setAttribute('src', 'scripts/bookinject.js');
-        document.body.appendChild(s);
-        console.log("injected javascript");
-        */
+async function bypassCountdown() {
+    // one try: injecting javascript code to set send=1
+    // not working due to content policy
+    /*
+    var s = document.createElement('script');
+    s.setAttribute('type', 'text/javascript');
+    s.setAttribute('src', 'scripts/bookinject.js');
+    document.body.appendChild(s);
+    console.log("injected javascript");
+    */
 
-        // Not pretty but working way:  Replace whole form with itself while removing the listener
-        let newForm = form.cloneNode(true);
-        newForm.removeAttribute("data-onsubmit");
-        let data = userdata[getSelectedUser(userSelectElem)];
-        // Replace whole form
-        form.outerHTML = newForm.outerHTML;
-        fillForm(document.forms[0], data);
-        let submitElem = document.getElementById("bs_submit");
-        console.assert(submitElem);
-        submitElem.className = "sub";
-    }
+    // Not pretty but working way:  Replace whole form with itself while removing the listener
+    let newForm = form.cloneNode(true);
+    newForm.removeAttribute("data-onsubmit");
+    // Replace whole form
+    form.outerHTML = newForm.outerHTML;
+    form = document.forms[0]; 
+    submitElem = document.getElementById("bs_submit");
+    console.assert(submitElem);
+    submitElem.className = "sub";
 }
 
 async function onSelectChange() {
@@ -227,8 +220,8 @@ async function processDocument() {
     }
     console.log("STATE IS " + STATE);
 
+    userdata = await download(USERS_FILE) ?? {};
     const courseID = getCourseID(STATE);
-    const userdata = await download(USERS_FILE) ?? {};
     let user = Object.keys(userdata).length > 0 ? Object.keys(userdata)[0] : null;
 
     if (STATE == "fill") {
@@ -259,20 +252,8 @@ async function processDocument() {
             setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             onSelectChange();
         } 
-        */
-        if (userdata[user])
-            fillForm(form, userdata[user]);
-
-        // sometimes password fields are automatically set by browser autofill;
-        // wait two seconds for autofill, then reset their value
-        sleep(2000).then(() => {
-            for (let inputElem of form.getElementsByTagName("INPUT")) {
-                    if (inputElem.name.startsWith("pw")) {
-                    inputElem.value = "";
-                }
-            }
-        });
-
+            */
+    
         // set booking state
         if (user && courseID) {
             let prevBookingState = await setBookingState(user, courseID, "booking");
@@ -293,15 +274,39 @@ async function processDocument() {
                     setBookingState(user, courseID, "booking");
                 }, booking_expiry_msec - 500);
         }
+        if (await getOption("bypasscountdown")) {
+                bypassCountdown();
+        }
+
+        if (userdata[user])
+            fillForm(form, userdata[user]);
+
+        // sometimes password fields are automatically set by browser autofill;
+        // wait two seconds for autofill, reset their value
+        sleep(2000).then(() => {
+            for (let inputElem of form.getElementsByTagName("INPUT")) {
+                    if (inputElem.name.startsWith("pw")) {
+                    inputElem.value = "";
+                }
+            }
+        });
 
         getOption("submitimmediately")
-        .then((submitimm) => {
+        .then(async (submitimm) => {
             if (submitimm) {
-                circumventCountdown()
-                .then(() => {
-                    // find submit button and submit
-                    document.forms[0].requestSubmit(submitElem);
-                });
+                // insert message that form will be submitted
+                setBookingMessage("Submitting once the countdown is done...", "green");
+                // wait until countdown passed
+                while(submitElem.className != "sub") {
+                    if (Date.now() - loadTime >= 8000) {
+                        bypassCountdown();
+                        userdata[user] && fillForm(form, userdata[user]);
+                        break;
+                    }
+                    await sleep(50);       
+                }
+                // find submit button and submit
+                form.requestSubmit(submitElem);
             }
         }); 
     } else if (STATE == "check") {
