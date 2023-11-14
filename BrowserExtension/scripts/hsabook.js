@@ -103,8 +103,8 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 
 	// Create href to course in the whole row
 	let openCourseFun = () => {
-		createTabIfNotExists(getHref(sport)+"#K"+nr, true);
-		window.close();
+		createTabIfNotExists(getHref(sport)+"#K"+nr, true)
+		.then(window.close());
 	}
 
 	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
@@ -220,7 +220,7 @@ async function updateChoice(c) {
 function updateBooked(b, prevB = {}) {
 	booked = b ?? {};
 	// check if data changes are relevant
-	if (!bookingDataChanged(b, prevB))
+	if (!bookingDataChanged(booked, prevB))
 		return;
 
 	for (let tableEntry of choiceElem.children) {
@@ -413,7 +413,7 @@ async function onOpenAll(closeAfter=false) {
 	for (let i = 0; i < urls.length; i++)
 		createTabIfNotExists(urls[i], i == urls.length-1 && switchToLast);
 	if (closeAfter)
-		window.close();
+		sleep(200).then(window.close());
 }
 
 

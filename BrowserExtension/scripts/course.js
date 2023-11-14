@@ -173,7 +173,7 @@ async function arm() {
 
         if (idlist.length == 0) {
             setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
-            .then(unArm);
+            .then(unarm);
             return;
         }
 

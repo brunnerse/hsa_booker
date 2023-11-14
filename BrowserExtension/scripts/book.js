@@ -149,7 +149,7 @@ function getCourseID(docState) {
                 if (!nr && child.innerHTML.match(/^\d+$/)) {
                     nr = child.innerHTML;
                 } else  {
-                    let m = child.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
+                    let m = child.innerHTML.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/);
                     if (!date && m) 
                         date = getFullDateStr(m[0].split("-")[0]);
                 }
@@ -337,7 +337,7 @@ async function processDocument() {
             console.assert(submitButton);
             submitButton.setAttribute("inert", "");
             //TODO in final version: uncomment the following line
-            //form.requestSubmit(submitElem); 
+            //form.requestSubmit(submitButton); 
         } else {
             // Do nothing
             submitButton.setAttribute("inert", "");

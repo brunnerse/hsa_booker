@@ -1,19 +1,32 @@
-const USERS_FILE = "userdata";
-const CHOICE_FILE = "choice";
-const BOOKSTATE_FILE = "booked";
-const ARMED_FILE = "armedcourses";
-
-const armed_expiry_msec = 45000;
-const booking_expiry_msec = 2500;
-const timeout_msec = 6000;
-
-
 var base; 
 try {
   base = browser;
 } catch { 
     base = chrome;
 } 
+
+const USERS_FILE = "userdata";
+const CHOICE_FILE = "choice";
+const BOOKSTATE_FILE = "booked";
+const ARMED_FILE = "armedcourses";
+const OPTIONS_FILE = "options";
+
+function getStorage(filename) {
+    switch (filename) {
+        case USERS_FILE:
+        case OPTIONS_FILE:
+            return base.storage.sync;
+        case ARMED_FILE:
+        default:
+            return base.storage.local;
+    }
+}
+
+const armed_expiry_msec = 45000;
+const booking_expiry_msec = 1500;
+const timeout_msec = 6000;
+
+
 
 function removeClass(a, b) { 
     let classes = a.className.split(" ");
@@ -90,7 +103,7 @@ function getAllTabsHref() {
 }
 
 // closes every tab matching urlPattern except the active one / the first one if no tab is active
-async function closeDuplicates(urlPattern) {
+function closeDuplicates(urlPattern) {
     return new Promise((resolve) => {
         base.tabs.query({ url: urlPattern},
             function (tabs) {
@@ -109,21 +122,25 @@ async function closeDuplicates(urlPattern) {
     });
 }
 
-async function createTabIfNotExists(tabUrl, switchToTab=true) {
-    // remove anchors
-    let tabUrlRaw = tabUrl.split("#")[0];
-    base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
-        function (tabs) {
-            for (let tab of tabs) {
-                if (tab.url.split("#")[0] == tabUrlRaw) {
-                    base.tabs.update(tab.id, {active: switchToTab, url: tabUrl});
-                    return;
+function createTabIfNotExists(tabUrl, switchToTab=true) {
+    return new Promise((resolve) => {
+        // remove anchors
+        let tabUrlRaw = tabUrl.split("#")[0];
+        base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
+            function (tabs) {
+                for (let tab of tabs) {
+                    if (tab.url.split("#")[0] == tabUrlRaw) {
+                        base.tabs.update(tab.id, {active: switchToTab, url: tabUrl});
+                        resolve(tab);
+                        return;
+                    }
                 }
+                // apparently no tab with that url open; open in new tab
+                base.tabs.create({active: switchToTab, url: tabUrl})
+                .then((tab) => resolve(tab));
             }
-            // apparently no tab with that url open; open in new tab
-            base.tabs.create({active: switchToTab, url: tabUrl});
-        }
-    );
+        );
+   });
 }
 
 function getJSONFileString(obj) {
@@ -166,10 +183,9 @@ function getJSONFileString(obj) {
     return str;
 }
 
-
 function download(filename) {
     return new Promise(async function (resolve, reject) {
-        base.storage.sync.get(filename).then((result) => {
+        getStorage(filename).get(filename).then((result) => {
             resolve(result[filename]);
         })
         .catch((err) => {
@@ -187,7 +203,7 @@ function upload(filename, obj) {
         //console.log("Uploading data:")
         //console.log(o);
 
-        base.storage.sync.set(o)
+        getStorage(filename).set(o)
         .then(() => resolve(o[filename]))
         .catch((err) => {
             console.log("[ERROR] : failed writing data " + filename);
@@ -198,9 +214,11 @@ function upload(filename, obj) {
 
 function addStorageListener(fun) {
     base.storage.sync.onChanged.addListener(fun);
+    base.storage.local.onChanged.addListener(fun);
 }
 function removeStorageListener(fun) {
     base.storage.sync.onChanged.removeListener(fun);
+    base.storage.local.onChanged.removeListener(fun);
 }
 
 
@@ -210,7 +228,7 @@ var option_var;
 
 async function getOption(val) {
     if (!option_var) {
-        option_var = await download("options");
+        option_var = await download(OPTIONS_FILE);
     }
     if (option_var && option_var[val])
         return option_var[val];
@@ -231,19 +249,19 @@ async function getOption(val) {
 
 async function setOption(option, value) {
     if (!option_var) {
-        option_var = await download("options") ?? {};
+        option_var = await download(OPTIONS_FILE) ?? {};
     }
     option_var[option] = value;
-    return upload("options", option_var);
+    return upload(OPTIONS_FILE, option_var);
 }
 
 async function setAllOptions(options) {
     if (!option_var) {
-        option_var = await download("options") ?? {};
+        option_var = await download(OPTIONS_FILE) ?? {};
     }
     for(let o of Object.keys(options))
         option_var[o] = options[o];
-    return upload("options", option_var);
+    return upload(OPTIONS_FILE, option_var);
 }
 
 
