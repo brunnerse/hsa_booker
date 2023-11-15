@@ -29,17 +29,9 @@ async function setBookingMessage(message, color="black") {
 }
 
 async function bypassCountdown() {
-    // one try: injecting javascript code to set send=1
-    // not working due to content policy
-    /*
-    var s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', 'scripts/bookinject.js');
-    document.body.appendChild(s);
-    console.log("injected javascript");
-    */
-
-    // Not pretty but working way:  Replace whole form with itself while removing the listener
+    // Listener onsubmit doesn't let form submit until countdown is done 
+    // -> Replace whole form with itself while removing the listener
+    // Slight problem:  Listener also performs form checking, so this is disabled too
     let newForm = form.cloneNode(true);
     newForm.removeAttribute("data-onsubmit");
     // Replace whole form
@@ -299,6 +291,7 @@ async function processDocument() {
                 // wait until countdown passed
                 while(submitElem.className != "sub") {
                     if (Date.now() - loadTime >= 8000) {
+                        setBookingMessage("Activating bypass...", "darkorange");
                         bypassCountdown();
                         userdata[user] && fillForm(form, userdata[user]);
                         break;
