@@ -104,7 +104,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	// Create href to course in the whole row
 	let openCourseFun = () => {
 		createTabIfNotExists(getHref(sport)+"#K"+nr, true)
-		.then(window.close());
+		.then(window.close);
 	}
 
 	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
@@ -409,11 +409,13 @@ async function onOpenAll(closeAfter=false) {
 			urls.push(href + "#K" + Math.min(...nrs));
 		}
 	}
+	// only switch to last tab if the current tab is not a course tab (isCurrentTabIncluded)
+	// and if the popup window should be closed after opening all
 	let switchToLast = (closeAfter && !isCurrentTabIncluded); 
 	for (let i = 0; i < urls.length; i++)
-		createTabIfNotExists(urls[i], i == urls.length-1 && switchToLast);
+		await createTabIfNotExists(urls[i], i == urls.length-1 && switchToLast);
 	if (closeAfter)
-		sleep(200).then(window.close());
+		window.close();
 }
 
 
