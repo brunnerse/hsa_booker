@@ -489,3 +489,6 @@ toggleAdviceButton.addEventListener("click", () => {
 		toggleAdviceButton.innerHTML = "Show";
 	}
 })
+
+document.getElementById("titlelink").addEventListener("click",
+	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
