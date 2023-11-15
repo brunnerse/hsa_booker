@@ -2,6 +2,8 @@ const inputSubImm = document.getElementById("submitimmediately");
 const armButton = document.getElementById("armallbutton"); 
 const storedDataElem = document.getElementById("storeduserdata");
 const choiceElem = document.getElementById("choice");
+const toggleAdviceButton = document.getElementById("toggleadvice");
+const adviceElem = document.getElementById("advice");
 
 let userdata = {};
 let choice = {};
@@ -476,3 +478,14 @@ setInterval(() => {
 	if (changed)
 		updateBooked(booked);
 }, 1000);
+
+toggleAdviceButton.addEventListener("click", () => {
+	console.log(adviceElem.getAttribute("hidden"));
+	if (adviceElem.getAttribute("hidden") == "") {
+		adviceElem.removeAttribute("hidden");
+		toggleAdviceButton.innerHTML = "Hide";
+	} else {
+		adviceElem.setAttribute("hidden", "");
+		toggleAdviceButton.innerHTML = "Show";
+	}
+})
