@@ -21,7 +21,7 @@ const topbar_html = '<div id="topbar" class="bar">\
 			Book for user:\
 			</div>\
 			<div align="center" style="float:left;margin-left:2%;">\
-				<select style="color:black;background-color:white;height:30px;padding: 0px; border-radius: 5px;border: 1px solid black;font-weight:bolder;font-size:120%;"\
+				<select style="text-align:center;color:black;background-color:white;height:30px;padding: 0px; border-radius: 5px;border: 1px solid black;font-weight:bolder;font-size:120%;"\
 				 name="users" size="0" id="userselect">\
 					<option value="" style="background-color: gray" title="adder">Add user</option>\
 				</select>\

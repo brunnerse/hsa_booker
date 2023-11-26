@@ -240,7 +240,6 @@ async function processDocument() {
             userSelectElem = document.getElementById("userselect");
             userSelectElem.addEventListener("change", onSelectChange); 
             updateUserSelect(userSelectElem, userdata)
-            // TODO way to check which user is supposed to be booked for; e.g. option?
             setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             onSelectChange();
         } 
@@ -343,12 +342,12 @@ async function processDocument() {
 
     } else if (STATE == "confirmed") {
         // signalize success
-        console.log("STATE IS SUCCESS");
         await setBookingState(user, courseID, "booked", false);
+        console.log("Marked course is successfully booked.");
 
     } else {
         // signalize error
-        console.log("STATE IS ERROR");
+        console.log("The server returned an error page.");
         if (user && courseID) {
             setBookingState(user, courseID, "error");
         }

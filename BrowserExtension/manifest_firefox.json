@@ -28,7 +28,7 @@
 	],
 
 	"permissions": [
-		"storage", "tabs"
+		"storage", "tabs", "*://anmeldung.sport.uni-augsburg.de/*"
 	],
 
 	"web_accessible_resources": [

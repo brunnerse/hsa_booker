@@ -256,7 +256,6 @@ function setStatus(status, color="white") {
 }
 
 function toggleInert() {
-    console.log("toggling inert...");
     document.getElementById("btn_cancel").toggleAttribute("inert");
     document.getElementById("bs_submit").toggleAttribute("inert");
     document.getElementById("userselect").toggleAttribute("inert");
