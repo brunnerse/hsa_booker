@@ -210,7 +210,7 @@ async function processDocument() {
     } else if (nameInput.type == "text") {
         STATE = "fill";
     }
-    console.log("STATE IS " + STATE);
+    console.log("Booking site is in state \"" + STATE + "\"");
 
     userdata = await download(USERS_FILE) ?? {};
     const courseID = getCourseID(STATE);
@@ -343,12 +343,12 @@ async function processDocument() {
 
     } else if (STATE == "confirmed") {
         // signalize success
-        console.log("STATE IS SUCCESS");
+        console.log("Marking course as successfully booked...");
         await setBookingState(user, courseID, "booked", false);
 
     } else {
         // signalize error
-        console.log("STATE IS ERROR");
+        console.log("An error occured during booking.");
         if (user && courseID) {
             setBookingState(user, courseID, "error");
         }

@@ -414,7 +414,6 @@ async function loadInitialData() {
                     updateUserdata(changes[item].newValue); 
                 } else if (item == ARMED_FILE) {
                     let storedAsArmed = await isArmed(currentSport, changes[item].newValue); 
-                    console.log("ARM stored is " + storedAsArmed + ", local is " + armed)
                     if (armed != storedAsArmed)
                         onArm();
                 } else if (item == CHOICE_FILE) {

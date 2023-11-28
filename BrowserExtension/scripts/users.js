@@ -34,8 +34,6 @@ function checkForm() {
         if (!chk_input(e, f ? f[1] : "")) {
             // g is row
             g.className += " warn"; e.focus(); 
-            console.log(g.children[0]);
-            console.log(g.children[0].children[0].innerHTMl);
             return g.children[0].children[0].innerHTML.replace(/[:*]/g, "");
         }
     }
@@ -256,7 +254,7 @@ function setStatus(status, color="white") {
 }
 
 function toggleInert() {
-    console.log("toggling inert...");
+    //console.log("toggling inert...");
     document.getElementById("btn_cancel").toggleAttribute("inert");
     document.getElementById("bs_submit").toggleAttribute("inert");
     document.getElementById("userselect").toggleAttribute("inert");

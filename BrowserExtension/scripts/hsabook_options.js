@@ -76,7 +76,7 @@ function requestHTML(method, url) {
         let xhr = new XMLHttpRequest();
         // abort any ongoing request to the same url
         if (ongoingXMLRequests[url]) {
-            console.log("Abort ongoing HTML request to " + url);
+            console.log("Restarting ongoing HTML request to " + url);
             ongoingXMLRequests[url].abort();
         }
         ongoingXMLRequests[url] = xhr;

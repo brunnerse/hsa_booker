@@ -447,8 +447,8 @@ loadOptions()
 
 
 addStorageListener((changes) => {
-	console.log("[Storage Listener] Changed:")
-    console.log(changes);
+//	console.log("[Storage Listener] Change:")
+//  console.log(changes);
     for (let item of Object.keys(changes)) {
         if (item == USERS_FILE) {
 			updateUserdata(changes[USERS_FILE].newValue);
@@ -473,7 +473,6 @@ setInterval(() => {
 			let storedState = getBookingStateFromData(booked, user, id); 
 			if (storedState != "booking") {
 				changed = true;
-				console.log("CHANGED TO " + storedState)
 			}
 		}
 	}
@@ -482,7 +481,6 @@ setInterval(() => {
 }, 1000);
 
 toggleAdviceButton.addEventListener("click", () => {
-	console.log(adviceElem.getAttribute("hidden"));
 	if (adviceElem.getAttribute("hidden") == "") {
 		adviceElem.removeAttribute("hidden");
 		toggleAdviceButton.innerHTML = "Hide";

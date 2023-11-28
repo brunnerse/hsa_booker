@@ -189,7 +189,7 @@ function download(filename) {
             resolve(result[filename]);
         })
         .catch((err) => {
-            console.log("[ERROR] : failed reading data " + filename);
+            console.error("[ERROR] : failed reading data " + filename + " from storage");
             reject(err);
         });
     });
@@ -206,7 +206,7 @@ function upload(filename, obj) {
         getStorage(filename).set(o)
         .then(() => resolve(o[filename]))
         .catch((err) => {
-            console.log("[ERROR] : failed writing data " + filename);
+            console.error("[ERROR] : failed writing data " + filename + " to storage");
             reject(err);
         });
     });

@@ -1,5 +1,3 @@
-console.log("COURSE SCRIPT ACTIVE");
-
 // insert custom css
 var cssId = 'custom_bars'; 
 if (!document.getElementById(cssId))
