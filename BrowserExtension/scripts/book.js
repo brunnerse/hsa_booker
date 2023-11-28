@@ -170,7 +170,7 @@ function setBookingState(user, courseID, bookingstate, avoidIfBooked=true) {
         if (!d[user]) 
             d[user] = {};
         let prevBookingState = getBookingStateFromData(d, user, courseID); 
-        if (!avoidIfBooked || !["booked"].includes(prevBookingState)){
+        if (!avoidIfBooked || "booked" != prevBookingState){
             d[user][courseID] = bookingstate + "_" + Date.now();
             upload(BOOKSTATE_FILE, d);
         } else 

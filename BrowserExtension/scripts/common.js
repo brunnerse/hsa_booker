@@ -17,7 +17,6 @@ function getStorage(filename) {
         case USERS_FILE:
         case OPTIONS_FILE:
             return base.storage.sync;
-        case ARMED_FILE:
         default:
             return base.storage.local;
     }
@@ -415,6 +414,8 @@ function bookingDataChanged(newData, oldData) {
     for (let user of Object.keys(newData)) {
         if (!oldData[user])
             return true;
+        if (Object.keys(oldData[user]).length != Object.keys(newData[user]).length) 
+            return true;
         for (let id of Object.keys(newData[user])) {
             let [newState, newStamp] = newData[user][id].split("_");
             if (!oldData[user][id])
@@ -423,9 +424,9 @@ function bookingDataChanged(newData, oldData) {
             if (oldState != newState)
                 return true;
             else if (oldState == "booking") {
-                // in state booking, if oldStamp was expired the state has changed 
-                // as newStamp certainly is not expired 
-                if (parseInt(oldStamp) + booking_expiry_msec < Date.now())
+                // if both have state booking, the state has changed if the old state was expired
+                // and the state was updated (i.e. is not expired anymore) 
+                if (parseInt(oldStamp) + booking_expiry_msec < Date.now() && oldStamp != newStamp)
                     return true;
             } 
         }

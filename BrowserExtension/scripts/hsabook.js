@@ -503,7 +503,8 @@ requestHTML("GET", "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_z
         }
   		}
 		upload(COURSELINKS_FILE, courselinks);
-		console.log(courselinks)
+		console.log("Fetched course links:");
+		console.log(courselinks);
     })
 .catch((err) => {
 		console.error("Failed to update course links: Loading course site failed");
