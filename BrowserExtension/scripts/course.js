@@ -159,7 +159,6 @@ async function removeCourse(user, nr, date) {
 
 async function arm() {
     armed = true;
-     //TODO check if another tab with the same site is open; if it is, only activate the one with the higher tab id and give a message for the other one 
     armText.innerHTML = "UNARM";
     let style = armButton.getAttribute("style").replace("green", "blue");
     armButton.setAttribute("style", style); 

@@ -10,6 +10,7 @@ const CHOICE_FILE = "choice";
 const BOOKSTATE_FILE = "booked";
 const ARMED_FILE = "armedcourses";
 const OPTIONS_FILE = "options";
+const COURSELINKS_FILE = "courselinks";
 
 function getStorage(filename) {
     switch (filename) {
@@ -62,7 +63,6 @@ function requestHTML(method, url) {
             }
         };
         xhr.onerror = function () {
-            delete ongoingXMLRequests[url];
             reject({
                 status: this.status,
                 statusText: xhr.statusText
@@ -291,7 +291,7 @@ function getCourseDateStr(tRowElem) {
         let daymonth = tRowElem.getElementsByClassName("bs_szr")[0].innerHTML.match(/\d+\.\d+\./)[0];
         return getFullDateStr(daymonth);
     } catch (err) {
-        throw err; // TODO make silent?
+        throw err;
     }
 }
 
@@ -321,8 +321,7 @@ function colorRow(tRowElem, color) {
 function storeAsArmed(sport) {
     return storeAsArmedCourses([sport]);
 }
-// TODO expiry date
-// TODO throw error if already armed by different tab? 
+
 function storeAsArmedCourses(sports) {
     // mark website as armed in options
     return download(ARMED_FILE)

@@ -11,17 +11,20 @@ let armed = false;
 let booked = {};
 let bookingState = {};
 
+let courselinks = {};
+
 
 function getHref(sport) {
-	// TODO better implementation
-	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_" + 
-		sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss") +
+	let link = courselinks[sport];
+	if (!link)
+		link = "_"+sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss") +
 		 ".html";
+	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
 }
 
-function getErrorTable(nr, details, error) {
+function getErrorTable(id, details, error) {
 	const notAvailElem = document.getElementById("notavail").cloneNode(true);
-	notAvailElem.getElementsByClassName("bs_sknr")[1].innerHTML = nr;
+	notAvailElem.getElementsByClassName("bs_sknr")[1].innerHTML = id.split("_")[0];
 	notAvailElem.getElementsByClassName("bs_sdet")[1].innerHTML = details;
 	notAvailElem.getElementsByClassName("bs_sbuch")[1].innerHTML = error;
 	notAvailElem.removeAttribute("hidden");
@@ -155,11 +158,6 @@ async function updateChoice(c) {
 	removeObsoleteEntries();
 	// add/update table entires in choice
 	for (let sport of Object.keys(choice)) {
-		// TODO display loading entry, like this?
-		//let title = `${sport}_${id}_${user}`;
-		//let entryElem = getErrorTable(nr, title, "loading...");
-		//await updateEntryInTable(entryElem, sport, id, user); 
-
 		requestHTML("GET", getHref(sport))
 		.then((sportDoc) => {
 			for (let user of Object.keys(choice[sport])) {
@@ -176,8 +174,10 @@ async function updateChoice(c) {
 					}
 					if (!tRowElem)
 						throw new Error("NR not found");
-					else if (!getCourseDateStr(tRowElem) == date)	
-						throw new Error("Course start that does not match!") //TODO: no error, just ignore it or remove from choice
+					else if (!getCourseDateStr(tRowElem) == date) {
+						console.warn(`Found no date matching course ${sport}_${id}, skipping...`)
+						continue;
+					}	
 
 					// create empty entry of table and insert course data
 					let entryElem = document.getElementById("notavail").cloneNode(true);
@@ -208,14 +208,11 @@ async function updateChoice(c) {
 			for (let user of Object.keys(choice[sport])) {
 				for (let id of choice[sport][user]) {
 					let title = `${sport}_${id}_${user}`;
-					let entryElem = getErrorTable(nr, title, err);
+					let entryElem = getErrorTable(id, title, err);
 					updateEntryInTable(entryElem, sport, id, user); 
 				}
 			}
-		})
-		.then(() => {
-
-		})
+		});
 	}
 }
 
@@ -438,6 +435,7 @@ document.getElementById("openall").addEventListener("click", onOpenAll);
 
 // Load data sequentially
 loadOptions()
+.then(() => download(COURSELINKS_FILE).then((d) => courselinks = d ?? {}))
 .then(() => download(USERS_FILE).then(updateUserdata))
 .then(() => download(BOOKSTATE_FILE).then(updateBooked))
 .then(
@@ -492,3 +490,22 @@ toggleAdviceButton.addEventListener("click", () => {
 
 document.getElementById("titlelink").addEventListener("click",
 	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
+
+
+// update course links 
+requestHTML("GET", "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/")
+.then (  
+    (doc) => {
+        let rootElems = doc.getElementsByClassName("bs_menu");
+        for (let rootElem of rootElems) {
+            for (let elem of rootElem.getElementsByTagName("A")) {
+            courselinks[elem.innerHTML] = elem.href.split("/").pop();
+        }
+  		}
+		upload(COURSELINKS_FILE, courselinks);
+		console.log(courselinks)
+    })
+.catch((err) => {
+		console.error("Failed to update course links: Loading course site failed");
+	}
+);	

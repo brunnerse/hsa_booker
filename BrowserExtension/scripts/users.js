@@ -338,7 +338,7 @@ function isFormModified() {
     for (let inputElem of inputElems) {
         // check is text element has content and if that content differs from the saved user content
         if (inputElem["type"] == "text" && inputElem.getAttribute("disabled") != "disabled" && inputElem["value"]) {
-            if (selectedUser == "" || inputElem.value != userdata[selectedUser][inputElem.name])
+            if (selectedUser == "" || !userdata[selectedUser] || inputElem.value != userdata[selectedUser][inputElem.name])
                 return true;
         // check if user is saved and radio button is different
         } else if (inputElem["type"] == "radio" && selectedUser) {
