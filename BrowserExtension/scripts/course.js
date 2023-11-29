@@ -407,8 +407,10 @@ async function loadInitialData() {
             for (let item of Object.keys(changes)) {
                 if (item == USERS_FILE) {
                     updateUserdata(changes[item].newValue); 
-                } else if (item == ARMED_FILE) {
-                    let storedAsArmed = await isArmed(currentSport, changes[item].newValue); 
+                } else if (item == ARMED_FILE+getCurrentSport()) {
+                    // check if item was removed
+                    let storedAsArmed = changes[item].newValue != undefined;  
+                    // don't need to check the timestamp here; just was updated, so timestamp must be fine
                     if (!storedAsArmed && armed)
                         unarm();
                     else if (storedAsArmed && !armed)

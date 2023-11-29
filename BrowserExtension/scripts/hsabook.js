@@ -1,5 +1,6 @@
 const inputSubImm = document.getElementById("submitimmediately");
 const armButton = document.getElementById("armallbutton"); 
+const armText = document.getElementById("armbuttontext");
 const storedDataElem = document.getElementById("storeduserdata");
 const choiceElem = document.getElementById("choice");
 const toggleAdviceButton = document.getElementById("toggleadvice");
@@ -8,6 +9,7 @@ const adviceElem = document.getElementById("advice");
 let userdata = {};
 let choice = {};
 let armed = false;
+let armedCourses = {};
 let booked = {};
 let bookingState = {};
 
@@ -276,10 +278,10 @@ async function updateUserdata(d) {
 	}
 }
 
-async function updateArm(armedCourses) {
-	let numArmedTitles = await getNumArmedCourses(armedCourses); 
+async function updateArm() {
+	// TODO check for expiry when counting titles?
+	let numArmedTitles = Object.keys(armedCourses).length;  
 	// set arm Button and text according to whether all are armed or not
-	const armText =  document.getElementById("armbuttontext");
 	if (numArmedTitles == 0) {
 		armText.innerHTML = "Arm all marked courses";
 		let style = armButton.getAttribute("style").replace("blue", "green");
@@ -380,7 +382,13 @@ function armAll() {
 
 function unarmAll() {
 	armed = false;
-    return storeAsUnarmedAll(); 
+	let user = Object.keys(userdata)[0];
+	let courselist = [];
+	for (let sport of Object.keys(choice)) {
+		if (choice[sport][user])
+			courselist.push(sport);
+	}
+    return storeAsUnarmed(courselist); 
 }
 
 function onArmAll() {
@@ -433,32 +441,70 @@ document.getElementById("go-to-options").onClick = () => {
 document.getElementById("armall").addEventListener("click", onArmAll);
 document.getElementById("openall").addEventListener("click", onOpenAll);
 
-// Load data sequentially
-loadOptions()
-.then(() => download(COURSELINKS_FILE).then((d) => courselinks = d ?? {}))
-.then(() => download(USERS_FILE).then(updateUserdata))
-.then(() => download(BOOKSTATE_FILE).then(updateBooked))
-.then(
-	// load choice, init table entries and remove expired courses
-	() => download(CHOICE_FILE).then(updateChoice).then(cleanupChoice))
-.then(() => download(ARMED_FILE).then(updateArm));
+loadOptions();
 
+// Load local storage and clean it up
+async function loadInitialData() {
+	let storageContent = await downloadAll();
+	console.log(storageContent);
 
-addStorageListener((changes) => {
-//	console.log("[Storage Listener] Change:")
-//  console.log(changes);
-    for (let item of Object.keys(changes)) {
-        if (item == USERS_FILE) {
-			updateUserdata(changes[USERS_FILE].newValue);
-        } else if (item == ARMED_FILE) {
-			updateArm(changes[ARMED_FILE].newValue);
-        } else if (item == CHOICE_FILE) {
-			updateChoice(changes[CHOICE_FILE].newValue);
-        } else if (item == BOOKSTATE_FILE) {
-			updateBooked(changes[BOOKSTATE_FILE].newValue, changes[BOOKSTATE_FILE].oldValue);
-        }
-    }
-});
+	courselinks = storageContent[COURSELINKS_FILE] ?? {};
+	updateUserdata(storageContent[USERS_FILE]);
+	updateBooked(storageContent[BOOKSTATE_FILE]);
+	updateChoice(storageContent[CHOICE_FILE]);
+
+	for (let file of Object.keys(storageContent)) {
+		if (file.startsWith(ARMED_FILE)) {
+			let stamp = storageContent[file];
+			if (hasExpired(stamp, armed_expiry_msec))
+				remove(file);
+			else 
+				armedCourses[file.substring(ARMED_FILE.length)] = stamp;
+		}
+	}
+	updateArm();
+
+	cleanupChoice();
+
+	addStorageListener((changes) => {
+		console.log("[Storage Listener] Change:")
+		console.log(changes);
+		for (let item of Object.keys(changes)) {
+			if (item == USERS_FILE) {
+				updateUserdata(changes[USERS_FILE].newValue);
+			} else if (item.startsWith(ARMED_FILE)) {
+				if (changes[item].newValue)
+					armedCourses[item.substring(ARMED_FILE.length)] = changes[item].newValue;
+				else
+					delete armedCourses[item.substring(ARMED_FILE.length)];
+				updateArm();
+			} else if (item == CHOICE_FILE) {
+				updateChoice(changes[CHOICE_FILE].newValue);
+			} else if (item == BOOKSTATE_FILE) {
+				updateBooked(changes[BOOKSTATE_FILE].newValue, changes[BOOKSTATE_FILE].oldValue);
+			}
+		}
+	});
+
+	// update course links 
+	requestHTML("GET", "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/")
+	.then((doc) => {
+			let rootElems = doc.getElementsByClassName("bs_menu");
+			for (let rootElem of rootElems) {
+				for (let elem of rootElem.getElementsByTagName("A")) {
+					courselinks[elem.innerHTML] = elem.href.split("/").pop();
+				}
+			}
+			upload(COURSELINKS_FILE, courselinks);
+			console.log("Fetched course links:");
+			console.log(courselinks);
+		})
+	.catch((err) => {
+		console.error("Failed to update course links: Loading course site failed");
+	});	
+}
+
+loadInitialData();
 
 // Create function that periodically checks whether a booking state has expired
 setInterval(() => {
@@ -491,22 +537,3 @@ toggleAdviceButton.addEventListener("click", () => {
 document.getElementById("titlelink").addEventListener("click",
 	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
 
-
-// update course links 
-requestHTML("GET", "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/")
-.then (  
-    (doc) => {
-        let rootElems = doc.getElementsByClassName("bs_menu");
-        for (let rootElem of rootElems) {
-            for (let elem of rootElem.getElementsByTagName("A")) {
-            courselinks[elem.innerHTML] = elem.href.split("/").pop();
-        }
-  		}
-		upload(COURSELINKS_FILE, courselinks);
-		console.log("Fetched course links:");
-		console.log(courselinks);
-    })
-.catch((err) => {
-		console.error("Failed to update course links: Loading course site failed");
-	}
-);	

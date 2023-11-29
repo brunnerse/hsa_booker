@@ -8,7 +8,7 @@ try {
 const USERS_FILE = "userdata";
 const CHOICE_FILE = "choice";
 const BOOKSTATE_FILE = "booked";
-const ARMED_FILE = "armedcourses";
+const ARMED_FILE = "armed_";
 const OPTIONS_FILE = "options";
 const COURSELINKS_FILE = "courselinks";
 
@@ -27,6 +27,9 @@ const booking_expiry_msec = 1500;
 const timeout_msec = 6000;
 
 
+function hasExpired(timeStamp, expiry_msec) {
+    return !timeStamp || (timeStamp + expiry_msec < Date.now()); 
+}
 
 function removeClass(a, b) { 
     let classes = a.className.split(" ");
@@ -182,6 +185,11 @@ function getJSONFileString(obj) {
     return str;
 }
 
+async function downloadAll() {
+    let localContent = await base.storage.local.get(null);
+    return {...localContent, ...await base.storage.sync.get(null)};
+}
+
 function download(filename) {
     return new Promise(async function (resolve, reject) {
         getStorage(filename).get(filename).then((result) => {
@@ -199,8 +207,8 @@ function upload(filename, obj) {
         let o = {};
         o[filename] = obj;
 
-        //console.log("Uploading data:")
-        //console.log(o);
+        console.log("Uploading data:")
+        console.log(o);
 
         getStorage(filename).set(o)
         .then(() => resolve(o[filename]))
@@ -209,6 +217,10 @@ function upload(filename, obj) {
             reject(err);
         });
     });
+}
+
+function remove(filename) {
+    return getStorage(filename).remove(filename);
 }
 
 function addStorageListener(fun) {
@@ -321,61 +333,28 @@ function storeAsArmed(sport) {
     return storeAsArmedCourses([sport]);
 }
 
-function storeAsArmedCourses(sports) {
-    // mark website as armed in options
-    return download(ARMED_FILE)
-    .then((d) => {
-        d = d ?? {}; 
-        //add expiry date
-        let timeStamp = Date.now();
-        for (let s of sports) {
-            d[s] = timeStamp;
-        }
-        return upload(ARMED_FILE, d);
-    });
+async function storeAsArmedCourses(sports) {
+    let timeStamp = Date.now();
+    for (let sport of sports) {
+        let file = ARMED_FILE + sport;
+        await upload(file, timeStamp);  
+    }
 }
 
 function storeAsUnarmed(sport) {
-    return download(ARMED_FILE)
-    .then((d) => {
-        if (d && d[sport]) {
-            delete d[sport];
-            return upload(ARMED_FILE, d);
-        }
-    })
+    return storeAsUnarmedCourses([sport]);
 }
 
-function storeAsUnarmedAll() {
-    return upload(ARMED_FILE, {});
-}
-
-async function isArmed(sport, armedData=null) {
-    if (!armedData)
-        armedData = await download(ARMED_FILE); 
-    if (!armedData)
-        return false;
-    let stamp = armedData[sport];
-    return (stamp && ((stamp + armed_expiry_msec) >= Date.now())) ? true : false;
-}
-
-// counts the armed courses and removes all expired ones from the list
-async function getNumArmedCourses(armedData=null) {
-    if (!armedData)
-        armedData = await download(ARMED_FILE); 
-    if (!armedData) 
-        return 0;
-    let counter = 0;
-    let expired = [];
-    let minNonExpired = Date.now() - armed_expiry_msec;
-    for (let s of Object.keys(armedData)) {
-        if (armedData[s] < minNonExpired) 
-           expired.push(s); 
+async function storeAsUnarmedCourses(sports) {
+    for (let sport of sports) {
+        let file = ARMED_FILE + sport;
+        await remove(file);  
     }
-    if (expired.length > 0) {
-        expired.forEach((s) => delete armedData[s]);
-        await upload(ARMED_FILE, armedData);
-    }
-    return Object.keys(armedData).length;
+}
+
+async function isArmed(sport) {
+    let stamp = await download(ARMED_FILE+sport);
+    return !hasExpired(stamp, armed_expiry_msec);
 }
 
 function removeNrFromChoice(choice, sport, user, nr) {
@@ -404,7 +383,7 @@ function getBookingStateFromData(bookStruct, user, id) {
     let [state, stamp] = bookStruct[user][id].split("_");
     stamp = parseInt(stamp);
     if (state == "booking")
-        return ((stamp + booking_expiry_msec) >= Date.now()) ? state : null;
+        return !hasExpired(stamp, booking_expiry_msec) ? state : null;
     else
         return state;
 }
