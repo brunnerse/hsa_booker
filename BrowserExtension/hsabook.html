@@ -60,33 +60,36 @@
     <div hidden class="bs_form_content">
         <div class="bs_form_row">
             <div class="" style="float:left;margin-right:5%;margin-top:2px">Mode:</div>
-            <input class="bs_fval_req" type="radio" name="mode" value="formonly">
-            <label>Only fill the form</label>
+            <label><input class="bs_fval_req" type="radio" name="mode" value="formonly">
+            Only fill the form</label>
             &nbsp;&nbsp;
-            <input class="bs_fval_req" type="radio" name="mode" value="all">
-            <label>Perform complete booking</label>&nbsp;&nbsp;
+            <label><input class="bs_fval_req" type="radio" name="mode" value="all">
+                Perform complete booking</label>&nbsp;&nbsp;
         </div>
     </div>
 
     <div class="bs_form_row" id="submitimmediately">
         <div class="tooltip">
-            <input type="checkbox" name="submitimmediately" />
-            <label>Submit immediately</label>
+            <label><input type="checkbox" name="submitimmediately" />
+            Submit immediately</label>
             <div class="tooltiptext">Submit booking form automatically as soon as possible</div>
         </div>
     </div>
     <div class="bs_form_row" id="bypasscountdown">
         <div class="tooltip">
-            <input inert type="checkbox" name="bypasscountdown" checked="false" />
-            <label style="color:gray">Bypass client-sided countdown restriction</label>
+            <label style="color:gray"><input inert type="checkbox" name="bypasscountdown" checked="false" />
+            Bypass client-sided countdown restriction</label>
             <div class="tooltiptext">This must always be unchecked as the countdown is also checked server-sided</div>
         </div>
+    </div>
+    <div class="bs_form_row" float="right">
+        <button id="resetdata">Reset data</button>
     </div>
 
     <div hidden class="bs_form_row">
         <div class="">
-            <input inert type="checkbox" checked="false" name="multipleusers" checked="false" />
-            <label style="color:gray">Allow more than one user</label>
+            <label style="color:gray"><input inert type="checkbox" checked="false" name="multipleusers" checked="false" />
+            Allow more than one user</label>
         </div>
     </div>
 
@@ -110,18 +113,18 @@
     <div id="storeduserdata" style="margin: 0 auto" class="bs_form_content anmeldung">
         <table align="center">
             <tr>
-                <td><label style="font-size:85%">Vorname:</label>
+                <td><label style="font-size:85%" for="vornameinput">Vorname:</label>
                 </td>
-                <td> <input style="font-size:85%" inert class="" type="text" name="vorname" maxlength="50">
-                </td>
-            </tr>
-            <tr>
-                <td> <label style="font-size:85%;margin-top:5px;margin-bottom:5px;margin-right:20px">Familienname:</label></td>
-                <td> <input style="font-size:85%" inert class="" type="text" name="name" maxlength="60">
+                <td> <input style="font-size:85%" inert class="" type="text" name="vorname" maxlength="50" id="vornameinput">
                 </td>
             </tr>
             <tr>
-                <td><label style="font-size:85%">Status:</label></td>
+                <td> <label style="font-size:85%;margin-top:5px;margin-bottom:5px;margin-right:20px" for="nameinput">Familienname:</label></td>
+                <td> <input style="font-size:85%" inert class="" type="text" name="name" maxlength="60" autocomplete="off" id="nameinput">
+                </td>
+            </tr>
+            <tr>
+                <td><label style="font-size:85%" for="usershowelem">Status:</label></td>
                 <td>
                     <select class="bs_form_field bs_fval_req" inert name="statusorig" size="1" id="usershowelem" style="font-size:85%">
                         <option style="font-size:85%" value="" selected="selected"></option>
