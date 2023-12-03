@@ -7,7 +7,7 @@ try {
 
 const USERS_FILE = "userdata";
 const CHOICE_FILE = "choice";
-const BOOKSTATE_FILE = "booked";
+const BOOKSTATE_FILE = "booked_";
 const ARMED_FILE = "armed_";
 const OPTIONS_FILE = "options";
 const COURSELINKS_FILE = "courselinks";
@@ -376,39 +376,14 @@ function removeNrFromChoice(choice, sport, user, nr) {
     return success;
 }
 
-function getBookingStateFromData(bookStruct, user, id) {
-    if (!bookStruct || !bookStruct[user] || !bookStruct[user][id]) {
+async function getBookingState(courseId) {
+    let bookState = await download(BOOKSTATE_FILE+courseId);
+    if (!bookState)
         return null;
-    }
-    let [state, stamp] = bookStruct[user][id].split("_");
+    let [state, stamp] = bookState;
     stamp = parseInt(stamp);
     if (state == "booking")
         return !hasExpired(stamp, booking_expiry_msec) ? state : null;
     else
         return state;
-}
-
-// check if state changed or if is just a timestamp update
-function bookingDataChanged(newData, oldData) {
-    for (let user of Object.keys(newData)) {
-        if (!oldData[user])
-            return true;
-        if (Object.keys(oldData[user]).length != Object.keys(newData[user]).length) 
-            return true;
-        for (let id of Object.keys(newData[user])) {
-            let [newState, newStamp] = newData[user][id].split("_");
-            if (!oldData[user][id])
-                return true;
-            let [oldState, oldStamp] = oldData[user][id].split("_");
-            if (oldState != newState)
-                return true;
-            else if (oldState == "booking") {
-                // if both have state booking, the state has changed if the old state was expired
-                // and the state was updated (i.e. is not expired anymore) 
-                if (parseInt(oldStamp) + booking_expiry_msec < Date.now() && oldStamp != newStamp)
-                    return true;
-            } 
-        }
-    }
-    return false;
 }
