@@ -158,37 +158,21 @@ function getCourseID(docState) {
     return null;
 }
 
-function getBookingState(user, courseID) {
-    return download(BOOKSTATE_FILE)
-    .then((d) => getBookingStateFromData(d, user, courseID)); 
-}
-
-function setBookingState(user, courseID, bookingstate, avoidIfBooked=true) {
-    return download(BOOKSTATE_FILE)
-    .then((d) => {
-        d = d ?? {};
-        if (!d[user]) 
-            d[user] = {};
-        let prevBookingState = getBookingStateFromData(d, user, courseID); 
-        if (!avoidIfBooked || "booked" != prevBookingState){
-            d[user][courseID] = bookingstate + "_" + Date.now();
-            upload(BOOKSTATE_FILE, d);
-        } else 
-            console.warn("Not updating bookingstate: state is already set to " + prevBookingState);
-        return prevBookingState;
-    });
+async function setBookingState(courseID, bookingstate, avoidIfBooked=true) {
+    let prevBookingStateStamp = await getBookingState(courseID); 
+    if (avoidIfBooked && prevBookingStateStamp && prevBookingStateStamp.split("_")[0] == "booked") {
+        console.warn("Not updating bookingstate: state is already set to " + prevBookingState);
+    } else {
+        await upload(BOOKSTATE_FILE+courseID, [bookingstate, Date.now()]);
+    }
+    return prevBookingStateStamp ? prevBookingStateStamp[0] : null;
 }
 
 // resets the booking state if window is refreshed/closed 
-function removeBookingStateOnClose(user, courseID) {
+function removeBookingStateOnClose(courseID) {
     window.addEventListener("beforeunload", function (e) {
-        download(BOOKSTATE_FILE)
-        .then((d) => {
-            if (getBookingStateFromData(d, user, courseID) == "booking") {
-                delete d[user][courseID];
-                return upload(BOOKSTATE_FILE, d);
-            }
-        });
+        if (getBookingState(courseID) == "booking")
+            remove(BOOKSTATE_FILE+courseID);
     }); 
 }
 
@@ -247,7 +231,7 @@ async function processDocument() {
     
         // set booking state
         if (user && courseID) {
-            let prevBookingState = await setBookingState(user, courseID, "booking");
+            let prevBookingState = await setBookingState(courseID, "booking");
             if (prevBookingState == "booked") {
                 console.warn("COURSE IS ALREADY MARKED AS BOOKED")
                 setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
@@ -259,10 +243,10 @@ async function processDocument() {
                 return;
             }
 
-            removeBookingStateOnClose(user, courseID);
+            removeBookingStateOnClose(courseID);
             // update booking state timestamp constantly to show the site didn't timeout
             setInterval(()=> {
-                    setBookingState(user, courseID, "booking");
+                    setBookingState(courseID, "booking");
                 }, booking_expiry_msec - 500);
         }
         if (await getOption("bypasscountdown")) {
@@ -303,11 +287,11 @@ async function processDocument() {
         }); 
     } else if (STATE == "check") {
         if (user && courseID) {
-            setBookingState(user, courseID, "booking");
-            removeBookingStateOnClose(user, courseID);
+            setBookingState(courseID, "booking");
+            removeBookingStateOnClose(courseID);
             // update booking state timestamp constantly to show the site didn't timeout
             setInterval(()=> {
-                    setBookingState(user, courseID, "booking");
+                    setBookingState(courseID, "booking");
                 }, booking_expiry_msec - 500);
         }
 
@@ -342,14 +326,14 @@ async function processDocument() {
 
     } else if (STATE == "confirmed") {
         // signalize success
-        await setBookingState(user, courseID, "booked", false);
+        await setBookingState(courseID, "booked", false);
         console.log("Marked course is successfully booked.");
 
     } else {
         // signalize error
         console.log("An error occured during booking.");
         if (user && courseID) {
-            setBookingState(user, courseID, "error");
+            setBookingState(courseID, "error");
         }
     }
 }
