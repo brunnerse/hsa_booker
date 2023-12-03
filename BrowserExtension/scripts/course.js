@@ -11,9 +11,9 @@ const currentSport = getCurrentSport();
 
 let userdata = {};
 let choice = {};
+let choiceIDs = [];
 let armed = false; 
 let bookingState = {};
-let booked = {};
 
 const refreshIntervals = [1000, 2000, 5000, 30000];
 const timeThresholds =   [0, 10000, 90000, Infinity]; 
@@ -95,7 +95,7 @@ async function onSelectChange(updateButtons=true) {
         }
     }
     if (updateButtons)
-        modifyBookButtonsAndSetStates();
+        modifyBookButtons();
 }
 
 function getCurrentSport() {
@@ -144,10 +144,8 @@ async function addCourse(user, nr, date) {
 async function removeCourse(user, nr, date) {
     // remove bookedState
     let id = nr+"_"+date;
-    if (booked[user] && booked[user][id]) {
-        delete booked[user][id];
-        await upload(BOOKSTATE_FILE, booked);
-    } 
+    await remove(BOOKSTATE_FILE+id);
+
     // remove from choice
  	if (removeNrFromChoice(choice, currentSport, user, nr)) {
         await upload(CHOICE_FILE, choice);	
@@ -167,10 +165,8 @@ async function arm(storedAsArmed=false) {
     if (!storedAsArmed)
         storeAsArmed(currentSport);
     let sport = currentSport;
-    let user = getSelectedUser(userSelectElem);
-    let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user].slice(0) : [];
 
-    if (idlist.length == 0) {
+    if (choiceIDs.length == 0) {
         setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
         .then(unarm);
         return;
@@ -181,8 +177,8 @@ async function arm(storedAsArmed=false) {
     // get all course number elements in document
     let nrElems = document.getElementsByClassName("bs_sknr");
 
-    for (let id of idlist) {
-        let state = bookingState[id];
+    for (let id of choiceIDs) {
+        let state = bookingState[id] ? bookingState[id][0] : undefined;
         switch (state) {
             case "full":
                 numCoursesFull++;
@@ -211,7 +207,7 @@ async function arm(storedAsArmed=false) {
         }
     } 
 
-    if (numCoursesDone < idlist.length) {
+    if (numCoursesDone < choiceIDs.length) {
         // get time until refresh and start counter
         let refreshInterval;
         let bookingTime;
@@ -272,11 +268,7 @@ async function onArm() {
         return unarm();
 }
 
-async function modifyBookButtonsAndSetStates() {
-    let sport = currentSport;
-    let user = getSelectedUser(userSelectElem);
-    let idlist = user && sport && choice[sport] && choice[sport][user] ? choice[sport][user] : [];
-    
+async function modifyBookButtons() {
     // insert buttons into book table cell
     for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
         if (bookElem.tagName != "TD")
@@ -297,26 +289,27 @@ async function modifyBookButtonsAndSetStates() {
             aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
-        button.innerHTML = idlist.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
+        button.innerHTML = choiceIDs.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
         button.style = "width:95%; border-radius:5px;text-align:center;" 
-            + (idlist.includes(id) ? "background-color: green;color:white" : "");
+            + (choiceIDs.includes(id) ? "background-color: green;color:white" : "");
         button.type = "button";
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button) 
 
        // set booking state if stored
-       bookingState[id] = getBookingStateFromData(booked, user, id);
-       if (!bookingState[id]) {
+       let bookState = bookingState[id] ? bookingState[id][0] : null;
+       if (!bookState) {
             // set bookingState according to className of book button
             if ("bs_btn_buchen" == className)
-                bookingState[id] = "ready";
+                bookState = "ready";
             else if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(className))
-                bookingState[id] = "full";
+                bookState = "full";
             else 
-                bookingState[id] = "none";
+                bookState = "none";
+            bookingState[id] = [bookState, Date.now()];
        }
        // color line according to bookingState
-        switch (bookingState[id]) {
+        switch (bookState) {
             case "booked":
                 colorRow(trElem, "lime");
                 button.innerHTML = "BOOKED";
@@ -330,7 +323,7 @@ async function modifyBookButtonsAndSetStates() {
                 button.innerHTML = "BOOKING ERROR";
                 break;
             case "full":
-                if (idlist.includes(id)) {
+                if (choiceIDs.includes(id)) {
                     colorRow(trElem, "salmon");
                     button.innerHTML = "MARKED BUT FULL";
                     break;
@@ -343,7 +336,12 @@ async function modifyBookButtonsAndSetStates() {
 
 function updateChoice(c) {
     choice = c ?? {};
-    modifyBookButtonsAndSetStates();
+    let user = getSelectedUser(userSelectElem);
+    let sport = currentSport;
+    choiceIDs = (user && sport && choice[sport] && choice[sport][user]) ?
+         choice[sport][user] : [];
+
+    modifyBookButtons();
 }
 
 function updateUserdata(d) {
@@ -393,9 +391,17 @@ async function loadInitialData() {
         userSelectElem.addEventListener("change", () => onSelectChange(true));
         armButton.addEventListener("click", onArm);
 
-        // load booked data
-        booked = await download(BOOKSTATE_FILE) ?? {};
         await download(CHOICE_FILE).then(updateChoice);    
+
+        // check for each course if bookstate_file exists and add it in case it does
+        for (let id of choiceIDs) {
+            let bookState = await download(BOOKSTATE_FILE+id);
+            if (bookState && !(bookState[0] == "booking" && hasExpired(bookState[1], booking_expiry_msec)))
+                bookingState[id] = bookState;
+        } 
+        console.log(bookingState)
+        modifyBookButtons();
+
         // check if website should be armed
         if (await isArmed(currentSport))
             arm(true);
@@ -417,34 +423,39 @@ async function loadInitialData() {
                         arm(true);
                 } else if (item == CHOICE_FILE) {
                     updateChoice(changes[item].newValue);
-                } else if (item == BOOKSTATE_FILE) {
-                    booked = changes[item].newValue ?? {};
-                    // check if changes affect this sport 
-                    if (bookingDataChanged(booked, changes[item].oldValue))
-                        modifyBookButtonsAndSetStates();
+                } else if (item.startsWith(BOOKSTATE_FILE)) {
+                    let id = item.substring(BOOKSTATE_FILE.length);
+                    if (choiceIDs.includes(id)) {
+                        let statestampArr = changes[item].newValue;
+                        let prevStateArr = bookingState[id] ?? [undefined, 0];
+                        if (!statestampArr) {
+                            delete bookingState[id];
+                        } else {
+                            bookingState[id] = statestampArr;
+                        }
+                        // reload if state changed
+                        if (prevStateArr[0] != (statestampArr ? statestampArr[0] : undefined))
+                            modifyBookButtons();
+                    }
                 }
             }
         });
 
         // Create function that periodically checks whether a booking state has expired
         setInterval(() => {
-            let user = getSelectedUser(userSelectElem);
             let changed = false;
             for (let id of Object.keys(bookingState)) {
-                if (bookingState[id] == "booking") {
-                    let storedState = getBookingStateFromData(booked, user, id); 
-                    if (storedState != "booking") {
-                        bookingState[id] = storedState; 
-                        changed = true;
-                    }
+                let [state, stamp] = bookingState[id];
+                if (state == "booking" && hasExpired(stamp, booking_expiry_msec)) {
+                    delete bookingState[id];
+                    changed = true;
                 }
             }
             if (changed)
-                modifyBookButtonsAndSetStates();
+                modifyBookButtons();
         }, 1000);
     }
 }
-
 
 loadInitialData();
 
