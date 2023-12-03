@@ -10,7 +10,6 @@ let userdata = {};
 let choice = {};
 let armed = false;
 let armedCourses = {};
-let booked = {};
 let bookingState = {};
 
 let courselinks = {};
@@ -46,10 +45,7 @@ async function cleanupChoice() {
 				if (Date.now() - date > 1000*60*60*24*30*8) {
 					changed = true;
 					removeNrFromChoice(choice, sport, user, nr)
-					if (booked[user] && booked[user][id]) {
-						delete booked[user][id];
-						upload(BOOKSTATE_FILE, booked);
-					}
+					remove(BOOKSTATE_FILE+id);
 				} 
 			}
 		}
@@ -128,22 +124,23 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	}
 
 	// Color entry if booked
-	bookingState[id] = getBookingStateFromData(booked, user, id);
-	if (bookingState[id] == "booked") {
-		colorRow(newRowElem, "lime");
-		// also change booking button
-		for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-			elem.setAttribute("inert", "");
-			elem.value = "GEBUCHT"; 
-		}
-	} 
-	else if (bookingState[id] == "booking")
-		colorRow(newRowElem, "lightblue");
-	else if (bookingState[id] == "error") {
-		colorRow(newRowElem, "darkorange");
-		// also change booking button
-		for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-			elem.value = "FEHLER"; 
+	if (bookingState[id]) {
+		if (bookingState[id][0] == "booked") {
+			colorRow(newRowElem, "lime");
+			// also change booking button
+			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
+				elem.setAttribute("inert", "");
+				elem.value = "GEBUCHT"; 
+			}
+		} 
+		else if (bookingState[id][0] == "booking")
+			colorRow(newRowElem, "lightblue");
+		else if (bookingState[id][0] == "error") {
+			colorRow(newRowElem, "darkorange");
+			// also change booking button
+			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
+				elem.value = "FEHLER"; 
+			}
 		}
 	}
 }
@@ -218,28 +215,35 @@ async function updateChoice(c) {
 	}
 }
 
-function updateBooked(b, prevB = {}) {
-	booked = b ?? {};
-	// check if data changes are relevant
-	if (!bookingDataChanged(booked, prevB))
+function updateBooked(courseID, statestampArr) {
+	let [oldState, oldStamp] = bookingState[courseID] ?? [undefined, 0];
+	let [state, newStamp] = statestampArr ?? [undefined, 0]
+	if (!statestampArr)
+		delete bookingState[courseID];
+	else
+		bookingState[courseID] = statestampArr; 
+
+	// check if state has changed / expired state has become unexpired
+	if (state == oldState && 
+			!(oldState =="booking" && hasExpired(oldStamp, booking_expiry_msec)))
 		return;
 
+	// find element in table and change it
 	for (let tableEntry of choiceElem.children) {
 		let [sport, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
 		let id = nr+"_"+date;
 
-		let prevBookingState = bookingState[id]; 
-		bookingState[id] = getBookingStateFromData(booked, user, id);
-		if (bookingState[id]) {
-			updateEntryInTable(tableEntry, sport, id, user);
-		} else if (prevBookingState) { // entry's booking state was removed
-			if (prevBookingState == "booked") {
-				updateChoice(choice); // if it was booked before, completely refresh everything
-				return; // due to complete refresh, the other tasks don't have to be checked
-			} else {
+		if (id == courseID) {
+			if (state) {  // if state is not undefined, update it
+				updateEntryInTable(tableEntry, sport, id, user);
+			} else if (oldState) { // entry's booking state was removed
+				if (oldState == "booked") {
+					// Todo revert changes to book button
+				} 
 				let tRow = tableEntry.getElementsByTagName("TD")[0].parentElement;
 				colorRow(tRow, "none");
 			}
+			return;
 		}
 	}
 }
@@ -309,10 +313,7 @@ function onCloseButton(button) {
  	if (removeNrFromChoice(choice, sport, user, nr)) {
 		upload(CHOICE_FILE, choice)
 		.then (() => {
-			if (booked[user] && booked[user][id]) {
-				delete booked[user][id];
-				return upload(BOOKSTATE_FILE, booked);
-			} 
+			remove(BOOKSTATE_FILE+id);
 		});
     } else {
 		console.error("Could not remove course " + nr + ": Not found in choice!");
@@ -431,6 +432,9 @@ for (let inputElem of document.getElementsByTagName("INPUT")) {
 	inputElem.addEventListener("change", onOptionChange);
 }
 
+document.getElementById("resetdata").addEventListener("click", () => {
+   chrome.storage.local.clear(); 
+})
 document.getElementById("go-to-options").addEventListener("click", () => {
     window.open("hsabook_options.html");
 })
@@ -450,7 +454,6 @@ async function loadInitialData() {
 
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
 	updateUserdata(storageContent[USERS_FILE]);
-	updateBooked(storageContent[BOOKSTATE_FILE]);
 	updateChoice(storageContent[CHOICE_FILE]);
 
 	for (let file of Object.keys(storageContent)) {
@@ -460,6 +463,15 @@ async function loadInitialData() {
 				remove(file);
 			else 
 				armedCourses[file.substring(ARMED_FILE.length)] = stamp;
+		} else if (file.startsWith(BOOKSTATE_FILE)) {
+			let statestamp = storageContent[file];
+			let courseID = file.substring(BOOKSTATE_FILE.length);
+			let [state, stamp] = statestamp ?? [undefined, 0];
+			// remove file if state has expired, i.e. is more than 8 months old
+			if (hasExpired(stamp, 8*31*24*3600*1000) || (state == "booking" && hasExpired(stamp, booking_expiry_msec)))
+				remove(file);
+			else
+				updateBooked(courseID, statestamp);
 		}
 	}
 	updateArm();
@@ -480,8 +492,9 @@ async function loadInitialData() {
 				updateArm();
 			} else if (item == CHOICE_FILE) {
 				updateChoice(changes[CHOICE_FILE].newValue);
-			} else if (item == BOOKSTATE_FILE) {
-				updateBooked(changes[BOOKSTATE_FILE].newValue, changes[BOOKSTATE_FILE].oldValue);
+			} else if (item.startsWith(BOOKSTATE_FILE)) {
+				let courseID = item.substring(BOOKSTATE_FILE.length);
+				updateBooked(courseID, changes[item].newValue);
 			}
 		}
 	});
@@ -508,20 +521,12 @@ loadInitialData();
 
 // Create function that periodically checks whether a booking state has expired
 setInterval(() => {
-	if (Object.keys(userdata).length < 1)
-		return;
-	let user = Object.keys(userdata)[0];
-	let changed = false;
 	for (let id of Object.keys(bookingState)) {
-		if (bookingState[id] == "booking") {
-			let storedState = getBookingStateFromData(booked, user, id); 
-			if (storedState != "booking") {
-				changed = true;
-			}
+		let [state, stamp] = bookingState[id];
+		if (state == "booking" && hasExpired(stamp, booking_expiry_msec)) {
+			updateBooked(id, null);
 		}
 	}
-	if (changed)
-		updateBooked(booked);
 }, 1000);
 
 toggleAdviceButton.addEventListener("click", () => {
