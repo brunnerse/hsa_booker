@@ -148,10 +148,14 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 async function updateChoice(c) {
 	choice = c ?? {};
 
-	if (Object.keys(choice).length == 0)
+	if (Object.keys(choice).length == 0) {
 		document.getElementById("armchoice").setAttribute("hidden", "");
-	else
+		document.getElementById("openchoicesite").removeAttribute("hidden");
+	}
+	else {
 		document.getElementById("armchoice").removeAttribute("hidden");
+		document.getElementById("openchoicesite").setAttribute("hidden", "");
+	}
 
 	// remove table entries not in choice anymore
 	removeObsoleteEntries();
@@ -287,13 +291,13 @@ async function updateArm() {
 	let numArmedTitles = Object.keys(armedCourses).length;  
 	// set arm Button and text according to whether all are armed or not
 	if (numArmedTitles == 0) {
-		armText.innerHTML = "Arm all marked courses";
+		armText.innerHTML = "Arm all";
 		let style = armButton.getAttribute("style").replace("blue", "green");
 		armButton.setAttribute("style", style); 
 		armed = false;
 	}
 	else if (numArmedTitles == Object.keys(choice).length) {
-		armText.innerHTML = "Unarm all marked courses";
+		armText.innerHTML = "Unarm all";
 		let style = armButton.getAttribute("style").replace("green", "blue");
 		armButton.setAttribute("style", style); 
 		armed = true;
@@ -433,7 +437,13 @@ for (let inputElem of document.getElementsByTagName("INPUT")) {
 }
 
 document.getElementById("resetdata").addEventListener("click", () => {
-   chrome.storage.local.clear(); 
+	if (confirm("Reset HSA Booker extension?")) {
+	    // TODO final: also clear sync storage
+			base.storage.local.clear();
+			//browser.storage.sync.clear();
+//			chrome.storage.local.clear();
+			//chrome.storage.sync.clear();
+	}
 })
 document.getElementById("go-to-options").addEventListener("click", () => {
     window.open("hsabook_options.html");
@@ -535,10 +545,11 @@ toggleAdviceButton.addEventListener("click", () => {
 		toggleAdviceButton.innerHTML = "Hide";
 	} else {
 		adviceElem.setAttribute("hidden", "");
-		toggleAdviceButton.innerHTML = "Show";
+		toggleAdviceButton.innerHTML = "Show advice";
 	}
 })
 
 document.getElementById("titlelink").addEventListener("click",
 	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
-
+document.getElementById("openchoicesite").addEventListener("click",
+	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
