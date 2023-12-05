@@ -48,8 +48,7 @@
 	
 	"browser_specific_settings": {
  		"gecko": {
-		    "id": "hsabooker@es-augsburg.de",
-		    "strict_min_version": "42.0"
+		    "id": "hsabooker@webext.de"
 		}
 	}
 

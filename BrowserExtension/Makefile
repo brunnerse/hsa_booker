@@ -1,11 +1,17 @@
 TEMPDIR=.hsa_firefox
 
-firefox:
-	rm -f hsa_firefox.zip
+.PHONY: all
+
+ALL: firefox
+
+firefox: node_hsa.xpi
+
+%.xpi: *.html scripts/* styles/* manifest*
+	rm -f $@ 
 	mkdir -p $(TEMPDIR) 
 	cp -r * $(TEMPDIR) 
 	# remove wrongly copied files
 	rm -f $(TEMPDIR)/*.zip
 	mv $(TEMPDIR)/manifest_firefox.json $(TEMPDIR)/manifest.json
-	cd $(TEMPDIR) ;	zip -r ../hsa_firefox.zip *
+	cd $(TEMPDIR) ;	zip -r ../$@ *
 	rm -r $(TEMPDIR)
