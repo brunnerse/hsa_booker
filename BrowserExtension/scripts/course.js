@@ -59,6 +59,7 @@ function setStatus(status, color="white") {
     statusId += 1;
     let style = "font-weight:bold;background-color: " + color + ";"
     statusElem.setAttribute("style", style);
+    //TODO innerText=" " work?
     statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
 }
 function setStatusTemp(status, color, timeMS=1500, setInert=false) {
@@ -86,9 +87,7 @@ async function onSelectChange(updateButtons=true) {
     if (selectedUser == "") {
         if (userSelectElem.options[userSelectElem.selectedIndex].title == "adder") {
             // open user edit page in new tab
-            // Opening extension directly doesnt work; make alert instead
-            //window.open(chrome.runtime.getURL("Users.html"));
-            alert("To add a user, click on the HSA Booker extension icon in the upper right corner of your browser and click \"Add User\".")
+            alert("Create a user profile by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
             // reset selection to the first blank one
             setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             return;
@@ -101,7 +100,7 @@ async function onSelectChange(updateButtons=true) {
 function getCurrentSport() {
     try {
         let headElem = document.getElementsByClassName("bs_head")[0];
-        return headElem ? headElem.innerHTML : null; 
+        return headElem ? headElem.innerText : null; 
     } catch {
         return undefined;
     }
@@ -110,7 +109,7 @@ function getCurrentSport() {
 async function onAdd(button) {
     let user = getSelectedUser(userSelectElem);
     if (!user) {
-        alert("Select a user to add the course for in the top left corner first.")
+        alert("Create a user profile first by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
         return;
     }
 
@@ -119,7 +118,7 @@ async function onAdd(button) {
     let date = getCourseDateStr(trElem); 
 
     setStatusTemp("Updating course data...", "white", 1000);
-    if(button.innerHTML.match(/^MARK\s/))
+    if(button.innerText.match(/^MARK\s/))
         addCourse(user, nr, date);
      else 
         removeCourse(user, nr, date);
@@ -157,7 +156,7 @@ async function removeCourse(user, nr, date) {
 
 async function arm(storedAsArmed=false) {
     armed = true;
-    armText.innerHTML = "UNARM";
+    armText.innerText = "UNARM";
     let style = armButton.getAttribute("style").replace("green", "blue");
     armButton.setAttribute("style", style); 
 
@@ -213,7 +212,7 @@ async function arm(storedAsArmed=false) {
         let bookingTime;
         let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
         if (bookTimeElems.length > 0) {
-            bookingTime = bookTimeElems[0].innerHTML;
+            bookingTime = bookTimeElems[0].innerText;
             let remainingTime = getRemainingTimeMS(bookingTime);
             // find correct threshold for current remaining time
             refreshInterval = refreshIntervals[refreshIntervals.length-1];
@@ -252,7 +251,7 @@ async function arm(storedAsArmed=false) {
 }
 
 function unarm() {
-    armText.innerHTML = "ARM";
+    armText.innerText = "ARM";
     let style = armButton.getAttribute("style").replace("blue", "green");
     armButton.setAttribute("style", style); 
     // remove website from armed list in options
@@ -289,7 +288,7 @@ async function modifyBookButtons() {
             aktionElem.removeChild(aktionElem.lastChild);
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
-        button.innerHTML = choiceIDs.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
+        button.innerText = choiceIDs.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
         button.style = "width:95%; border-radius:5px;text-align:center;" 
             + (choiceIDs.includes(id) ? "background-color: green;color:white" : "");
         button.type = "button";
@@ -312,20 +311,20 @@ async function modifyBookButtons() {
         switch (bookState) {
             case "booked":
                 colorRow(trElem, "lime");
-                button.innerHTML = "BOOKED";
+                button.innerText = "BOOKED";
                 break;
             case "booking":
                 colorRow(trElem, "lightblue");
-                button.innerHTML = "BOOKING...";
+                button.innerText = "BOOKING...";
                 break;
             case "error":
                 colorRow(trElem, "darkorange");
-                button.innerHTML = "BOOKING ERROR";
+                button.innerText = "BOOKING ERROR";
                 break;
             case "full":
                 if (choiceIDs.includes(id)) {
                     colorRow(trElem, "salmon");
-                    button.innerHTML = "MARKED BUT FULL";
+                    button.innerText = "MARKED BUT FULL";
                     break;
                 }
             default:
@@ -361,11 +360,11 @@ if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktuell
     let course = currentSport; 
     setStatus("Click ARM to book the marked courses ASAP", "white");
     armButton.parentElement.removeAttribute("hidden");
-    hintElem.innerHTML = "Mark the " + course + " courses that you want to be booked automatically";
+    hintElem.innerText = "Mark the " + course + " courses that you want to be booked automatically";
     isCourseSite = true;
 } else if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
     setStatus("Course overview");
-    hintElem.innerHTML = "Go to a course website to add the course";
+    hintElem.innerText = "Go to a course website to add the course";
 } else {
     setStatus("Not a course website", "white");
 }

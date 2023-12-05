@@ -25,7 +25,7 @@ async function setBookingMessage(message, color="black") {
         submitElem.parentElement.insertBefore(messageElem, submitElem);
     }
     messageElem.setAttribute("style", `text-align:center;font-weight:bold;color:${color};background-color:none;`);
-    messageElem.innerHTML =  message;
+    messageElem.innerText =  message;
 }
 
 async function bypassCountdown() {
@@ -131,10 +131,10 @@ function getCourseID(docState) {
         let spElems = document.getElementsByClassName("bs_form_sp2");
         for (let sp of spElems) {
             for (let child of sp.children) {
-                if (!nr && child.innerHTML.match(/^\d+$/)) {
-                    nr = child.innerHTML;
+                if (!nr && child.innerText.match(/^\d+$/)) {
+                    nr = child.innerText;
                 } else  {
-                    let m = child.innerHTML.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/);
+                    let m = child.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/);
                     if (!date && m) 
                         date = getFullDateStr(m[0].split("-")[0]);
                 }
@@ -143,10 +143,10 @@ function getCourseID(docState) {
     } else if (docState == "confirmed") {
         let tdTags = document.getElementsByTagName("TD");
         for (let td of tdTags) {
-            if (td.innerHTML.match(/^\d+-\d+$/)) {
-                nr = bTag.innerHTML;
+            if (td.innerText.match(/^\d+-\d+$/)) {
+                nr = bTag.innerText;
             } else {
-                let m = bTag.innerHTML.match(/^\d+\.\d+.-\d+\.\d+\./);
+                let m = bTag.innerText.match(/^\d+\.\d+.-\d+\.\d+\./);
                 if (m)
                     date = getFullDateStr(m[0].split("-")[0]);
             }

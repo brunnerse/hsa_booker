@@ -34,7 +34,7 @@ function checkForm() {
         if (!chk_input(e, f ? f[1] : "")) {
             // g is row
             g.className += " warn"; e.focus(); 
-            return g.children[0].children[0].innerHTML.replace(/[:*]/g, "");
+            return g.children[0].children[0].innerText.replace(/[:*]/g, "");
         }
     }
     return "";
@@ -250,7 +250,7 @@ function setStatus(status, color="white") {
     // background-color is at the end; replace it
     style = style.split("background-color")[0] + "background-color:"+color;
     statusElem.setAttribute("style", style); 
-    statusElem.innerHTML = status;
+    statusElem.innerText = status;
 }
 
 function toggleInert() {
@@ -372,7 +372,7 @@ getOption("multipleusers")
         document.getElementById("deletebutton").setAttribute("hidden", "");
         removeClass(document.getElementById("savebutton"), "bs_right");
         document.getElementById("savebutton").setAttribute("style", "margin: 0 auto");
-        document.getElementById("savebutton").children[0].innerHTML = "Save changes";
+        document.getElementById("savebutton").children[0].innerText = "Save changes";
         userSelectElem.parentElement.parentElement.setAttribute("hidden", "");
     }
 });

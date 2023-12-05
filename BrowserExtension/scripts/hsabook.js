@@ -17,6 +17,7 @@ let courselinks = {};
 
 function getHref(sport) {
 	let link = courselinks[sport];
+	// if link not registered, create it according to heuristic 
 	if (!link)
 		link = "_"+sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss") +
 		 ".html";
@@ -25,9 +26,9 @@ function getHref(sport) {
 
 function getErrorTable(id, details, error) {
 	const notAvailElem = document.getElementById("notavail").cloneNode(true);
-	notAvailElem.getElementsByClassName("bs_sknr")[1].innerHTML = id.split("_")[0];
-	notAvailElem.getElementsByClassName("bs_sdet")[1].innerHTML = details;
-	notAvailElem.getElementsByClassName("bs_sbuch")[1].innerHTML = error;
+	notAvailElem.getElementsByClassName("bs_sknr")[1].innerText = id.split("_")[0];
+	notAvailElem.getElementsByClassName("bs_sdet")[1].innerText = details;
+	notAvailElem.getElementsByClassName("bs_sbuch")[1].innerText = error;
 	notAvailElem.removeAttribute("hidden");
 	return notAvailElem;
 }
@@ -169,7 +170,7 @@ async function updateChoice(c) {
 					// find corresponding  row element matching nr
 					let tRowElem; 
 					for (let nrElem of sportDoc.getElementsByClassName("bs_sknr")) {
-						if (nrElem.innerHTML == nr) {
+						if (nrElem.innerText == nr) {
 							tRowElem = nrElem.parentElement;
 							console.assert(tRowElem.tagName == "TR");
 							break;
@@ -202,7 +203,7 @@ async function updateChoice(c) {
 					// append sport to details (bs_sdet)
 					let detElem = newRowElem.getElementsByClassName("bs_sdet")[0];
 					if (detElem)
-						detElem.innerHTML = sport + " - " + detElem.innerHTML; // + " (" + user + ")";
+						detElem.innerText = sport + " - " + detElem.innerText; // + " (" + user + ")";
 					updateEntryInTable(entryElem, sport, id, user); 
 				}
 			}
@@ -260,10 +261,10 @@ async function updateUserdata(d) {
 
 	if (Object.keys(userdata).length == 0) {
 		storedDataElem.setAttribute("hidden", "");
-		document.getElementById("edituserbutton").children[0].innerHTML = "Add User";
+		document.getElementById("edituserbutton").children[0].innerText = "Add User";
 	} else {
 		storedDataElem.removeAttribute("hidden");
-		document.getElementById("edituserbutton").children[0].innerHTML = "Edit User data";
+		document.getElementById("edituserbutton").children[0].innerText = "Edit User data";
 		let data = userdata[Object.keys(userdata)[0]];
 		// Set status select input
 		let selectElem = document.getElementById("usershowelem");
@@ -291,13 +292,13 @@ async function updateArm() {
 	let numArmedTitles = Object.keys(armedCourses).length;  
 	// set arm Button and text according to whether all are armed or not
 	if (numArmedTitles == 0) {
-		armText.innerHTML = "Arm all";
+		armText.innerText = "Arm all";
 		let style = armButton.getAttribute("style").replace("blue", "green");
 		armButton.setAttribute("style", style); 
 		armed = false;
 	}
 	else if (numArmedTitles == Object.keys(choice).length) {
-		armText.innerHTML = "Unarm all";
+		armText.innerText = "Unarm all";
 		let style = armButton.getAttribute("style").replace("green", "blue");
 		armButton.setAttribute("style", style); 
 		armed = true;
@@ -438,11 +439,8 @@ for (let inputElem of document.getElementsByTagName("INPUT")) {
 
 document.getElementById("resetdata").addEventListener("click", () => {
 	if (confirm("Reset HSA Booker extension?")) {
-	    // TODO final: also clear sync storage
 			base.storage.local.clear();
-			//browser.storage.sync.clear();
-//			chrome.storage.local.clear();
-			//chrome.storage.sync.clear();
+			base.storage.sync.clear();
 	}
 })
 document.getElementById("go-to-options").addEventListener("click", () => {
@@ -515,7 +513,7 @@ async function loadInitialData() {
 			let rootElems = doc.getElementsByClassName("bs_menu");
 			for (let rootElem of rootElems) {
 				for (let elem of rootElem.getElementsByTagName("A")) {
-					courselinks[elem.innerHTML] = elem.href.split("/").pop();
+					courselinks[elem.innerText] = elem.href.split("/").pop();
 				}
 			}
 			upload(COURSELINKS_FILE, courselinks);
@@ -542,10 +540,10 @@ setInterval(() => {
 toggleAdviceButton.addEventListener("click", () => {
 	if (adviceElem.getAttribute("hidden") == "") {
 		adviceElem.removeAttribute("hidden");
-		toggleAdviceButton.innerHTML = "Hide";
+		toggleAdviceButton.innerText = "Hide";
 	} else {
 		adviceElem.setAttribute("hidden", "");
-		toggleAdviceButton.innerHTML = "Show advice";
+		toggleAdviceButton.innerText = "Show advice";
 	}
 })
 

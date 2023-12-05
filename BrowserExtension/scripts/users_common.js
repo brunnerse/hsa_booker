@@ -9,7 +9,7 @@ async function updateUserSelect(userSelectElem, userdata) {
     for (let user of Object.keys(userdata)) {
         let elem = document.createElement("OPTION");
         elem.value = user;
-        elem.innerHTML = user; 
+        elem.innerText = user; 
         userSelectElem.appendChild(elem);
     }
     if (!(await getOption("multipleusers"))) {
