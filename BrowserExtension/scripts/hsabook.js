@@ -5,6 +5,7 @@ const storedDataElem = document.getElementById("storeduserdata");
 const choiceElem = document.getElementById("choice");
 const toggleAdviceButton = document.getElementById("toggleadvice");
 const adviceElem = document.getElementById("advice");
+const optionElem = document.getElementById("configuration");
 
 let userdata = {};
 let choice = {};
@@ -45,7 +46,7 @@ async function cleanupChoice() {
 				// if start date is more than 8 months ago, remove the course from choice 
 				if (Date.now() - date > 1000*60*60*24*30*8) {
 					changed = true;
-					removeNrFromChoice(choice, sport, user, nr)
+					removeIdFromChoice(choice, sport, user, id)
 					remove(BOOKSTATE_FILE+id);
 				} 
 			}
@@ -100,7 +101,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	for (let cell of rowElem.children)
 		cell.removeAttribute("style");
 
-	replaceEntry.innerHTML = entryElem.innerHTML;
+	replaceEntry.innerHTML = entryElem.innerHTML; //TODO avoid innerhtml
 	// set close button listener
 	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
 	closeButton.addEventListener("click", () => onCloseButton(closeButton));
@@ -188,7 +189,7 @@ async function updateChoice(c) {
 					entryElem.removeAttribute("id");
 					entryElem.removeAttribute("hidden");
 					let bodyElem = entryElem.getElementsByTagName("TBODY")[0];
-					bodyElem.innerHTML = tRowElem.outerHTML;
+					bodyElem.innerHTML = tRowElem.outerHTML; //TODO avoid innerHTML
 					let newRowElem = bodyElem.lastChild;
 					// Remove some table cells from the row
 					for (let i = newRowElem.children.length-1; i >= 0; i--) {
@@ -315,7 +316,7 @@ function onCloseButton(button) {
 	let id = nr+"_"+date;
 
 	// update choice file if removed successfully
- 	if (removeNrFromChoice(choice, sport, user, nr)) {
+ 	if (removeIdFromChoice(choice, sport, user, id)) {
 		upload(CHOICE_FILE, choice)
 		.then (() => {
 			remove(BOOKSTATE_FILE+id);
@@ -330,7 +331,7 @@ function onCloseButton(button) {
 function onOptionChange(change) {
 	// set changed options
 	let optionObj = {};
-	for (let inputElem of document.getElementsByTagName("INPUT")) {
+	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
 		if (inputElem.type == "radio") {
 			if (inputElem.checked) {
 				optionObj[inputElem.name] = inputElem.value;
@@ -355,7 +356,7 @@ function onOptionChange(change) {
 }
 
 async function loadOptions() {
-	for (let inputElem of document.getElementsByTagName("INPUT")) {
+	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
 		if (inputElem.type == "radio") {
 			inputElem.checked = await getOption(inputElem.name) == inputElem.value;
 		} else if (inputElem.type == "checkbox") {
@@ -433,7 +434,7 @@ async function onOpenAll(closeAfter=false) {
 
 
 // Add listeners
-for (let inputElem of document.getElementsByTagName("INPUT")) {
+for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
 	inputElem.addEventListener("change", onOptionChange);
 }
 

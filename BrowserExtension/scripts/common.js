@@ -282,7 +282,7 @@ function dateFromDDMMYY(s) {
 }
 
 function getCourseNr(tRowElem) {
-    return tRowElem.getElementsByClassName("bs_sknr")[0].innerHTML;
+    return tRowElem.getElementsByClassName("bs_sknr")[0].innerText;
 }
 
 function getFullDateStr(daymonth) {
@@ -299,7 +299,7 @@ function getFullDateStr(daymonth) {
 
 function getCourseDateStr(tRowElem) {
     try {
-        let daymonth = tRowElem.getElementsByClassName("bs_szr")[0].innerHTML.match(/\d+\.\d+\./)[0];
+        let daymonth = tRowElem.getElementsByClassName("bs_szr")[0].innerText.match(/\d+\.\d+\./)[0];
         return getFullDateStr(daymonth);
     } catch (err) {
         throw err;
@@ -357,11 +357,11 @@ async function isArmed(sport) {
     return !hasExpired(stamp, armed_expiry_msec);
 }
 
-function removeNrFromChoice(choice, sport, user, nr) {
+function removeIdFromChoice(choice, sport, user, id) {
     let success = false;
     if (choice[sport] && choice[sport][user]) {
         for (let i = choice[sport][user].length-1; i >= 0; i--) {
-            if (choice[sport][user][i].split("_")[0] == nr) {
+            if (choice[sport][user][i] == id) {
                 choice[sport][user].splice(i, 1);
                 success = true;
             }

@@ -60,7 +60,8 @@ function setStatus(status, color="white") {
     let style = "font-weight:bold;background-color: " + color + ";"
     statusElem.setAttribute("style", style);
     //TODO innerText=" " work?
-    statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
+//    statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
+    statusElem.innerText = status ? status : " ";
 }
 function setStatusTemp(status, color, timeMS=1500, setInert=false) {
     setStatus(status, color);
@@ -116,16 +117,17 @@ async function onAdd(button) {
     let trElem = button.parentElement.parentElement;
     let nr = getCourseNr(trElem);
     let date = getCourseDateStr(trElem); 
+    let courseID = nr + "_" + date;
+    let sport = currentSport;
 
     setStatusTemp("Updating course data...", "white", 1000);
-    if(button.innerText.match(/^MARK\s/))
-        addCourse(user, nr, date);
+    if(choice[sport] && choice[sport][user] && choice[sport][user].includes(courseID))
+        removeCourse(user, courseID);
      else 
-        removeCourse(user, nr, date);
+        addCourse(user, courseID);
 }
 
-async function addCourse(user, nr, date) {
-    let courseID = nr + "_" + date;
+async function addCourse(user, courseID) {
     let sport = currentSport;
     if (!choice[sport])
         choice[sport] = {};
@@ -134,21 +136,20 @@ async function addCourse(user, nr, date) {
     if (!choice[sport][user].includes(courseID)) {
         choice[sport][user].push(courseID);
         await upload(CHOICE_FILE, choice);
-        setStatusTemp("Marked course " + nr + " for booking", "green");
+        setStatusTemp("Marked course " + courseID.split("_")[0] + " for booking", "green");
     } else {
         throw new Error("Cannot add: course " + nr + " is already marked for user " + user);
     }
 } 
 
-async function removeCourse(user, nr, date) {
+async function removeCourse(user, courseID) {
     // remove bookedState
-    let id = nr+"_"+date;
-    await remove(BOOKSTATE_FILE+id);
+    await remove(BOOKSTATE_FILE+courseID);
 
     // remove from choice
- 	if (removeNrFromChoice(choice, currentSport, user, nr)) {
+ 	if (removeIdFromChoice(choice, currentSport, user, courseID)) {
         await upload(CHOICE_FILE, choice);	
-        setStatusTemp("Unmarked course " + nr, "green");
+        setStatusTemp("Unmarked course " + courseID.split("_")[0], "green");
     } else {
         throw new Error("Cannot remove: course " + nr + " is not marked for user " + user);
     }
@@ -191,7 +192,7 @@ async function arm(storedAsArmed=false) {
                 let [nr, date] = id.split("_");
                 let bookButton;
                 for (let nElem of nrElems) {
-                    if (nElem.tagName == "TD" && nElem.innerHTML == nr) {
+                    if (nElem.tagName == "TD" && nElem.innerText == nr) {
                         bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
                         break;
                     }
