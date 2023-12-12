@@ -3,6 +3,8 @@ let submitElem = document.getElementById("bs_submit");
 
 const loadTime = Date.now();
 
+let lastTimestamp;
+
 let userdata = {};
 
 const STATES = ["fill", "check", "confirmed", "error"];
@@ -35,7 +37,9 @@ async function bypassCountdown() {
     let newForm = form.cloneNode(true);
     newForm.removeAttribute("data-onsubmit");
     // Replace whole form
-    form.outerHTML = newForm.outerHTML;
+    //TODO does replace work?
+    document.replaceChild(form, newForm);
+//    form.outerHTML = newForm.outerHTML;
     form = document.forms[0]; 
     submitElem = document.getElementById("bs_submit");
     console.assert(submitElem);
@@ -158,14 +162,9 @@ function getCourseID(docState) {
     return null;
 }
 
-async function setBookingState(courseID, bookingstate, avoidIfBooked=true) {
-    let prevBookingStateStamp = await getBookingState(courseID); 
-    if (avoidIfBooked && prevBookingStateStamp && prevBookingStateStamp.split("_")[0] == "booked") {
-        console.warn("Not updating bookingstate: state is already set to " + prevBookingState);
-    } else {
-        await upload(BOOKSTATE_FILE+courseID, [bookingstate, Date.now()]);
-    }
-    return prevBookingStateStamp ? prevBookingStateStamp[0] : null;
+function setBookingState(courseID, bookingstate) {
+    lastTimestamp = Date.now();
+    return upload(BOOKSTATE_FILE+courseID, [bookingstate, lastTimestamp]);
 }
 
 // resets the booking state if window is refreshed/closed 
@@ -227,11 +226,11 @@ async function processDocument() {
             setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             onSelectChange();
         } 
-            */
+        */
     
         // set booking state
         if (user && courseID) {
-            let prevBookingState = await setBookingState(courseID, "booking");
+            let prevBookingState = await getBookingState(courseID); 
             if (prevBookingState == "booked") {
                 console.warn("COURSE IS ALREADY MARKED AS BOOKED")
                 setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
@@ -242,10 +241,25 @@ async function processDocument() {
                 window.close();
                 return;
             }
+            await setBookingState(courseID, "booking");
 
             removeBookingStateOnClose(courseID);
-            // update booking state timestamp constantly to show the site didn't timeout
-            setInterval(()=> {
+            setInterval(async () => {
+                    // check if the last timestamp is the own one;
+                    // if not, another tab is writing and we should abort booking
+                    let bookState = await download(BOOKSTATE_FILE+courseID);
+                    if (!bookState)
+                        console.log("ERROR: Booking state somehow did not get stored");
+                    else {
+                        let [state, stamp] = bookState;
+                        if (state == "booking" && stamp != lastTimestamp) {
+                            setBookingMessage("COURSE IS BEING BOOKED BY ANOTHER TAB, CLOSING...", "red");
+                            await sleep(1000);
+                            window.close();
+                            return;
+                        }
+                    }
+                    // update booking state timestamp constantly to show the site didn't timeout
                     setBookingState(courseID, "booking");
                 }, booking_expiry_msec - 500);
         }
@@ -281,8 +295,9 @@ async function processDocument() {
                     }
                     await sleep(50);       
                 }
-                // find submit button and submit
-                form.requestSubmit(submitElem);
+                // check submitimmediately once again, then submit
+                if (await getOption("submitimmediately"))
+                    form.requestSubmit(submitElem);
             }
         }); 
     } else if (STATE == "check") {
@@ -325,14 +340,14 @@ async function processDocument() {
         }
 
     } else if (STATE == "confirmed") {
+        console.log("Course has been successfully booked.");
         // signalize success
-        await setBookingState(courseID, "booked", false);
-        console.log("Marked course is successfully booked.");
-
+        if (user && courseID)
+            await setBookingState(courseID, "booked");
     } else {
         // signalize error
         console.log("An error occured during booking.");
-        if (user && courseID) {
+        if (user && courseID && (await getBookingState(courseID) != "booked")) {
             setBookingState(courseID, "error");
         }
     }

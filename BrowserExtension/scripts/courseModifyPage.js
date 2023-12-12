@@ -13,7 +13,8 @@ if (!document.getElementById(cssId))
 }
 
 // insert top bar
-const topbar_html = '<div id="topbar" class="bar">\
+document.getElementsByTagName("BODY")[0].innerHTML += '\
+	<div id="topbar" class="bar">\
 		<div class="darkred" align="center" style="margin-top:0px;height:max-content">\
 			<div align="center" style="float:left;margin-left:5%;font-size:120%;font-weight:bolder;">\
 			Book for user:\
@@ -33,7 +34,13 @@ const topbar_html = '<div id="topbar" class="bar">\
 			</div>\
 		</div>\
 	</div>\
+	<div class="bottombar">\
+		<div id="hint" class="hint"">\
+		</div>\
+	</div>\
+	<div class="bottombar"></div>\
 ';
+/*
 const bottombar_html = '<div class="bottombar">\
 		<div id="hint" class="hint"">\
 		</div>\
@@ -43,17 +50,27 @@ document.getElementsByTagName('body')[0].innerHTML +=
 	topbar_html 
 	+ bottombar_html 
 	+ '<div class="bottombar" style="position:static"></div>';
+*/
 
 
+let thElem = document.createElement("TH");
+thElem.style = "text-align:center;";
+thElem.innerText = "Aktion";
 let tHeadElems = document.getElementsByTagName("THEAD");
 for (let tHead of tHeadElems) {
 	let tRows = tHead.getElementsByTagName("TR");
 	for (let tRow of tRows)
-		tRow.innerHTML += '<th style="text-align:center">Aktion</th>'
+		tRow.appendChild(thElem.cloneNode(true));
+//		tRow.innerHTML += '<th style="text-align:center">Aktion</th>'
 }
+
+
 let tBodyElems = document.getElementsByTagName("TBODY");
+let tdElem = document.createElement("TD");
+tdElem.className = "aktion";
 for (let tBody of tBodyElems) {
 	let tRows = tBody.getElementsByTagName("TR");
 	for (let tRow of tRows)
-		tRow.innerHTML += '<td class="aktion"></td>'
+		tRow.appendChild(tdElem.cloneNode(true));
+//		tRow.innerHTML += '<td class="aktion"></td>'
 }
