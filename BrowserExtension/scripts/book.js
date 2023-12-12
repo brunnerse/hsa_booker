@@ -31,15 +31,13 @@ async function setBookingMessage(message, color="black") {
 }
 
 async function bypassCountdown() {
-    // Listener onsubmit doesn't let form submit until countdown is done 
+    // Listener for onsubmit event does not let form submit until countdown is done 
     // -> Replace whole form with itself while removing the listener
     // Slight problem:  Listener also performs form checking, so this is disabled too
     let newForm = form.cloneNode(true);
     newForm.removeAttribute("data-onsubmit");
     // Replace whole form
-    //TODO does replace work?
-    document.replaceChild(form, newForm);
-//    form.outerHTML = newForm.outerHTML;
+    form.replaceWith(newForm);
     form = document.forms[0]; 
     submitElem = document.getElementById("bs_submit");
     console.assert(submitElem);

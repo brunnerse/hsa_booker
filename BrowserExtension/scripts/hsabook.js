@@ -101,7 +101,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	for (let cell of rowElem.children)
 		cell.removeAttribute("style");
 
-	replaceEntry.innerHTML = entryElem.innerHTML; //TODO avoid innerhtml
+	replaceEntry.replaceChildren(...entryElem.children);
 	// set close button listener
 	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
 	closeButton.addEventListener("click", () => onCloseButton(closeButton));
@@ -168,7 +168,7 @@ async function updateChoice(c) {
 			for (let user of Object.keys(choice[sport])) {
 				for (let id of choice[sport][user]) {
 					let [nr, date] = id.split("_");
-					// find corresponding  row element matching nr
+					// find corresponding row element matching nr
 					let tRowElem; 
 					for (let nrElem of sportDoc.getElementsByClassName("bs_sknr")) {
 						if (nrElem.innerText == nr) {
@@ -189,7 +189,7 @@ async function updateChoice(c) {
 					entryElem.removeAttribute("id");
 					entryElem.removeAttribute("hidden");
 					let bodyElem = entryElem.getElementsByTagName("TBODY")[0];
-					bodyElem.innerHTML = tRowElem.outerHTML; //TODO avoid innerHTML
+					bodyElem.replaceChildren(tRowElem);
 					let newRowElem = bodyElem.lastChild;
 					// Remove some table cells from the row
 					for (let i = newRowElem.children.length-1; i >= 0; i--) {

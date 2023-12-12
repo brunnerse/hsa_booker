@@ -57,11 +57,11 @@ function getRemainingTimeString(timeStr) {
 let statusId = 0;
 function setStatus(status, color="white") {
     statusId += 1;
-    let style = "font-weight:bold;background-color: " + color + ";"
+    let style = "font-weight:bold;background-color:" + color + ";"
+    if (!status)
+        style += `color:${color};` // if no state is given, print text in same color as background
     statusElem.setAttribute("style", style);
-    //TODO innerText=" " work?
-//    statusElem.innerHTML = status ? status : `<div style="color:${color}">status</div>`;
-    statusElem.innerText = status ? status : " ";
+    statusElem.innerText = status ? status : "status"; // placeholder required
 }
 function setStatusTemp(status, color, timeMS=1500, setInert=false) {
     setStatus(status, color);
