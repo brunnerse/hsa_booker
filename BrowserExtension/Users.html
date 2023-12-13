@@ -38,8 +38,7 @@
 			</div>
 			<div class="bs_space"></div>
 		</div>
-		<form name="bsform" method="get" target="_self" action="user.json?write=" onsubmit="javascript:return false">
-			<!--chkForm-->
+		<form name="bsform" method="get" target="_self" onsubmit="javascript:return false">
 			<div id="bs_form_main">
 				<div id="bs_pw_anmlink" class="  pointer">
 				</div>
@@ -51,42 +50,42 @@
 							class="bs_form_entext">Please enter the data of the participant</div>
 					</div>
 					<div class="bs_form_row">
-						<div class="bs_form_sp1"><label>Geschlecht:*</label>
+						<div class="bs_form_sp1"><label for="BS_F00">Geschlecht:*</label>
 							<div class="bs_form_entext">Gender</div>
 						</div>
-						<div class="bs_form_sp2"><label><input class="bs_fval_req" type="radio" name="sex" value="W">
+						<div class="bs_form_sp2"><label><input class="bs_fval_req" type="radio" name="sex" value="W" id="BS_F00">
 								weiblich</label>&nbsp;&nbsp;<label><input class="bs_fval_req" type="radio" name="sex"
 									value="M"> männlich</label>&nbsp;&nbsp;<label><input class="bs_fval_req"
 									type="radio" name="sex" value="D"> divers</label>&nbsp;&nbsp;<label><input
 									class="bs_fval_req" type="radio" name="sex" value="X"> keine Angabe</label></div>
 					</div>
 					<div class="bs_form_row">
-						<div class="bs_form_sp1"><label>Vorname:*</label>
+						<div class="bs_form_sp1"><label for="BS_F1100">Vorname:*</label>
 							<div class="bs_form_entext">First Name</div>
 						</div>
 						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_name" type="text" id="BS_F1100"
-								name="vorname" maxlength="50"></div>
+								name="vorname" maxlength="50" autocomplete="given-name"></div>
 					</div>
 					<div class="bs_form_row">
 						<div class="bs_form_sp1"><label for="BS_F1200">Familienname:*</label>
 							<div class="bs_form_entext">Surname</div>
 						</div>
 						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_name" type="text" id="BS_F1200"
-								name="name" maxlength="60"></div>
+								name="name" maxlength="60" autocomplete="family-name"></div>
 					</div>
 					<div class="bs_form_row">
 						<div class="bs_form_sp1"><label for="BS_F1300">Strasse Nr:*</label>
 							<div class="bs_form_entext">Street No</div>
 						</div>
 						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req" type="text" id="BS_F1300"
-								name="strasse" maxlength="60"></div>
+								name="strasse" maxlength="60" autocomplete="street-address"></div>
 					</div>
 					<div class="bs_form_row">
 						<div class="bs_form_sp1"><label for="BS_F1400">PLZ Ort:*</label>
 							<div class="bs_form_entext">Zip Code+City</div>
 						</div>
 						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_ort" type="text" id="BS_F1400"
-								name="ort" maxlength="50"></div>
+								name="ort" maxlength="50" autocomplete="postal-code"></div>
 					</div>
 					<div class="bs_form_row">
 						<div class="bs_form_sp1"><label for="BS_F1600">Status:*</label>
@@ -139,20 +138,12 @@
 						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_req bs_fval_status15" type="text"
 								id="BS_F1803" name="mitnr" maxlength="50" disabled="disabled"></div>
 					</div>
-					<div hidden class="bs_form_row">
-						<div class="bs_form_sp1"><label>Ihr Entgelt:</label>
-							<div class="bs_form_entext">Fee payable</div>
-						</div>
-						<div class="bs_form_sp2">
-							<div class="bs_ag_text" id="bs_anz_entgelt1">------</div>
-						</div>
-					</div>
 					<div class="bs_form_row">
 						<div class="bs_form_sp1"><label for="BS_F2000">E-Mail:*</label>
 							<div class="bs_form_entext">E-mail Address</div>
 						</div>
 						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_email" type="text" id="BS_F2000"
-								name="email" maxlength="100">
+								name="email" maxlength="100" autocomplete="email">
 							<div class="bs_form_ftext">Bitte geben Sie Ihre E-Mail Adresse an, damit wir Sie ggf.
 								erreichen können.<div class="bs_form_entext">Please enter your email address so we can
 									reach you if necessary.</div>
@@ -164,7 +155,7 @@
 							<div class="bs_form_entext">Phone number</div>
 						</div>
 						<div class="bs_form_sp2"><input class="bs_form_field bs_fval_tel" type="text" id="BS_F2100"
-								name="telefon" maxlength="60"></div>
+								name="telefon" maxlength="60" autocomplete="tel"></div>
 					</div>
 					<div class="bs_space"></div>
 					<div id="bs_lastschrift">
@@ -177,7 +168,7 @@
 								<div class="bs_form_entext">Intern. Bank Account No</div>
 							</div>
 							<div class="bs_form_sp2"><input class="bs_form_field bs_fval_iban" type="text" name="iban"
-									id="BS_F_iban"></div>
+									id="BS_F_iban" autocomplete="on"></div>
 						</div>
 						<div class="bs_form_row hide" id="Fbic">
 							<div class="bs_form_sp1"><label for="BS_F_bic">BIC:*</label>
@@ -219,5 +210,4 @@
 <script src="scripts/common.js"></script>
 <script src="scripts/users_common.js"></script>
 <script src="scripts/users.js"></script>
-
 </html>
