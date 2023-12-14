@@ -15,6 +15,8 @@ let choiceIDs = [];
 let armed = false; 
 let bookingState = {};
 
+let refreshTriggered = false;
+
 const refreshIntervals = [1000, 2000, 5000, 30000];
 const timeThresholds =   [0, 10000, 90000, Infinity]; 
 const statusUpdateInterval = 500;
@@ -63,6 +65,7 @@ function setStatus(status, color="white") {
     statusElem.setAttribute("style", style);
     statusElem.innerText = status ? status : "status"; // placeholder required
 }
+
 function setStatusTemp(status, color, timeMS=1500, setInert=false) {
     setStatus(status, color);
     if (setInert) {
@@ -161,6 +164,8 @@ async function arm(storedAsArmed=false) {
     let style = armButton.getAttribute("style").replace("green", "blue");
     armButton.setAttribute("style", style); 
 
+    setStatusTemp("Checking if booking is possible...", "yellow", timeMS=1500);
+
     // mark website as armed in storage
     if (!storedAsArmed)
         storeAsArmed(currentSport);
@@ -231,18 +236,25 @@ async function arm(storedAsArmed=false) {
         // refresh window in refreshInterval seconds
         let lastRefreshTime = Date.now();
         let refreshIntervalID = setInterval(async () => {
-            let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
+            // if course has been unarmed in the meantime, stop 
+            if (!armed) {
+                clearInterval(refreshIntervalID);
+                return;
+            }
 
+            let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
             let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "<br>" : ""; 
-            setStatus(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow");
+            setStatusTemp(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow", 1000);
             if (armed && remTime <= 0) {
+                refreshTriggered = true;
                 // update arm timeout and then reload the window
                 storeAsArmed(sport)
-                .then(window.location.reload);
-            } // if course has been unarmed in the meantime, clear this interval
-            else if (!armed)
-                clearInterval(refreshIntervalID);
-        }, 333);
+                .then(() => {
+                    window.open(window.location.href, "_self");
+                    location.reload(true);
+                });
+            }
+        }, 500);
     } else {
         setStatusTemp("Unarming: " + 
             (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed."),
@@ -459,11 +471,13 @@ async function loadInitialData() {
 
 loadInitialData();
 
+
 // unarm when closing the window
-window.addEventListener("beforeunload", function (e) {
-    if (armed){
+unloadEventListener = function (e) {
+    if (armed && !refreshTriggered){
         unarm(); 
         e.preventDefault();
         e.returnValue = "Unarm first before leaving the page!";
     }
-}); 
+}
+window.addEventListener("beforeunload", unloadEventListener); 
