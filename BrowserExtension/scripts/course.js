@@ -235,7 +235,9 @@ async function arm(storedAsArmed=false) {
 
         // refresh window in refreshInterval seconds
         let lastRefreshTime = Date.now();
-        let refreshIntervalID = setInterval(async () => {
+        let refreshIntervalID;
+
+        refreshIntervalFun = function () {
             // if course has been unarmed in the meantime, stop 
             if (!armed) {
                 clearInterval(refreshIntervalID);
@@ -254,7 +256,10 @@ async function arm(storedAsArmed=false) {
                     location.reload(true);
                 });
             }
-        }, 500);
+        };
+        // execute function once immediately, then set interval
+        refreshIntervalFun();
+        refreshIntervalID = setInterval(refreshIntervalFun, 500); 
     } else {
         setStatusTemp("Unarming: " + 
             (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed."),
@@ -478,6 +483,8 @@ unloadEventListener = function (e) {
         unarm(); 
         e.preventDefault();
         e.returnValue = "Unarm first before leaving the page!";
+        setTimeout(() => arm(), 1000);
     }
+    return e.returnValue;
 }
 window.addEventListener("beforeunload", unloadEventListener); 
