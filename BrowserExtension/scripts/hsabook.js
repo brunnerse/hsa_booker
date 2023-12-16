@@ -244,7 +244,9 @@ function updateBooked(courseID, statestampArr) {
 				updateEntryInTable(tableEntry, sport, id, user);
 			} else if (oldState) { // entry's booking state was removed
 				if (oldState == "booked") {
-					// Todo revert changes to book button
+					// This path is probably never taken, as a "booked" bookingState is only removed
+					// when the course is removed
+					// In this path, the changes to the book button should be reverted.
 				} 
 				let tRow = tableEntry.getElementsByTagName("TD")[0].parentElement;
 				colorRow(tRow, "none");
@@ -289,7 +291,14 @@ async function updateUserdata(d) {
 }
 
 async function updateArm() {
-	// TODO check for expiry when counting titles?
+	// check for expiry and remove expired titles 
+	let expiredCourses = [];
+	for (let c in Object.keys(armedCourses)) {
+		if (hasExpired(armedCourses[c], armed_expiry_msec))
+			expiredCourses.push(c)	
+	}
+	expiredCourses.forEach((c) => delete armedCourses[c]);
+
 	let numArmedTitles = Object.keys(armedCourses).length;  
 	// set arm Button and text according to whether all are armed or not
 	if (numArmedTitles == 0) {

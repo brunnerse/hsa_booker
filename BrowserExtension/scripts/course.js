@@ -420,8 +420,12 @@ async function loadInitialData() {
         modifyBookButtons();
 
         // check if website should be armed
-        if (await isArmed(currentSport))
-            arm(true);
+        let armTimestamp = await download(ARMED_FILE+currentSport);
+        if (!hasExpired(armTimestamp, armed_expiry_msec)) {
+            await arm(true);
+            if (Date.now() - armTimestamp > 10000)
+                storeAsArmed(currentSport);
+        }
 
         // add storage listener for all kinds of changes
         addStorageListener(async (changes) => {
@@ -480,11 +484,15 @@ loadInitialData();
 // unarm when closing the window
 unloadEventListener = function (e) {
     if (armed && !refreshTriggered){
-        unarm(); 
-        e.preventDefault();
-        e.returnValue = "Unarm first before leaving the page!";
-        setTimeout(() => arm(), 1000);
+        // set timestamp of armed so it times out time out in 10 seconds
+        let timeStamp = Date.now() - armed_expiry_msec + 5000;
+        let file = ARMED_FILE + currentSport;
+        upload(file, timeStamp);  
+        // dont prevent closing, just unarm silently
+        //e.preventDefault();
+        //e.returnValue = "Unarm first before leaving the page!";
+        //setTimeout(() => arm(), 1000);
+        //return e.returnValue;
     }
-    return e.returnValue;
 }
 window.addEventListener("beforeunload", unloadEventListener); 

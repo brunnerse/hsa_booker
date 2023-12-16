@@ -333,7 +333,7 @@ async function processDocument() {
             //TODO in final version: uncomment the following line
             //form.requestSubmit(submitButton); 
         } else {
-            // Do nothing
+            // Do nothing TODO remove
             submitButton.setAttribute("inert", "");
         }
 
