@@ -484,7 +484,7 @@ loadInitialData();
 // unarm when closing the window
 unloadEventListener = function (e) {
     if (armed && !refreshTriggered){
-        // set timestamp of armed so it times out time out in 10 seconds
+        // set timestamp of armed so it times out time out in 5 seconds
         let timeStamp = Date.now() - armed_expiry_msec + 5000;
         let file = ARMED_FILE + currentSport;
         upload(file, timeStamp);  

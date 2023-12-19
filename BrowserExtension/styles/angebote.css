@@ -556,7 +556,7 @@ body.bs_index_ks	input,select {
 
 /**** Anpassungen für kleine Bildschirme ****/
 @media all and (max-width: 1020px) {
-	#bs_content table.bs_kurse th.bs_sknr, #bs_content table.bs_kurse th.bs_skl,  div#bs_content table.bs_kurse td.bs_sknr, div#bs_content table.bs_kurse td.bs_skl{
+	#bs_content table.bs_kurse th.bs_skl, div#bs_content table.bs_kurse td.bs_skl{
 		display:none;
 	}
 	div#bs_content table.bs_kurse td.bs_spreis, div#bs_content table.bs_kurse td.bs_szeit,	div#bs_content table.bs_kurse td.bs_sort  {

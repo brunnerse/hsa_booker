@@ -25,11 +25,12 @@ function getHref(sport) {
 	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
 }
 
-function getErrorTable(id, details, error) {
+function getErrorTable(id, details, errorStr) {
 	const notAvailElem = document.getElementById("notavail").cloneNode(true);
 	notAvailElem.getElementsByClassName("bs_sknr")[1].innerText = id.split("_")[0];
 	notAvailElem.getElementsByClassName("bs_sdet")[1].innerText = details;
-	notAvailElem.getElementsByClassName("bs_sbuch")[1].innerText = error;
+	notAvailElem.getElementsByClassName("bs_szr")[1].innerText = id.split("_")[1];
+	//notAvailElem.getElementsByClassName("bs_sbuch")[1].innerText = error;
 	notAvailElem.removeAttribute("hidden");
 	return notAvailElem;
 }
@@ -93,14 +94,6 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		replaceEntry.setAttribute("title", title);
 	}
 	// replace tableRow with entryHTML input appended with the old status bar 
-	const rowElem = replaceEntry.getElementsByTagName("TR")[1];
-	// clear row for 100msec for visual effect of refresh
-	for (let cell of rowElem.children)
-		cell.setAttribute("style", "color: white;");
-	await sleep(100);
-	for (let cell of rowElem.children)
-		cell.removeAttribute("style");
-
 	replaceEntry.replaceChildren(...entryElem.children);
 	// set close button listener
 	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
@@ -114,15 +107,15 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 
 	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
 	for (let elem of newRowElem.children) {
-		if (!elem.className.match("bs_sbuch")) {
-			elem.addEventListener("click", openCourseFun);
-			if (!elem.className.includes("link"))
-				elem.className += " link";
-		} else {
+		if (elem.className.match("bs_sbuch") && elem.lastChild.className) {
 			elem.lastChild.addEventListener("click", openCourseFun);
 			if (!elem.lastChild.className.includes("link"))
 				elem.lastChild.className += " link";
-		}
+		} else { 
+			elem.addEventListener("click", openCourseFun);
+			if (!elem.className.includes("link"))
+				elem.className += " link";
+		} 
 	}
 
 	// Color entry if booked
@@ -194,9 +187,9 @@ async function updateChoice(c) {
 					// Remove some table cells from the row
 					for (let i = newRowElem.children.length-1; i >= 0; i--) {
 						let cellElem = newRowElem.children[i];
-						if (!["bs_sknr", "bs_sbuch", "bs_sdet", "bs_stag", "bs_szeit", "bs_szr"].includes(cellElem.className))
+						if (!cellElem.className.match("bs_sknr|bs_sbuch|bs_sdet|bs_stag|bs_szeit|bs_szr"))
 							newRowElem.removeChild(cellElem);
-						if (cellElem.className == "bs_szr")
+						if (cellElem.className.match("bs_szr"))
 							for (let anchor of cellElem.getElementsByTagName("A"))
 								anchor.removeAttribute("href");
 
@@ -212,9 +205,10 @@ async function updateChoice(c) {
 		.catch((err) => {
 			for (let user of Object.keys(choice[sport])) {
 				for (let id of choice[sport][user]) {
-					let title = `${sport}_${id}_${user}`;
-					let entryElem = getErrorTable(id, title, err);
+					let title = `${sport}`;
+					let entryElem = getErrorTable(id, title, JSON.stringify(err));
 					updateEntryInTable(entryElem, sport, id, user); 
+					document.getElementsByTagName("BODY")[0].appendChild(entryElem);
 				}
 			}
 		});
@@ -531,7 +525,7 @@ async function loadInitialData() {
 			console.log(courselinks);
 		})
 	.catch((err) => {
-		console.error("Failed to update course links: Loading course site failed");
+		console.log("Failed to update course links: Loading course site failed");
 	});	
 }
 
