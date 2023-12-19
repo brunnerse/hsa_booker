@@ -285,7 +285,7 @@ async function onArm() {
         return unarm();
 }
 
-async function modifyBookButtons() {
+function modifyBookButtons() {
     // insert buttons into book table cell
     for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
         if (bookElem.tagName != "TD")
@@ -302,8 +302,7 @@ async function modifyBookButtons() {
 
         let aktionElem = bookElem.parentElement.lastChild;
         // remove content of aktionElem
-        while (aktionElem.lastChild)
-            aktionElem.removeChild(aktionElem.lastChild);
+        aktionElem.replaceChildren();
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
         button.innerText = choiceIDs.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
@@ -408,16 +407,13 @@ async function loadInitialData() {
         userSelectElem.addEventListener("change", () => onSelectChange(true));
         armButton.addEventListener("click", onArm);
 
-        await download(CHOICE_FILE).then(updateChoice);    
-
         // check for each course if bookstate_file exists and add it in case it does
         for (let id of choiceIDs) {
             let bookState = await download(BOOKSTATE_FILE+id);
             if (bookState && !(bookState[0] == "booking" && hasExpired(bookState[1], booking_expiry_msec)))
                 bookingState[id] = bookState;
         } 
-        console.log(bookingState)
-        modifyBookButtons();
+        await download(CHOICE_FILE).then(updateChoice);    
 
         // check if website should be armed
         let armTimestamp = await download(ARMED_FILE+currentSport);
