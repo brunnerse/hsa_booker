@@ -133,27 +133,21 @@ function getCourseID(docState) {
         let spElems = document.getElementsByClassName("bs_form_sp2");
         for (let sp of spElems) {
             for (let child of sp.children) {
-                if (!nr && child.innerText.match(/^\d+$/)) {
+                if (!nr && child.innerText.match(/^\d+$/))
                     nr = child.innerText;
-                } else  {
-                    let m = child.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/);
-                    if (!date && m) 
-                        date = getFullDateStr(m[0].split("-")[0]);
-                }
+                else if (!date && child.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/))
+                    date = getFullDateStr(child.innerText.split("-")[0]);
             }
-        } 
+        }
     } else if (docState == "confirmed") {
         let tdTags = document.getElementsByTagName("TD");
         for (let td of tdTags) {
-            if (td.innerText.match(/^\d+-\d+$/)) {
+            if (!nr && td.innerText.match(/^\d+-\d+$/))
                 nr = td.innerText.split("-")[0];
-            } else {
-                let m = td.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/);
-                if (m)
-                    date = getFullDateStr(m[0].split("-")[0]);
-            }
-        } 
-    } 
+            else if (!date && td.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/))
+                date = getFullDateStr(td.innerText.split("-")[0]);
+        }
+    }
     if (nr && date) 
         return nr + "_"+date;
     console.error("Could not find number or date of course: " + nr + ", " + date);
