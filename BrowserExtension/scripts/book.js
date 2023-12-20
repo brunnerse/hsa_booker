@@ -146,9 +146,9 @@ function getCourseID(docState) {
         let tdTags = document.getElementsByTagName("TD");
         for (let td of tdTags) {
             if (td.innerText.match(/^\d+-\d+$/)) {
-                nr = bTag.innerText;
+                nr = td.innerText.split("-")[1]; //TODO
             } else {
-                let m = bTag.innerText.match(/^\d+\.\d+.-\d+\.\d+\./);
+                let m = td.innerText.match(/^\d+\.\d+.-\d+\.\d+\./); 
                 if (m)
                     date = getFullDateStr(m[0].split("-")[0]);
             }
@@ -309,6 +309,7 @@ async function processDocument() {
         }
 
         let inputElems = form.getElementsByTagName("INPUT");
+        // Get email from form
         let emailVal = "";
         for (let inputElem of inputElems) {
             if (inputElem.name == "email") {
@@ -316,7 +317,7 @@ async function processDocument() {
                 break;
             }
         }
-        // find submit button and enter email check
+        // find submit button and enter email again in check field
         let submitButton; 
         for (let inputElem of inputElems) {
             if (inputElem.title == "fee-based order") {
@@ -329,12 +330,10 @@ async function processDocument() {
         if (await getOption("submitimmediately"))  {
             // submit
             console.assert(submitButton);
-            submitButton.setAttribute("inert", "");
-            //TODO in final version: uncomment the following line
-            //form.requestSubmit(submitButton); 
+            //submitButton.setAttribute("inert", "");
+            form.requestSubmit(submitButton); 
         } else {
-            // Do nothing TODO remove
-            submitButton.setAttribute("inert", "");
+            // Do nothing
         }
 
     } else if (STATE == "confirmed") {
