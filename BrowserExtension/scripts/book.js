@@ -146,9 +146,9 @@ function getCourseID(docState) {
         let tdTags = document.getElementsByTagName("TD");
         for (let td of tdTags) {
             if (td.innerText.match(/^\d+-\d+$/)) {
-                nr = td.innerText.split("-")[1]; //TODO
+                nr = td.innerText.split("-")[0];
             } else {
-                let m = td.innerText.match(/^\d+\.\d+.-\d+\.\d+\./); 
+                let m = td.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/);
                 if (m)
                     date = getFullDateStr(m[0].split("-")[0]);
             }
@@ -174,12 +174,14 @@ function removeBookingStateOnClose(courseID) {
 }
 
 async function processDocument() {
-    // Check which state the site is in
+    // Check which state the site is in by checking the form in the document
     let nameInput;
-    for (let input of form.getElementsByTagName("INPUT")) {
-        if (input["name"] == "vorname") {
-            nameInput = input;
-            break;
+    if (form) {
+        for (let input of form.getElementsByTagName("INPUT")) {
+            if (input["name"] == "vorname") {
+                nameInput = input;
+                break;
+            }
         }
     }
     STATE = "error";
@@ -337,7 +339,7 @@ async function processDocument() {
         }
 
     } else if (STATE == "confirmed") {
-        console.log("Course has been successfully booked.");
+        console.log(`Course Nr. ${courseID.split("_").join(" starting on ")} has been successfully booked.`);
         // signalize success
         if (user && courseID)
             await setBookingState(courseID, "booked");
