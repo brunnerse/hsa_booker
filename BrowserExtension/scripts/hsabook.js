@@ -403,7 +403,7 @@ function unarmAll() {
 
 function onArmAll() {
     if (!armed) 
-		return armAll();  
+		return confirm("Arm all courses?") && armAll();  
     else 
 		return unarmAll();
 }

@@ -23,6 +23,7 @@
     a {
         color: blue;
     }
+
     .err {
         color: red;
         background-color: white;
@@ -157,13 +158,15 @@
             <a href="Users.html" style="font-weight:bold;">Edit user data</a>
         </div>
     </div>
-
     <h2>Marked courses</h2>
-    <div id="armchoice" style="margin-left:5%;height:40px">
+    <div id="armchoice" style="margin-left:5%;height:40px;">
         <a class="link" style="float:left;font-weight:bold;margin-right:270px;" id="openall">Open all</a>
-        <div class="link" id="armall" style="margin-top:5%;font-weight:bold;">
-            <div id="armbuttontext" style="float:left;text-align:right;padding-right:3%">Arm all</div>
-            <button class="roundbutton" style="background-color:green;float:left;" id="armallbutton"></button>
+        <div class="tooltip">
+            <div class="link" id="armall" style="margin-top:5%;font-weight:bold;">
+                <div id="armbuttontext" style="float:left;text-align:right;padding-right:3%">Arm all</div>
+                <button class="roundbutton" style="background-color:green;float:left;" id="armallbutton"></button>
+            </div>
+            <div class="tooltiptext" style="margin-left:230px;margin-top:40px;">Open all course sites and book the courses</div>
         </div>
     </div>
     <a class="link" style="float:left;font-weight:bold;margin-left:40px;margin-bottom:30px;" hidden
@@ -195,7 +198,8 @@
                             <td inert class="bs_szeit err"></td>
                             <td inert class="bs_szr err"></td>
                             <td inert class="bs_sbuch err">
-                            <input inert type="submit" value="Unavailable" title="booking" name="BS_Kursid_12566" class="bs_btn_buchen link err" style="color:red; background-color:white">
+                                <input inert type="submit" value="Unavailable" title="booking" name="BS_Kursid_12566"
+                                    class="bs_btn_buchen link err" style="color:red; background-color:white">
                             </td>
                         </tr>
                     </tbody>
