@@ -162,8 +162,7 @@ function setBookingState(courseID, bookingstate) {
 // resets the booking state if window is refreshed/closed 
 function removeBookingStateOnClose(courseID) {
     window.addEventListener("beforeunload", function (e) {
-        if (getBookingState(courseID) == "booking")
-            remove(BOOKSTATE_FILE+courseID);
+        remove(BOOKSTATE_FILE+courseID);
     }); 
 }
 
@@ -255,7 +254,7 @@ async function processDocument() {
                     }
                     // update booking state timestamp constantly to show the site didn't timeout
                     setBookingState(courseID, "booking");
-                }, booking_expiry_msec - 500);
+                }, booking_expiry_msec * 0.4);
         }
         if (await getOption("bypasscountdown")) {
                 bypassCountdown();
@@ -265,11 +264,11 @@ async function processDocument() {
             fillForm(form, userdata[user]);
 
         // sometimes password fields are automatically set by browser autofill;
-        // wait two seconds for autofill, reset their value
-        sleep(2000).then(() => {
+        // wait a few seconds for autofill, then reset their value
+        sleep(4000).then(() => {
             for (let inputElem of form.getElementsByTagName("INPUT")) {
                     if (inputElem.name.startsWith("pw")) {
-                    inputElem.value = "";
+                       inputElem.value = "";
                 }
             }
         });
@@ -281,15 +280,18 @@ async function processDocument() {
                 setBookingMessage("Submitting once the countdown is done...", "green");
                 // wait until countdown passed
                 while(submitElem.className != "sub") {
+                    // if 8 seconds have passed but submitElem is still not enabled, bypass the countdown 
+                    // This happens when javascript slows down because the tab is in the background
                     if (Date.now() - loadTime >= 8000) {
                         setBookingMessage("Activating bypass...", "darkorange");
                         bypassCountdown();
+                        // fill form again
                         userdata[user] && fillForm(form, userdata[user]);
                         break;
                     }
                     await sleep(50);       
                 }
-                // check submitimmediately once again, then submit
+                // check again if submitimmediately option is set, then submit
                 if (await getOption("submitimmediately"))
                     form.requestSubmit(submitElem);
             }
@@ -301,7 +303,7 @@ async function processDocument() {
             // update booking state timestamp constantly to show the site didn't timeout
             setInterval(()=> {
                     setBookingState(courseID, "booking");
-                }, booking_expiry_msec - 500);
+                }, booking_expiry_msec * 0.4);
         }
 
         let inputElems = form.getElementsByTagName("INPUT");

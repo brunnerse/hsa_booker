@@ -140,7 +140,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	}
 }
 
-async function updateChoice(c) {
+async function updateChoice(c, initElems=false) {
 	choice = c ?? {};
 
 	if (Object.keys(choice).length == 0) {
@@ -156,6 +156,15 @@ async function updateChoice(c) {
 	removeObsoleteEntries();
 	// add/update table entires in choice
 	for (let sport of Object.keys(choice)) {
+		if (initElems) {
+			for (let user of Object.keys(choice[sport])) {
+				for (let id of choice[sport][user]) {
+					let title = `${sport}`;
+					let entryElem = getErrorTable(id, title, "");
+					updateEntryInTable(entryElem, sport, id, user);
+				}
+			}
+		}
 		requestHTML("GET", getHref(sport))
 		.then((sportDoc) => {
 			for (let user of Object.keys(choice[sport])) {
@@ -198,6 +207,7 @@ async function updateChoice(c) {
 					let detElem = newRowElem.getElementsByClassName("bs_sdet")[0];
 					if (detElem)
 						detElem.innerText = sport + " - " + detElem.innerText; // + " (" + user + ")";
+
 					updateEntryInTable(entryElem, sport, id, user); 
 				}
 			}
@@ -208,7 +218,6 @@ async function updateChoice(c) {
 					let title = `${sport}`;
 					let entryElem = getErrorTable(id, title, JSON.stringify(err));
 					updateEntryInTable(entryElem, sport, id, user); 
-					document.getElementsByTagName("BODY")[0].appendChild(entryElem);
 				}
 			}
 		});
@@ -466,7 +475,9 @@ async function loadInitialData() {
 
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
 	updateUserdata(storageContent[USERS_FILE]);
-	updateChoice(storageContent[CHOICE_FILE]);
+
+	// load the actual choice data
+	updateChoice(storageContent[CHOICE_FILE], true);
 
 	for (let file of Object.keys(storageContent)) {
 		if (file.startsWith(ARMED_FILE)) {
