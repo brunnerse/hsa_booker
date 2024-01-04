@@ -19,7 +19,7 @@ document.getElementsByTagName("BODY")[0].innerHTML += '\
 			<div align="center" style="float:left;margin-left:5%;font-size:120%;font-weight:bolder;">\
 			Book for user:\
 			</div>\
-			<div align="center" style="float:left;margin-left:2%;">\
+			<div align="center" style="float:left;margin-left:1%;transform:translateY(-3px);">\
 				<select style="text-align:center;color:black;background-color:white;height:30px;padding: 0px; border-radius: 5px;border: 1px solid black;font-weight:bolder;font-size:120%;"\
 				 name="users" size="0" id="userselect">\
 					<option value="" style="background-color: gray" title="adder">Add user</option>\

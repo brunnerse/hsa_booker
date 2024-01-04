@@ -490,7 +490,7 @@ async function loadInitialData() {
 			let statestamp = storageContent[file];
 			let courseID = file.substring(BOOKSTATE_FILE.length);
 			let [state, stamp] = statestamp ?? [undefined, 0];
-			// remove file if state has expired, i.e. is more than 8 months old
+			// remove file if state has expired, i.e. is more than 8 months old or is state "booking"
 			if (hasExpired(stamp, 8*31*24*3600*1000) || (state == "booking" && hasExpired(stamp, booking_expiry_msec)))
 				remove(file);
 			else

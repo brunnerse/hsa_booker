@@ -368,8 +368,6 @@ function updateUserdata(d) {
     updateUserSelect(userSelectElem, userdata);
 }
 
-
-
 // check the current site if it is a course site
 let isCourseSite = false;
 // check if URL is a course and update visible elements accordingly
@@ -442,18 +440,16 @@ async function loadInitialData() {
                     updateChoice(changes[item].newValue);
                 } else if (item.startsWith(BOOKSTATE_FILE)) {
                     let id = item.substring(BOOKSTATE_FILE.length);
-                    if (choiceIDs.includes(id)) {
-                        let statestampArr = changes[item].newValue;
-                        let prevStateArr = bookingState[id] ?? [undefined, 0];
-                        if (!statestampArr) {
-                            delete bookingState[id];
-                        } else {
-                            bookingState[id] = statestampArr;
-                        }
-                        // reload if state changed
-                        if (prevStateArr[0] != (statestampArr ? statestampArr[0] : undefined))
-                            modifyBookButtons();
+                    let statestampArr = changes[item].newValue;
+                    let prevStateArr = bookingState[id] ?? [undefined, 0];
+                    if (!statestampArr) {
+                        delete bookingState[id];
+                    } else {
+                        bookingState[id] = statestampArr;
                     }
+                    // modify book buttons if state changed
+                    if (prevStateArr[0] != (statestampArr ? statestampArr[0] : undefined))
+                        modifyBookButtons();
                 }
             }
         });
@@ -480,7 +476,7 @@ loadInitialData();
 // unarm when closing the window
 unloadEventListener = function (e) {
     if (armed && !refreshTriggered){
-        // set timestamp of armed so it times out time out in 5 seconds
+        // set arm timestamp so it times out in 5 seconds
         let timeStamp = Date.now() - armed_expiry_msec + 5000;
         let file = ARMED_FILE + currentSport;
         upload(file, timeStamp);  
