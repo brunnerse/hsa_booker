@@ -274,12 +274,10 @@ async function updateUserdata(d) {
 		let data = userdata[Object.keys(userdata)[0]];
 		// Set status select input
 		let selectElem = document.getElementById("usershowelem");
-		let ok = false;
 		for (let i = 0; i < selectElem.options.length; i++) {
 			if (selectElem.options[i].value == data.statusorig) {
 				selectElem.selectedIndex = i;
 				selectElem.dispatchEvent(new Event("change"));
-				ok = true;
 				break;
 			}
 		}
@@ -502,8 +500,8 @@ async function loadInitialData() {
 	cleanupChoice();
 
 	addStorageListener((changes) => {
-		console.log("[Storage Listener] Change:")
-		console.log(changes);
+		//console.log("[Storage Listener] Change:")
+		//console.log(changes);
 		for (let item of Object.keys(changes)) {
 			if (item == USERS_FILE) {
 				updateUserdata(changes[USERS_FILE].newValue);
@@ -532,11 +530,11 @@ async function loadInitialData() {
 				}
 			}
 			upload(COURSELINKS_FILE, courselinks);
-			console.log("Fetched course links:");
-			console.log(courselinks);
+			//console.log("Fetched course links:");
+			//console.log(courselinks);
 		})
 	.catch((err) => {
-		console.log("Failed to update course links: Loading course site failed");
+		console.error("Failed to update course links: Loading course site failed");
 	});	
 }
 

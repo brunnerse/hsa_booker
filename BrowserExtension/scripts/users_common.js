@@ -43,6 +43,6 @@ function setSelectedUserIdx(userSelectElem, idx) {
 }
 
 function getSelectedUser(userSelectElem) {
-    let userElem = userSelectElem.options[userSelectElem.selectedIndex]
+    let userElem = userSelectElem.options[userSelectElem.selectedIndex];
     return userElem ? userElem.value : null; 
 }

@@ -324,6 +324,7 @@ function modifyBookButtons() {
                 bookState = "none";
             bookingState[id] = [bookState, Date.now()];
        }
+
        // color line according to bookingState
         switch (bookState) {
             case "booked":
@@ -360,12 +361,12 @@ function updateChoice(c) {
     modifyBookButtons();
 }
 
-function updateUserdata(d) {
+async function updateUserdata(d) {
 	// if userdata didn't change, do nothing
 	if (userdata == d)
 		return;
 	userdata = d ?? {};
-    updateUserSelect(userSelectElem, userdata);
+    await updateUserSelect(userSelectElem, userdata);
 }
 
 // check the current site if it is a course site
@@ -422,9 +423,9 @@ async function loadInitialData() {
         }
 
         // add storage listener for all kinds of changes
-        addStorageListener(async (changes) => {
-            console.log("Storage change:")
-            console.log(changes);
+        addStorageListener((changes) => {
+            //console.log("Storage change:")
+            //console.log(changes);
             for (let item of Object.keys(changes)) {
                 if (item == USERS_FILE) {
                     updateUserdata(changes[item].newValue); 
