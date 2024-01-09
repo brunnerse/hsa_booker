@@ -72,7 +72,7 @@ function fillForm(form, data) {
         }
     }
     if (!ok) {
-        throw new Error("Didn't find status element for " + data.statusorig);
+        throw new Error("Did not find status element for " + data.statusorig);
     } 
 
     removeWarnMarks();
@@ -238,23 +238,23 @@ async function processDocument() {
 
             removeBookingStateOnClose(courseID);
             setInterval(async () => {
-                    // check if the last timestamp is the own one;
-                    // if not, another tab is writing and we should abort booking
-                    let bookState = await download(BOOKSTATE_FILE+courseID);
-                    if (!bookState)
-                        console.log("ERROR: Booking state somehow did not get stored");
-                    else {
-                        let [state, stamp] = bookState;
-                        if (state == "booking" && stamp != lastTimestamp) {
-                            setBookingMessage("COURSE IS BEING BOOKED BY ANOTHER TAB, CLOSING...", "red");
-                            await sleep(1000);
-                            window.close();
-                            return;
-                        }
+                // check if the last timestamp is the own one;
+                // if not, another tab is writing and we should abort booking
+                let bookState = await download(BOOKSTATE_FILE+courseID);
+                if (!bookState)
+                    console.log("ERROR: Booking state somehow did not get stored");
+                else {
+                    let [state, stamp] = bookState;
+                    if (state == "booking" && stamp != lastTimestamp) {
+                        setBookingMessage("COURSE IS BEING BOOKED BY ANOTHER TAB, CLOSING...", "red");
+                        await sleep(1000);
+                        window.close();
+                        return;
                     }
-                    // update booking state timestamp constantly to show the site didn't timeout
-                    setBookingState(courseID, "booking");
-                }, booking_expiry_msec * 0.4);
+                }
+                // update booking state timestamp constantly to show the site did not timeout
+                setBookingState(courseID, "booking");
+            }, booking_expiry_msec * 0.4);
         }
         if (await getOption("bypasscountdown")) {
                 bypassCountdown();
@@ -300,7 +300,7 @@ async function processDocument() {
         if (user && courseID) {
             setBookingState(courseID, "booking");
             removeBookingStateOnClose(courseID);
-            // update booking state timestamp constantly to show the site didn't timeout
+            // update booking state timestamp constantly to show the site did not timeout
             setInterval(()=> {
                     setBookingState(courseID, "booking");
                 }, booking_expiry_msec * 0.4);

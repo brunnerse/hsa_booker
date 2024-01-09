@@ -11,7 +11,7 @@ firefox: node_hsa.xpi
 	mkdir -p $(TEMPDIR) 
 	cp -r * $(TEMPDIR) 
 	# remove wrongly copied files
-	rm -f $(TEMPDIR)/*.zip
+	rm -f $(TEMPDIR)/*.zip $(TEMPDIR)/*.xpi $(TEMPDIR)/Makefile
 	mv $(TEMPDIR)/manifest_firefox.json $(TEMPDIR)/manifest.json
 	cd $(TEMPDIR) ;	zip -r ../$@ *
 	rm -r $(TEMPDIR)

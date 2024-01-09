@@ -260,7 +260,7 @@ function updateBooked(courseID, statestampArr) {
 }
 
 async function updateUserdata(d) {
-	// if userdata didn't change, do nothing
+	// if userdata did not change, do nothing
 	if (userdata == d)
 		return;
 	userdata = d ?? {};
@@ -422,7 +422,7 @@ async function onOpenAll(closeAfter=false) {
 	let isCurrentTabIncluded = false;
 
 	for (let sport of Object.keys(choice)) {
-		// get all tabs and don't reopen the ones already open
+		// get all tabs and do not reopen the ones already open
 		if (choice[sport][user]) {
 			let href = getHref(sport);
 			if (href == currentTab) 

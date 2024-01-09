@@ -76,7 +76,7 @@ function setStatusTemp(status, color, timeMS=1500, setInert=false) {
         if (setInert) {
             armButton.removeAttribute("inert");
         }
-        // set status to empty if it wasn't changed in between
+        // set status to empty if it was not changed in between
         if (statusId == currentId) {
             setStatus("");
         }
@@ -362,7 +362,7 @@ function updateChoice(c) {
 }
 
 async function updateUserdata(d) {
-	// if userdata didn't change, do nothing
+	// if userdata did not change, do nothing
 	if (userdata == d)
 		return;
 	userdata = d ?? {};
@@ -432,7 +432,7 @@ async function loadInitialData() {
                 } else if (item == ARMED_FILE+getCurrentSport()) {
                     // check if item was removed
                     let storedAsArmed = changes[item].newValue != undefined;  
-                    // don't need to check the timestamp here; just was updated, so timestamp must be fine
+                    // do not need to check the timestamp here; just was updated, so timestamp must be fine
                     if (!storedAsArmed && armed)
                         unarm();
                     else if (storedAsArmed && !armed)

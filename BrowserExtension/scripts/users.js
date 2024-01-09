@@ -203,7 +203,7 @@ async function onSelectChange() {
             }
         }
         if (!ok) {
-            throw new Error("Didn't find status element for " + data.statusorig);
+            throw new Error("Did not find status element for " + data.statusorig);
         } 
 
         removeWarnMarks();
