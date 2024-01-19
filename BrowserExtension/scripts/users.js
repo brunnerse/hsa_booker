@@ -138,7 +138,7 @@ async function addUser(user) {
     }
     
     let selectedUser = getSelectedUser(userSelectElem);
-    const isUpdate = selectedUser != "";
+    const isUpdate = selectedUser == data.vorname;
     if (!isFormModified()) {
         setStatus("User " + user + " already saved: No changes in data", "green");
         return;
@@ -388,5 +388,5 @@ document.getElementById("backbutton").addEventListener("click", () => {
     if (window.history.length <= 1)
         window.close();
     else
-        window.history.back();
+        window.location.replace("hsabook.html");
 }); 

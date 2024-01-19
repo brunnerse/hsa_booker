@@ -91,7 +91,15 @@ async function onSelectChange(updateButtons=true) {
     if (selectedUser == "") {
         if (userSelectElem.options[userSelectElem.selectedIndex].title == "adder") {
             // open user edit page in new tab
-            alert("Create a user profile by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
+            try {
+                window.open(browser.runtime.getURL("Users.html"));
+            } catch {
+                try {
+                    window.open(`chrome-extension://${chrome.runtime.id}/Users.html`);
+                } catch {
+                    alert("Create a user profile by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
+                }
+            } 
             // reset selection to the first blank one
             setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
             return;

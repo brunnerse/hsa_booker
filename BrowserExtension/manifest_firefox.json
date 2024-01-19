@@ -32,7 +32,7 @@
 	],
 
 	"web_accessible_resources": [
-		"styles/custom_bars.css"
+		"styles/custom_bars.css", "Users.html"
 	],
 
 	"browser_action": {

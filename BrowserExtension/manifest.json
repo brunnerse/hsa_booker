@@ -34,7 +34,7 @@
 
 	"web_accessible_resources": [
 		{
-	       "resources": ["styles/custom_bars.css"],
+	       "resources": ["styles/custom_bars.css", "Users.html"],
 		   "matches": [ "*://*/*" ]
 		}
 	],
