@@ -193,7 +193,8 @@ async function downloadAll() {
 
 function download(filename) {
     return new Promise(async function (resolve, reject) {
-        getStorage(filename).get(filename).then((result) => {
+        getStorage(filename).get(filename)
+        .then((result) => {
             //console.log(`Downloaded data ${filename}:`)
             //console.log(result[filename]);
             resolve(result[filename]);
@@ -206,7 +207,7 @@ function download(filename) {
 }
 
 function upload(filename, obj) {
-    return new Promise(async function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         let o = {};
         o[filename] = obj;
 

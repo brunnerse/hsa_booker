@@ -146,8 +146,12 @@ async function addCourse(user, courseID) {
        choice[sport][user] = [];
     if (!choice[sport][user].includes(courseID)) {
         choice[sport][user].push(courseID);
-        await upload(CHOICE_FILE, choice);
-        setStatusTemp("Marked course " + courseID.split("_")[0] + " for booking", "green");
+        await upload(CHOICE_FILE, choice)
+        .then(() => setStatusTemp("Marked course " + courseID.split("_")[0] + " for booking", "green"))
+        .catch((err) => {
+            setStatusTemp( err, "red");
+            throw err;
+        });
     } else {
         throw new Error("Cannot add: course " + nr + " is already marked for user " + user);
     }
@@ -156,9 +160,13 @@ async function addCourse(user, courseID) {
 async function removeCourse(user, courseID) {
     // remove from choice
  	if (removeIdFromChoice(choice, currentSport, user, courseID)) {
-        await upload(CHOICE_FILE, choice);	
-        await removeBookingState(courseID);
-        setStatusTemp("Unmarked course " + courseID.split("_")[0], "green");
+        await upload(CHOICE_FILE, choice)
+        .then(() => removeBookingState(courseID))
+        .then(() => setStatusTemp("Unmarked course " + courseID.split("_")[0], "green"))
+        .catch((err) => {
+            setStatusTemp( err, "red");
+            throw err;
+        });
     } else {
         throw new Error("Cannot remove: course " + nr + " is not marked for user " + user);
     }
