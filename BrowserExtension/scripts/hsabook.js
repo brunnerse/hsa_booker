@@ -247,8 +247,8 @@ function updateBooked(courseID, statestampArr) {
 				updateEntryInTable(tableEntry, sport, id, user);
 			} else if (oldState) { // entry's booking state was removed
 				if (oldState == "booked") {
-					// This path is probably never taken, as a "booked" bookingState is only removed
-					// when the course is removed
+					// This path is never taken,
+					// as a "booked" bookingState is only removed when the course is removed
 					// In this path, the changes to the book button should be reverted.
 				} 
 				let tRow = tableEntry.getElementsByTagName("TD")[0].parentElement;
@@ -328,9 +328,7 @@ function onCloseButton(button) {
 	// update choice file if removed successfully
  	if (removeIdFromChoice(choice, sport, user, id)) {
 		upload(CHOICE_FILE, choice)
-		.then (() => {
-			remove(BOOKSTATE_FILE+id);
-		});
+		.then (() => removeBookingState(id));
     } else {
 		console.error("Could not remove course " + nr + ": Not found in choice!");
 	}

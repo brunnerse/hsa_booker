@@ -154,15 +154,10 @@ function getCourseID(docState) {
     return null;
 }
 
-function setBookingState(courseID, bookingstate) {
-    lastTimestamp = Date.now();
-    return upload(BOOKSTATE_FILE+courseID, [bookingstate, lastTimestamp]);
-}
-
 // resets the booking state if window is refreshed/closed 
 function removeBookingStateOnClose(courseID) {
     window.addEventListener("beforeunload", function (e) {
-        remove(BOOKSTATE_FILE+courseID);
+        removeBookingState(courseID);
     }); 
 }
 
@@ -234,13 +229,14 @@ async function processDocument() {
                 window.close();
                 return;
             }
-            await setBookingState(courseID, "booking");
+            
+            lastTimestamp = await setBookingState(courseID, "booking");
 
             removeBookingStateOnClose(courseID);
             setInterval(async () => {
                 // check if the last timestamp is the own one;
                 // if not, another tab is writing and we should abort booking
-                let bookState = await download(BOOKSTATE_FILE+courseID);
+                let bookState = await getBookingState(courseID, includeTimestamp=true); 
                 if (!bookState)
                     console.log("ERROR: Booking state somehow did not get stored");
                 else {
@@ -253,7 +249,7 @@ async function processDocument() {
                     }
                 }
                 // update booking state timestamp constantly to show the site did not timeout
-                await setBookingState(courseID, "booking");
+                lastTimestamp = await setBookingState(courseID, "booking");
             }, booking_expiry_msec * 0.4);
         }
         if (await getOption("bypasscountdown")) {

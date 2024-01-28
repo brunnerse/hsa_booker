@@ -16,6 +16,7 @@ function getStorage(filename) {
     switch (filename) {
         case USERS_FILE:
         case OPTIONS_FILE:
+        case CHOICE_FILE:
             return base.storage.sync;
         default:
             return base.storage.local;
@@ -384,14 +385,26 @@ function removeIdFromChoice(choice, sport, user, id) {
     return success;
 }
 
-async function getBookingState(courseId) {
-    let bookState = await download(BOOKSTATE_FILE+courseId);
+async function getBookingState(courseID, includeTimestamp=false) {
+    let bookState = await download(BOOKSTATE_FILE+courseID);
     if (!bookState)
         return null;
+    if (includeTimestamp)
+        return bookState;
     let [state, stamp] = bookState;
     stamp = parseInt(stamp);
     if (state == "booking")
         return !hasExpired(stamp, booking_expiry_msec) ? state : null;
     else
         return state;
+}
+
+async function setBookingState(courseID, state) {
+    timestamp = Date.now();
+    await upload(BOOKSTATE_FILE+courseID, [state, timestamp]);
+    return timestamp;
+}
+
+async function removeBookingState(courseID) {
+    await remove(BOOKSTATE_FILE+courseID);
 }

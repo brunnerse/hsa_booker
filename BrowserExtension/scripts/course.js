@@ -154,12 +154,10 @@ async function addCourse(user, courseID) {
 } 
 
 async function removeCourse(user, courseID) {
-    // remove bookedState
-    await remove(BOOKSTATE_FILE+courseID);
-
     // remove from choice
  	if (removeIdFromChoice(choice, currentSport, user, courseID)) {
         await upload(CHOICE_FILE, choice);	
+        await removeBookingState(courseID);
         setStatusTemp("Unmarked course " + courseID.split("_")[0], "green");
     } else {
         throw new Error("Cannot remove: course " + nr + " is not marked for user " + user);
