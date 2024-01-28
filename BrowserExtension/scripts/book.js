@@ -253,7 +253,7 @@ async function processDocument() {
                     }
                 }
                 // update booking state timestamp constantly to show the site did not timeout
-                setBookingState(courseID, "booking");
+                await setBookingState(courseID, "booking");
             }, booking_expiry_msec * 0.4);
         }
         if (await getOption("bypasscountdown")) {
@@ -292,7 +292,7 @@ async function processDocument() {
                     await sleep(50);       
                 }
                 // check again if submitimmediately option is set, then submit
-                if (await getOption("submitimmediately"))
+                if (await getOption("submitimmediately", false))
                     form.requestSubmit(submitElem);
             }
         }); 

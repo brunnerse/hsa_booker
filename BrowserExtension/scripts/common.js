@@ -239,8 +239,14 @@ function removeStorageListener(fun) {
 
 var option_var;
 
-async function getOption(val) {
-    if (!option_var) {
+async function getOption(val, allowcache=true) {
+    // Override default values for some options
+   if (val == "multipleusers")
+        return 0;
+    if (val == "defaultuseridx")
+        return 1;
+
+    if (!option_var || !allowcache) {
         option_var = await download(OPTIONS_FILE);
     }
     if (option_var && option_var[val])
