@@ -179,9 +179,11 @@ async function updateChoice(c, initElems=false) {
 							break;
 						}
 					}
-					if (!tRowElem)
-						throw new Error("NR not found");
-					else if (!getCourseDateStr(tRowElem) == date) {
+					if (!tRowElem) {
+						let entryElem = getErrorTable(id, `${sport}`, "Not found");
+						updateEntryInTable(entryElem, sport, id, user); 
+						continue;
+					} else if (!getCourseDateStr(tRowElem) == date) {
 						console.warn(`Found no date matching course ${sport}_${id}, skipping...`)
 						continue;
 					}	

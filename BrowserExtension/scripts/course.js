@@ -236,7 +236,7 @@ async function arm(storedAsArmed=false) {
             let remainingTime = getRemainingTimeMS(bookingTime);
             // find correct threshold for current remaining time
             refreshInterval = refreshIntervals[refreshIntervals.length-1];
-            for (let i = 0; i < refreshIntervals.length-1; i++) {
+            for (let i = 0; i < refreshIntervals.length-2; i++) {
                 if (remainingTime <= timeThresholds[i]) {
                     refreshInterval = refreshIntervals[i];
                     break;
