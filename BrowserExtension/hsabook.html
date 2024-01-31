@@ -46,14 +46,14 @@
 
     <h2>Configuration</h2>
     <div id="configuration">
-        <div hidden class="bs_form_content">
-            <div class="bs_form_row">
-                <div class="" style="float:left;margin-right:5%;margin-top:2px">Mode:</div>
-                <label><input class="bs_fval_req" type="radio" name="mode" value="formonly">
-                    Only fill the form</label>
-                &nbsp;&nbsp;
-                <label><input class="bs_fval_req" type="radio" name="mode" value="all">
-                    Perform complete booking</label>&nbsp;&nbsp;
+        <div class="bs_form_row" id="fillform" style="margin-left:10px">
+            <div class="tooltip" style="float:inline-start">
+                <label><input type="checkbox" name="fillform" />
+                    Fill form</label>
+                <div class="tooltiptext">Fill out the booking form automatically</div>
+            </div>
+            <div style="float:inline-end;margin-right:10px;">
+                <button id="resetdata">Reset data</button>
             </div>
         </div>
         <div class="bs_form_row" id="submitimmediately" style="margin-left:10px">
@@ -63,34 +63,32 @@
                 <div class="tooltiptext">Submit booking form automatically as soon as possible</div>
             </div>
             <div style="float:inline-end;margin-right:10px;">
-                <button id="resetdata">Reset data</button>
+                <button class="link" style="font-weight:bold;" id="toggleadvice">Show advice</button>
             </div>
         </div>
         <div hidden class="bs_form_row" id="bypasscountdown" style="margin-left:10px">
             <div class="tooltip">
                 <label inert style="color:gray"><input inert type="checkbox" name="bypasscountdown" checked="false" />
                     Bypass client-sided countdown restriction</label>
-                <div class="tooltiptext">This must always be unchecked as the countdown is also checked server-sided</div>
+                <div class="tooltiptext">This must always be unchecked as the countdown is also checked server-sided
+                </div>
             </div>
         </div>
-        <div class="bs_form_row" style="background-color: white;margin-left:10px">
-            <button class="link" style="font-weight:bold;" id="toggleadvice">Show advice</button>
-            <ol hidden id="advice">
-                <li>On first use, add a user (below here). Then go to the course sites you want to book and mark the
-                    desired courses.</li>
-                <li>When arming a site, it will refresh continuously until the marked courses are bookable, then the
-                    book buttons will be pressed automatically.</li>
-                <li>Check the <b>Submit immediately</b> box if you want to complete booking process to be performed
-                    automatically,
-                    uncheck the box if you only want to extension to fill in your data. </li>
-                <li>When arming a course, make sure the course site is open only once to prevent a possible double
-                    booking.</li>
-                <li>Javascript slows down a lot when a tab is not visible. When booking or arming multiple courses, it
-                    is recommended
-                    to open the course sites in separate windows and position the windows next to each other so they all
-                    are visible. This ensures a fast booking.</li>
-            </ol>
-        </div>
+        <ol hidden id="advice">
+            <li>On first use, add a user (below here). Then go to the course sites you want to book and mark the
+                desired courses.</li>
+            <li>When arming a site, it will refresh continuously until the marked courses are bookable, then the
+                book buttons will be pressed automatically.</li>
+            <li>Check the <b>Submit immediately</b> box if you want to complete booking process to be performed
+                automatically,
+                uncheck the box if you only want to extension to fill in your data. </li>
+            <li>When arming a course, make sure the course site is open only once to prevent a possible double
+                booking.</li>
+            <li>Javascript slows down a lot when a tab is not visible. When booking or arming multiple courses, it
+                is recommended
+                to open the course sites in separate windows and position the windows next to each other so they all
+                are visible. This ensures a fast booking.</li>
+        </ol>
 
         <div hidden class="bs_form_row">
             <div class="">
@@ -166,7 +164,8 @@
                 <div id="armbuttontext" style="float:left;text-align:right;padding-right:3%">Arm all</div>
                 <button class="roundbutton" style="background-color:green;float:left;" id="armallbutton"></button>
             </div>
-            <div class="tooltiptext" style="margin-left:230px;margin-top:40px;">Open all course sites and book the courses</div>
+            <div class="tooltiptext" style="margin-left:230px;margin-top:40px;">Open all course sites and book the
+                courses</div>
         </div>
     </div>
     <a class="link" style="float:left;font-weight:bold;margin-left:40px;margin-bottom:30px;" hidden
@@ -187,7 +186,8 @@
                             <th class="bs_szeit" style="width:70px"><span class="bslang_de">Zeit</span></th>
                             <th class="bs_szr"><span class="bslang_de">Zeitraum</span></th>
                             <th class="bs_sbuch"><span class="bslang_de">Buchung</span></th>
-                            <th class="closebutton link" style="text-align:center;background-color:red;width:25px">x</th>
+                            <th class="closebutton link" style="text-align:center;background-color:red;width:25px">x
+                            </th>
                         </tr>
                     </thead>
                     <tbody>

@@ -247,6 +247,8 @@ async function getOption(val, allowcache=true) {
         return 0;
     if (val == "defaultuseridx")
         return 1;
+    if (val == "bypasscountdown")
+        return 0;
 
     if (!option_var || !allowcache) {
         option_var = await download(OPTIONS_FILE);
@@ -255,16 +257,15 @@ async function getOption(val, allowcache=true) {
         return option_var[val];
     else {
         // return default values
+        if (val == "fillform")
+            return 1;
         if (val == "multipleusers")
             return 0;
-        else if (val == "mode")
-            return "formonly";
-        else if (val == "defaultuseridx")
+        if (val == "defaultuseridx")
             return 1;
-        else if (val == "bypasscountdown")
+        if (val == "bypasscountdown")
             return 0;
-        else
-            return null;
+        return null;
     }
 }
 

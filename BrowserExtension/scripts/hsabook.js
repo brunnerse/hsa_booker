@@ -1,4 +1,5 @@
 const inputSubImm = document.getElementById("submitimmediately");
+const inputFill = document.getElementById("fillform");
 const armButton = document.getElementById("armallbutton"); 
 const armText = document.getElementById("armbuttontext");
 const storedDataElem = document.getElementById("storeduserdata");
