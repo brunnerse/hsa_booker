@@ -365,15 +365,27 @@ function modifyBookButtons() {
     }
 }
 
-async function updateChoice(c) {
+async function updateChoice(c, checkAllCourses=false) {
     choice = c ?? {};
     let user = getSelectedUser(userSelectElem);
     let sport = currentSport;
     choiceIDs = (user && sport && choice[sport] && choice[sport][user]) ?
          choice[sport][user] : [];
 
-    // check for each course if bookstate_file exists and add it in case it does
-    for (let id of choiceIDs) {
+    // check for each course if bookstate_file exists and add the state in case it does
+    // either check only choiceIDs or all IDs
+    let IDsToCheck = choiceIDs;
+    if (checkAllCourses) {
+        IDsToCheck = [];
+        for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
+            if (bookElem.tagName != "TD")
+                continue;
+            let trElem = bookElem.parentElement;
+            let id = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
+            IDsToCheck.push(id);
+        }
+    }
+    for (let id of IDsToCheck) {
         let bookState = await download(BOOKSTATE_FILE+id);
         if (bookState && !(bookState[0] == "booking" && hasExpired(bookState[1], booking_expiry_msec)))
             bookingState[id] = bookState;
@@ -427,7 +439,7 @@ async function loadInitialData() {
         userSelectElem.addEventListener("change", () => onSelectChange(true));
         armButton.addEventListener("click", onArm);
 
-        await download(CHOICE_FILE).then(updateChoice);    
+        await download(CHOICE_FILE).then((data) => updateChoice(data, true));    
 
         // check if website should be armed
         let armTimestamp = await download(ARMED_FILE+currentSport);
