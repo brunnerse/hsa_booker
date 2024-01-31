@@ -254,7 +254,7 @@ async function getOption(val, allowcache=true) {
     if (!option_var || !allowcache) {
         option_var = await download(OPTIONS_FILE);
     }
-    if (option_var && option_var[val])
+    if (option_var && option_var[val] != undefined)
         return option_var[val];
     else {
         // return default values

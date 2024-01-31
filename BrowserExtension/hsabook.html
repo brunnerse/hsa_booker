@@ -46,19 +46,19 @@
 
     <h2>Configuration</h2>
     <div id="configuration">
-        <div class="bs_form_row" id="fillform" style="margin-left:10px">
-            <div class="tooltip" style="float:inline-start">
-                <label><input type="checkbox" name="fillform" />
+        <div class="bs_form_row" style="margin-left:10px;position:relative;">
+            <div class="tooltip" style="float:inline-start;">
+                <label><input type="checkbox" name="fillform" id="fillform"/>
                     Fill form</label>
-                <div class="tooltiptext">Fill out the booking form automatically</div>
+                <div class="tooltiptext" style="top:0; left:0" >Fill out the booking form automatically</div>
             </div>
             <div style="float:inline-end;margin-right:10px;">
                 <button id="resetdata">Reset data</button>
             </div>
         </div>
-        <div class="bs_form_row" id="submitimmediately" style="margin-left:10px">
+        <div class="bs_form_row" style="margin-left:10px">
             <div class="tooltip" style="float:inline-start">
-                <label><input type="checkbox" name="submitimmediately" />
+                <label><input type="checkbox" name="submitimmediately" id="submitimmediately"/>
                     Submit immediately</label>
                 <div class="tooltiptext">Submit booking form automatically as soon as possible</div>
             </div>
@@ -66,9 +66,9 @@
                 <button class="link" style="font-weight:bold;" id="toggleadvice">Show advice</button>
             </div>
         </div>
-        <div hidden class="bs_form_row" id="bypasscountdown" style="margin-left:10px">
+        <div hidden class="bs_form_row" style="margin-left:10px">
             <div class="tooltip">
-                <label inert style="color:gray"><input inert type="checkbox" name="bypasscountdown" checked="false" />
+                <label inert style="color:gray"><input inert type="checkbox" name="bypasscountdown" id="bypasscountdown" checked="false" />
                     Bypass client-sided countdown restriction</label>
                 <div class="tooltiptext">This must always be unchecked as the countdown is also checked server-sided
                 </div>

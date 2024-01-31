@@ -186,8 +186,9 @@ async function updateChoice(c, initElems=false) {
 						continue;
 					} else if (!getCourseDateStr(tRowElem) == date) {
 						console.warn(`Found no date matching course ${sport}_${id}`)
-						//TODO if course with same number lies in the future, remove that course as it expired
-						if (getCourseDateStr(tRowElem) > date) {
+						// If course with same number lies in the future, remove that course as it expired
+						// TODO test if this is correct
+						if (getCourseDate(tRowElem) > dateFromDDMMYY(date)) {
 							console.log(`Course ${id} expired as a course with the same nr`+
 								` and a higher date exists, removing the course...`);
 							if (removeIdFromChoice(choice, sport, user, id)) {
@@ -349,9 +350,21 @@ function onCloseButton(button) {
 
 
 function onOptionChange(change) {
-	// set changed options
+	let triggerElem = change["target"];
+	// enforce constraints
+	console.log(change)
+	console.log(change["target"])
+	if (triggerElem === inputFill && triggerElem.checked == false)
+		inputSubImm.checked = false;
+	else if (triggerElem === inputSubImm && triggerElem.checked)
+		inputFill.checked = true;
+
+	// For simplicity, simply upload all options if one changes
+	// As all options are uploaded as one single object, this does not affect performance too much 
 	let optionObj = {};
 	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null)
+			continue;
 		if (inputElem.type == "radio") {
 			if (inputElem.checked) {
 				optionObj[inputElem.name] = inputElem.value;
@@ -362,21 +375,13 @@ function onOptionChange(change) {
 			optionObj[inputElem.name] = inputElem.value;
 		}
 	}
-
-/*
-	if (optionObj["mode"] == "formonly") {
-		inputSubImm.setAttribute("hidden", "");
-	} else {
-		inputSubImm.removeAttribute("hidden");
-		inputSubImm.checked = false;
-		optionObj[inputSubImm.name] = false;
-	}
-*/
 	setAllOptions(optionObj);
 }
 
 async function loadOptions() {
 	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null)
+			continue;
 		if (inputElem.type == "radio") {
 			inputElem.checked = await getOption(inputElem.name) == inputElem.value;
 		} else if (inputElem.type == "checkbox") {
@@ -385,14 +390,12 @@ async function loadOptions() {
 			inputElem.value = await getOption(inputElem.name);
 		}
 	}
-/*	
-	if (getOption("mode") == "formonly") {
-		inputSubImm.setAttribute("hidden", "");
-	} else {
-		inputSubImm.removeAttribute("hidden");
+	// Enforce constraints
+	if (inputFill.checked == false && inputSubImm.checked) {
+		console.error("INCONSISTENT OPTIONS: fillform unchecked but submitimmediately checked");
 		inputSubImm.checked = false;
+		onOptionChange({});
 	}
-*/
 }
 
 function armAll() {
