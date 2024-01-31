@@ -222,6 +222,7 @@ async function processDocument() {
             if (prevBookingState == "booked") {
                 console.warn("COURSE IS ALREADY MARKED AS BOOKED")
                 setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
+                // TODO fill out form anyway?
                 return;
             } else if (prevBookingState == "booking") {
                 setBookingMessage("COURSE IS ALREADY BEING BOOKED, CLOSING...", "red");
@@ -294,6 +295,7 @@ async function processDocument() {
         }); 
     } else if (STATE == "check") {
         if (user && courseID) {
+            // Do not check if state is booked; if this page (check) is reached, user already decided to ignore it
             setBookingState(courseID, "booking");
             removeBookingStateOnClose(courseID);
             // update booking state timestamp constantly to show the site did not timeout

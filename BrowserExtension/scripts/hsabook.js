@@ -45,8 +45,8 @@ async function cleanupChoice() {
 				let id = choice[sport][user][idx];
 				let [nr, dateStr] = id.split("_");
 				let date = dateFromDDMMYY(dateStr); 
-				// if start date is more than 8 months ago, remove the course from choice 
-				if (Date.now() - date > 1000*60*60*24*30*8) {
+				// if start date is too long ago, remove the course from choice 
+				if (Date.now() - date > default_expiry_msec) {
 					changed = true;
 					removeIdFromChoice(choice, sport, user, id)
 					remove(BOOKSTATE_FILE+id);
@@ -185,7 +185,16 @@ async function updateChoice(c, initElems=false) {
 						updateEntryInTable(entryElem, sport, id, user); 
 						continue;
 					} else if (!getCourseDateStr(tRowElem) == date) {
-						console.warn(`Found no date matching course ${sport}_${id}, skipping...`)
+						console.warn(`Found no date matching course ${sport}_${id}`)
+						//TODO if course with same number lies in the future, remove that course as it expired
+						if (getCourseDateStr(tRowElem) > date) {
+							console.log(`Course ${id} expired as a course with the same nr`+
+								` and a higher date exists, removing the course...`);
+							if (removeIdFromChoice(choice, sport, user, id)) {
+								upload(CHOICE_FILE, choice)
+								.then (() => removeBookingState(id));
+							}
+						} 
 						continue;
 					}	
 
@@ -475,9 +484,12 @@ async function loadInitialData() {
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
 	updateUserdata(storageContent[USERS_FILE]);
 
-	// load the actual choice data
-	updateChoice(storageContent[CHOICE_FILE], true);
+	// load and clean up the choice data
+	choice = storageContent[CHOICE_FILE] ?? {}; 
+	cleanupChoice();
+	updateChoice(choice, true);
 
+	// get armed and bookstate files and remove expired ones 
 	for (let file of Object.keys(storageContent)) {
 		if (file.startsWith(ARMED_FILE)) {
 			let stamp = storageContent[file];
@@ -489,16 +501,15 @@ async function loadInitialData() {
 			let statestamp = storageContent[file];
 			let courseID = file.substring(BOOKSTATE_FILE.length);
 			let [state, stamp] = statestamp ?? [undefined, 0];
-			// remove file if state has expired, i.e. is more than 8 months old or is state "booking"
-			if (hasExpired(stamp, 8*31*24*3600*1000) || (state == "booking" && hasExpired(stamp, booking_expiry_msec)))
+			if (hasExpired(stamp, default_expiry_msec) || 
+					 (state == "booking" && hasExpired(stamp, booking_expiry_msec)))
 				remove(file);
 			else
 				updateBooked(courseID, statestamp);
 		}
 	}
-	updateArm();
 
-	cleanupChoice();
+	updateArm();
 
 	addStorageListener((changes) => {
 		//console.log("[Storage Listener] Change:")

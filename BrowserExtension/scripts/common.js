@@ -25,6 +25,7 @@ function getStorage(filename) {
 
 const armed_expiry_msec = 45000;
 const booking_expiry_msec = 1500;
+const default_expiry_msec = 1000 * 60 * 60 * 24 * 30 * 8; // 8 months
 const timeout_msec = 6000;
 
 
