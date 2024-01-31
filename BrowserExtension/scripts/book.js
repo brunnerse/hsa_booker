@@ -222,7 +222,10 @@ async function processDocument() {
             if (prevBookingState == "booked") {
                 console.warn("COURSE IS ALREADY MARKED AS BOOKED")
                 setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
-                // TODO fill out form anyway?
+                document.title = document.title + " - ALREADY BOOKED";
+                // Fill out form anyway, but return immediately afterwards 
+                if (userdata[user] && await getOption("fillform"))
+                    fillForm(form, userdata[user]);
                 return;
             } else if (prevBookingState == "booking") {
                 setBookingMessage("COURSE IS ALREADY BEING BOOKED, CLOSING...", "red");
@@ -253,26 +256,24 @@ async function processDocument() {
                 lastTimestamp = await setBookingState(courseID, "booking");
             }, booking_expiry_msec * 0.4);
         }
+
         if (await getOption("bypasscountdown")) {
                 bypassCountdown();
         }
 
-        if (userdata[user])
+        if (userdata[user] && await getOption("fillform")) {
             fillForm(form, userdata[user]);
-
-        // sometimes password fields are automatically set by browser autofill;
-        // wait a few seconds for autofill, then reset their value
-        sleep(4000).then(() => {
-            for (let inputElem of form.getElementsByTagName("INPUT")) {
-                    if (inputElem.name.startsWith("pw")) {
-                       inputElem.value = "";
+            // sometimes password fields are automatically set by browser autofill;
+            // wait a few seconds for autofill, then reset their value
+            sleep(4000).then(() => {
+                for (let inputElem of form.getElementsByTagName("INPUT")) {
+                        if (inputElem.name.startsWith("pw")) {
+                        inputElem.value = "";
+                    }
                 }
-            }
-        });
+            });
 
-        getOption("submitimmediately")
-        .then(async (submitimm) => {
-            if (submitimm) {
+            if (await getOption("submitimmediately")) {
                 // insert message that form will be submitted
                 setBookingMessage("Submitting once the countdown is done...", "green");
                 // wait until countdown passed
@@ -282,7 +283,7 @@ async function processDocument() {
                     if (Date.now() - loadTime >= 8000) {
                         setBookingMessage("Activating bypass...", "darkorange");
                         bypassCountdown();
-                        // fill form again
+                        // fill form again 
                         userdata[user] && fillForm(form, userdata[user]);
                         break;
                     }
@@ -291,8 +292,8 @@ async function processDocument() {
                 // check again if submitimmediately option is set, then submit
                 if (await getOption("submitimmediately", false))
                     form.requestSubmit(submitElem);
-            }
-        }); 
+            }; 
+        }
     } else if (STATE == "check") {
         if (user && courseID) {
             // Do not check if state is booked; if this page (check) is reached, user already decided to ignore it
@@ -318,7 +319,7 @@ async function processDocument() {
         for (let inputElem of inputElems) {
             if (inputElem.title == "fee-based order") {
                 submitButton = inputElem;
-            } else if (inputElem.name.startsWith("email_check")) {
+            } else if (inputElem.name.startsWith("email_check") && emailVal) {
                 inputElem.value = emailVal;  
             }
         }
@@ -331,7 +332,6 @@ async function processDocument() {
         } else {
             // Do nothing
         }
-
     } else if (STATE == "confirmed") {
         console.log(`Course Nr. ${courseID.split("_").join(" starting on ")} has been successfully booked.`);
         // signalize success
