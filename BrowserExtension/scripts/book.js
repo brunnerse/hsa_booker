@@ -242,7 +242,7 @@ async function processDocument() {
                 // if not, another tab is writing and we should abort booking
                 let bookState = await getBookingState(courseID, includeTimestamp=true); 
                 if (!bookState)
-                    console.log("ERROR: Booking state somehow did not get stored");
+                    console.error("Booking state somehow did not get stored; maybe it expired before reading?");
                 else {
                     let [state, stamp] = bookState;
                     if (state == "booking" && stamp != lastTimestamp) {

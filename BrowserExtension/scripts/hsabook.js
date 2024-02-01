@@ -122,11 +122,11 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	// Color entry if booked
 	if (bookingState[id]) {
 		if (bookingState[id][0] == "booked") {
-			colorRow(newRowElem, "lime");
+			colorRow(newRowElem, "lawngreen");
 			// also change booking button
 			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
 				elem.setAttribute("inert", "");
-				elem.value = "GEBUCHT"; 
+				elem.value = "BOOKED"; 
 			}
 		} 
 		else if (bookingState[id][0] == "booking")
@@ -135,7 +135,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			colorRow(newRowElem, "darkorange");
 			// also change booking button
 			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-				elem.value = "FEHLER"; 
+				elem.value = "ERROR"; 
 			}
 		}
 	}
@@ -352,8 +352,6 @@ function onCloseButton(button) {
 function onOptionChange(change) {
 	let triggerElem = change["target"];
 	// enforce constraints
-	console.log(change)
-	console.log(change["target"])
 	if (triggerElem === inputFill && triggerElem.checked == false)
 		inputSubImm.checked = false;
 	else if (triggerElem === inputSubImm && triggerElem.checked)
@@ -566,9 +564,9 @@ setInterval(() => {
 }, 1000);
 
 toggleAdviceButton.addEventListener("click", () => {
-	if (adviceElem.getAttribute("hidden") == "") {
+	if (adviceElem.getAttribute("hidden") != null) {
 		adviceElem.removeAttribute("hidden");
-		toggleAdviceButton.innerText = "Hide";
+		toggleAdviceButton.innerText = "Hide advice";
 	} else {
 		adviceElem.setAttribute("hidden", "");
 		toggleAdviceButton.innerText = "Show advice";

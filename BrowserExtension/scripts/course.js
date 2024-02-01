@@ -193,16 +193,17 @@ async function arm(storedAsArmed=false) {
 
     let numCoursesDone = 0;
     let numCoursesFull = 0;
-    // get all course number elements in document
+    // get all course number elements in the document
     let nrElems = document.getElementsByClassName("bs_sknr");
 
     for (let id of choiceIDs) {
-        let state = bookingState[id] ? bookingState[id][0] : undefined;
+        let state = bookingState[id] ? bookingState[id][0] : "unavailable";
         switch (state) {
             case "full":
                 numCoursesFull++;
             case "booking":
             case "booked":
+            case "unavailable":
                 numCoursesDone++;
                 break;
             case "ready":
@@ -216,6 +217,8 @@ async function arm(storedAsArmed=false) {
                         break;
                     }
                 } 
+                if (!bookButton)
+                    break;
                 let formElem = bookButton.parentElement;
                 while (formElem.tagName != "FORM")
                     formElem = formElem.parentElement;
@@ -342,7 +345,7 @@ function modifyBookButtons() {
        // color line according to bookingState
         switch (bookState) {
             case "booked":
-                colorRow(trElem, "lime");
+                colorRow(trElem, "lawngreen");
                 button.innerText = "BOOKED";
                 break;
             case "booking":
