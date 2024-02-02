@@ -94,7 +94,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		replaceEntry = choiceElem.lastChild; 
 		replaceEntry.setAttribute("title", title);
 	}
-	// replace tableRow with entryHTML input appended with the old status bar 
+	// replace the replaceEntry tableRow with entryElem
 	replaceEntry.replaceChildren(...entryElem.children);
 	// set close button listener
 	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
@@ -119,7 +119,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		} 
 	}
 
-	// Color entry if booked
+	// Color entry depending on the course's booking state
 	if (bookingState[id]) {
 		if (bookingState[id][0] == "booked") {
 			colorRow(newRowElem, "lawngreen");
@@ -376,16 +376,16 @@ function onOptionChange(change) {
 	setAllOptions(optionObj);
 }
 
-async function loadOptions() {
+async function loadOptions(allowCache=true) {
 	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
 		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null)
 			continue;
 		if (inputElem.type == "radio") {
-			inputElem.checked = await getOption(inputElem.name) == inputElem.value;
+			inputElem.checked = await getOption(inputElem.name, allowCache) == inputElem.value;
 		} else if (inputElem.type == "checkbox") {
-			inputElem.checked = await getOption(inputElem.name);
+			inputElem.checked = await getOption(inputElem.name, allowCache);
 		} else {
-			inputElem.value = await getOption(inputElem.name);
+			inputElem.value = await getOption(inputElem.name, allowCache);
 		}
 	}
 	// Enforce constraints
@@ -463,6 +463,7 @@ document.getElementById("resetdata").addEventListener("click", () => {
 	if (confirm("Reset HSA Booker extension?")) {
 			base.storage.local.clear();
 			base.storage.sync.clear();
+			loadOptions(false);
 	}
 })
 document.getElementById("go-to-options").addEventListener("click", () => {
