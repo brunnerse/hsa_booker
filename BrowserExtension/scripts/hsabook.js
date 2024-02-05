@@ -242,10 +242,12 @@ function updateBooked(courseID, statestampArr) {
 	let [state, newStamp] = statestampArr ?? [undefined, 0]
 	if (!statestampArr)
 		delete bookingState[courseID];
+	else if (oldState == "booked" && state == "booking")
+		return;
 	else
 		bookingState[courseID] = statestampArr; 
 
-	// check if state has changed / expired state has become unexpired
+	// no changes necessary if state has not changed (i.e. same state + old state not expired)
 	if (state == oldState && 
 			!(oldState =="booking" && hasExpired(oldStamp, booking_expiry_msec)))
 		return;
@@ -501,7 +503,7 @@ async function loadInitialData() {
 				armedCourses[file.substring(ARMED_FILE.length)] = stamp;
 		} else if (file.startsWith(BOOKSTATE_FILE)) {
 			let statestamp = storageContent[file];
-			let courseID = file.substring(BOOKSTATE_FILE.length);
+			let courseID = file.split("-").pop();
 			let [state, stamp] = statestamp ?? [undefined, 0];
 			if (hasExpired(stamp, default_expiry_msec) || 
 					 (state == "booking" && hasExpired(stamp, booking_expiry_msec)))
@@ -528,7 +530,7 @@ async function loadInitialData() {
 			} else if (item == CHOICE_FILE) {
 				updateChoice(changes[CHOICE_FILE].newValue);
 			} else if (item.startsWith(BOOKSTATE_FILE)) {
-				let courseID = item.substring(BOOKSTATE_FILE.length);
+				let courseID = item.split("-").pop();
 				updateBooked(courseID, changes[item].newValue);
 			}
 		}
@@ -562,7 +564,7 @@ setInterval(() => {
 			updateBooked(id, null);
 		}
 	}
-}, 1000);
+}, 500);
 
 toggleAdviceButton.addEventListener("click", () => {
 	if (adviceElem.getAttribute("hidden") != null) {

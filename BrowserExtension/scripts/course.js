@@ -389,8 +389,10 @@ async function updateChoice(c, checkAllCourses=false) {
         }
     }
     for (let id of IDsToCheck) {
-        let bookState = await download(BOOKSTATE_FILE+id);
-        if (bookState && !(bookState[0] == "booking" && hasExpired(bookState[1], booking_expiry_msec)))
+        // TODO not syncOnly?
+        let bookState = await getBookingState(id, true, false, syncOnly=true);
+        console.log("Got booking state " + bookState + "for course " + id);
+        if (bookState)
             bookingState[id] = bookState;
     } 
 
@@ -470,7 +472,7 @@ async function loadInitialData() {
                 } else if (item == CHOICE_FILE) {
                     updateChoice(changes[item].newValue);
                 } else if (item.startsWith(BOOKSTATE_FILE)) {
-                    let id = item.substring(BOOKSTATE_FILE.length);
+                    let id = item.split("-").pop();
                     let statestampArr = changes[item].newValue;
                     let prevStateArr = bookingState[id] ?? [undefined, 0];
                     if (!statestampArr) {
@@ -497,7 +499,7 @@ async function loadInitialData() {
             }
             if (changed)
                 modifyBookButtons();
-        }, 1000);
+        }, 500);
     }
 }
 

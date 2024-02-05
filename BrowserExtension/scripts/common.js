@@ -7,7 +7,8 @@ try {
 
 const USERS_FILE = "userdata";
 const CHOICE_FILE = "choice";
-const BOOKSTATE_FILE = "booked_";
+const BOOKSTATE_FILE = "booked-";
+const BOOKSTATE_FILE_LOCAL = "booked_local-";
 const ARMED_FILE = "armed_";
 const OPTIONS_FILE = "options";
 const COURSELINKS_FILE = "courselinks";
@@ -17,7 +18,10 @@ function getStorage(filename) {
         case USERS_FILE:
         case OPTIONS_FILE:
         case CHOICE_FILE:
+        case BOOKSTATE_FILE:
             return base.storage.sync;
+        //case BOOKSTATE_FILE_LOCAL:
+        //case ARMED_FILE:
         default:
             return base.storage.local;
     }
@@ -388,11 +392,15 @@ function removeIdFromChoice(choice, sport, user, id) {
     return success;
 }
 
-async function getBookingState(courseID, includeTimestamp=false) {
-    let bookState = await download(BOOKSTATE_FILE+courseID);
-    if (!bookState)
-        return null;
-    if (includeTimestamp)
+async function getBookingState(courseID, includeTimestamp=false, localOnly=false, syncOnly=false) {
+    // check sync bookstate first
+    let bookState;
+    if (!localOnly) {
+        bookState = await download(BOOKSTATE_FILE+courseID);
+    }
+    if (!bookState && !syncOnly)
+        bookState = await download(BOOKSTATE_FILE_LOCAL+courseID);
+    if (includeTimestamp || !bookState)
         return bookState;
     let [state, stamp] = bookState;
     stamp = parseInt(stamp);
@@ -402,12 +410,16 @@ async function getBookingState(courseID, includeTimestamp=false) {
         return state;
 }
 
-async function setBookingState(courseID, state) {
-    timestamp = Date.now();
-    await upload(BOOKSTATE_FILE+courseID, [state, timestamp]);
+async function setBookingState(courseID, state, local) {
+    let timestamp = Date.now();
+    await upload( (local ? BOOKSTATE_FILE_LOCAL : BOOKSTATE_FILE)+courseID,
+         [state, timestamp]);
     return timestamp;
 }
 
-async function removeBookingState(courseID) {
-    await remove(BOOKSTATE_FILE+courseID);
+async function removeBookingState(courseID, local=false) {
+    if (local)
+        await remove(BOOKSTATE_FILE_LOCAL+courseID);
+    else
+        await remove(BOOKSTATE_FILE+courseID);
 }
