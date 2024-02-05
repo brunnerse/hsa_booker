@@ -389,9 +389,9 @@ async function updateChoice(c, checkAllCourses=false) {
         }
     }
     for (let id of IDsToCheck) {
-        // TODO not syncOnly?
-        let bookState = await getBookingState(id, true, false, syncOnly=true);
-        console.log("Got booking state " + bookState + "for course " + id);
+        // Only get states from sync; local states (i.e. "booking") get updated every second anyway 
+        let bookState = await getBookingState(id, true, false, /*syncOnly=*/true);
+//        console.log("Got booking state " + bookState + "for course " + id);
         if (bookState)
             bookingState[id] = bookState;
     } 
@@ -477,7 +477,9 @@ async function loadInitialData() {
                     let prevStateArr = bookingState[id] ?? [undefined, 0];
                     if (!statestampArr) {
                         delete bookingState[id];
-                    } else {
+                    // Do not update if course state is "booked"; Should never happen anyway, just a safety check 
+                    } else if (!(bookingState[id] && bookingState[id] == "booked")) {
+                        // This currently also integrates states from other courses for simplicity
                         bookingState[id] = statestampArr;
                     }
                     // modify book buttons if state changed

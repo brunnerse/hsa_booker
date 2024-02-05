@@ -157,7 +157,7 @@ function getCourseID(docState) {
 // resets the booking state if window is refreshed/closed 
 function removeBookingStateOnClose(courseID) {
     window.addEventListener("beforeunload", function (e) {
-        removeBookingState(courseID, local=true);
+        removeBookingState(courseID, /*local=*/true);
     }); 
 }
 
@@ -234,16 +234,16 @@ async function processDocument() {
                 return;
             } else if (prevBookingState) {
                 // if state was e.g. error, remove the state
-                await removeBookingState(courseID, local=false);
+                await removeBookingState(courseID, /*local=*/false);
             }
             
-            lastTimestamp = await setBookingState(courseID, "booking", local=true);
+            lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
 
             removeBookingStateOnClose(courseID);
             setInterval(async () => {
                 // check if the last timestamp is the own one;
                 // if not, another tab is writing and we should abort booking
-                let bookState = await getBookingState(courseID, includeTimestamp=true, localOnly=true); 
+                let bookState = await getBookingState(courseID, /*includeTimestamp=*/true, /*localOnly=*/true); 
                 if (!bookState)
                     console.error("Booking state somehow did not get stored; maybe it expired before reading?");
                 else {
@@ -256,7 +256,7 @@ async function processDocument() {
                     }
                 }
                 // update booking state timestamp constantly to show the site did not timeout
-                lastTimestamp = await setBookingState(courseID, "booking", local=true);
+                lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
             }, booking_expiry_msec * 0.4);
         }
 
@@ -300,11 +300,12 @@ async function processDocument() {
     } else if (STATE == "check") {
         if (user && courseID) {
             // Do not check if state is booked; if this page (check) is reached, user already decided to ignore it
-            setBookingState(courseID, "booking", local=true);
+            setBookingState(courseID, "booking", /*local=*/true);
             removeBookingStateOnClose(courseID);
+
             // update booking state timestamp constantly to show the site did not timeout
             setInterval(()=> {
-                    setBookingState(courseID, "booking", local=true);
+                setBookingState(courseID, "booking", /*local=*/true);
                 }, booking_expiry_msec * 0.4);
         }
 
@@ -339,14 +340,14 @@ async function processDocument() {
         console.log(`Course Nr. ${courseID.split("_").join(" starting on ")} has been successfully booked.`);
         // signalize success by setting the global booking state
         if (user && courseID)
-            await removeBookingState(courseID, local=true);
-            await setBookingState(courseID, "booked", local=false);
+            await removeBookingState(courseID, /*local=*/true);
+            await setBookingState(courseID, "booked", /*local=*/false);
     } else {
         // signalize error
         console.log("An error occured during booking.");
-        if (user && courseID && (await getBookingState(courseID, false, false, syncOnly=true) != "booked")) {
-            await removeBookingState(courseID, local=true);
-            await setBookingState(courseID, "error", local=false);
+        if (user && courseID && (await getBookingState(courseID, false, false, /*syncOnly=*/true) != "booked")) {
+            await removeBookingState(courseID, /*local=*/true);
+            await setBookingState(courseID, "error", /*local=*/false);
         }
     }
 }

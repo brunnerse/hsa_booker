@@ -242,6 +242,7 @@ function updateBooked(courseID, statestampArr) {
 	let [state, newStamp] = statestampArr ?? [undefined, 0]
 	if (!statestampArr)
 		delete bookingState[courseID];
+    // do not update if course state is already "booked"; Should never happen anyway, just extra safety check 
 	else if (oldState == "booked" && state == "booking")
 		return;
 	else
