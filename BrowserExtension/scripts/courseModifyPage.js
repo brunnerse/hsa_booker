@@ -30,7 +30,7 @@ document.getElementsByTagName("BODY")[0].innerHTML += '\
 				<button class="roundbutton" style="background-color:green;float:left;" id="armbutton" ></button>\
 			</div>\
 			<div align="center" style="overflow:hidden;float:none;margin-right:5%;padding-left:5%">\
-				<div class="status" id="statustext" style="background-color:white;"></div>\
+				<div class="status" id="statustext" style="background-color:white;">&nbsp;</div>\
 			</div>\
 		</div>\
 	</div>\

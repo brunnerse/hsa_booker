@@ -59,19 +59,20 @@ function getRemainingTimeString(timeStr) {
 let statusId = 0;
 function setStatus(status, color="white") {
     statusId += 1;
-    let style = "font-weight:bold;background-color:" + color + ";"
-    if (!status)
-        style += `color:${color};` // if no state is given, print text in same color as background
-    statusElem.setAttribute("style", style);
+    statusElem.setAttribute("style", `font-weight:bold;background-color:${color};`);
     statusElem.replaceChildren();
-    // split status into lines or use placeholder if no status
-    let lines = status ? status.split("\n") : ["&nbsp;"];
-    for (let i = 0; i < lines.length; i++) {
-        let span = document.createElement("SPAN");
-        span.innerText = lines[i];
-        statusElem.appendChild(span);
-        if (i < lines.length-1) 
-            statusElem.appendChild(document.createElement("BR"));
+    if (!status) {
+        statusElem.innerHTML = "&nbsp;";
+    } else {
+        // split status into lines or use placeholder if no status
+        let lines = status.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+            let span = document.createElement("SPAN");
+            span.innerText = lines[i];
+            statusElem.appendChild(span);
+            if (i < lines.length-1) 
+                statusElem.appendChild(document.createElement("BR"));
+        }
     }
 }
 
