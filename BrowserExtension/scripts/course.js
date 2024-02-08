@@ -63,7 +63,16 @@ function setStatus(status, color="white") {
     if (!status)
         style += `color:${color};` // if no state is given, print text in same color as background
     statusElem.setAttribute("style", style);
-    statusElem.innerText = status ? status : "status"; // placeholder required
+    statusElem.replaceChildren();
+    // split status into lines or use placeholder if no status
+    let lines = status ? status.split("\n") : ["&nbsp;"];
+    for (let i = 0; i < lines.length; i++) {
+        let span = document.createElement("SPAN");
+        span.innerText = lines[i];
+        statusElem.appendChild(span);
+        if (i < lines.length-1) 
+            statusElem.appendChild(document.createElement("BR"));
+    }
 }
 
 function setStatusTemp(status, color, timeMS=1500, setInert=false) {
@@ -217,7 +226,7 @@ async function arm(storedAsArmed=false) {
                         break;
                     }
                 } 
-                if (!bookButton)
+                if (!bookButton || !bookButton.className.includes("bs_btn_buchen"))
                     break;
                 let formElem = bookButton.parentElement;
                 while (formElem.tagName != "FORM")
@@ -262,7 +271,7 @@ async function arm(storedAsArmed=false) {
             }
 
             let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
-            let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "<br>" : ""; 
+            let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "\n" : ""; 
             setStatusTemp(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow", 1000);
             if (armed && remTime <= 0) {
                 refreshTriggered = true;
@@ -276,7 +285,7 @@ async function arm(storedAsArmed=false) {
         };
         // execute function once immediately, then set interval
         refreshIntervalFun();
-        refreshIntervalID = setInterval(refreshIntervalFun, 500); 
+        refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
     } else {
         setStatusTemp("Unarming: " + 
             (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed."),
@@ -391,7 +400,7 @@ async function updateChoice(c, checkAllCourses=false) {
     for (let id of IDsToCheck) {
         // Only get states from sync; local states (i.e. "booking") get updated every second anyway 
         let bookState = await getBookingState(id, true, false, /*syncOnly=*/true);
-//        console.log("Got booking state " + bookState + "for course " + id);
+        //console.log("Got booking state " + bookState + " for course " + id);
         if (bookState)
             bookingState[id] = bookState;
     } 

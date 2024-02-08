@@ -172,7 +172,7 @@ async function updateChoice(c, initElems=false) {
 				for (let id of choice[sport][user]) {
 					let [nr, date] = id.split("_");
 					// find corresponding row element matching nr
-					let tRowElem; 
+					let tRowElem = null; 
 					for (let nrElem of sportDoc.getElementsByClassName("bs_sknr")) {
 						if (nrElem.innerText == nr) {
 							tRowElem = nrElem.parentElement;
@@ -184,7 +184,7 @@ async function updateChoice(c, initElems=false) {
 						let entryElem = getErrorTable(id, `${sport}`, "Not found");
 						updateEntryInTable(entryElem, sport, id, user); 
 						continue;
-					} else if (!getCourseDateStr(tRowElem) == date) {
+					} else if (getCourseDateStr(tRowElem) != date) {
 						console.warn(`Found no date matching course ${sport}_${id}`)
 						// If course with same number lies in the future, remove that course as it expired
 						// TODO test if this is correct

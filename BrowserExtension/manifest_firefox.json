@@ -2,7 +2,7 @@
 	"manifest_version": 2,
 	"name": "HSA Booker",
 	"description": "Automatically books and fills out booking form for booking sport courses of the HSA",
-	"version": "1.1.2",
+	"version": "1.2.0",
 
 	"icons": {
     	"16": "img/favicon.png"
