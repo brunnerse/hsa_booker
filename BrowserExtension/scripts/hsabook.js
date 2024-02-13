@@ -7,6 +7,7 @@ const choiceElem = document.getElementById("choice");
 const toggleAdviceButton = document.getElementById("toggleadvice");
 const adviceElem = document.getElementById("advice");
 const optionElem = document.getElementById("configuration");
+const emptyTableElem = document.getElementById("notavail");
 
 let userdata = {};
 let choice = {};
@@ -26,13 +27,19 @@ function getHref(sport) {
 	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
 }
 
+function createEmptyCourseTable() {
+	const elem = emptyTableElem.cloneNode(true);
+	elem.removeAttribute("id");
+	elem.removeAttribute("hidden");
+	return elem;
+}
+
 function getErrorTable(id, details, errorStr) {
-	const notAvailElem = document.getElementById("notavail").cloneNode(true);
+	const notAvailElem = createEmptyCourseTable(); 
 	notAvailElem.getElementsByClassName("bs_sknr")[1].innerText = id.split("_")[0];
 	notAvailElem.getElementsByClassName("bs_sdet")[1].innerText = details;
 	notAvailElem.getElementsByClassName("bs_szr")[1].innerText = id.split("_")[1];
-	//notAvailElem.getElementsByClassName("bs_sbuch")[1].innerText = error;
-	notAvailElem.removeAttribute("hidden");
+	notAvailElem.getElementsByClassName("bs_sbuch")[1].children[0].value = errorStr;
 	return notAvailElem;
 }
 
@@ -181,11 +188,12 @@ async function updateChoice(c, initElems=false) {
 						}
 					}
 					if (!tRowElem) {
-						let entryElem = getErrorTable(id, `${sport}`, "Not found");
+						//console.warn(`Found no course nr matching course ${sport}_${id}`)
+						let entryElem = getErrorTable(id, `${sport}`, "Nr not found");
 						updateEntryInTable(entryElem, sport, id, user); 
 						continue;
 					} else if (getCourseDateStr(tRowElem) != date) {
-						console.warn(`Found no date matching course ${sport}_${id}`)
+						//console.warn(`Date for course ${sport}_${id} does not match: ${date} != ${getCourseDateStr(tRowElem)}`)
 						// If course with same number lies in the future, remove that course as it expired
 						// TODO test if this is correct
 						if (getCourseDate(tRowElem) > dateFromDDMMYY(date)) {
@@ -195,14 +203,16 @@ async function updateChoice(c, initElems=false) {
 								upload(CHOICE_FILE, choice)
 								.then (() => removeBookingState(id));
 							}
-						} 
+						} else { 
+							let entryElem = getErrorTable(id, `${sport}`, "Wrong date");
+							updateEntryInTable(entryElem, sport, id, user); 
+						}
 						continue;
 					}	
+//					console.log(`Found date matching course ${sport}_${id}: date ${date} == ${getCourseDateStr(tRowElem)}`)
 
 					// create empty entry of table and insert course data
-					let entryElem = document.getElementById("notavail").cloneNode(true);
-					entryElem.removeAttribute("id");
-					entryElem.removeAttribute("hidden");
+					let entryElem = createEmptyCourseTable(); 
 					let bodyElem = entryElem.getElementsByTagName("TBODY")[0];
 					bodyElem.replaceChildren(tRowElem);
 					let newRowElem = bodyElem.lastChild;
@@ -228,8 +238,7 @@ async function updateChoice(c, initElems=false) {
 		.catch((err) => {
 			for (let user of Object.keys(choice[sport])) {
 				for (let id of choice[sport][user]) {
-					let title = `${sport}`;
-					let entryElem = getErrorTable(id, title, JSON.stringify(err));
+					let entryElem = getErrorTable(id, `${sport}`, "Site load error");
 					updateEntryInTable(entryElem, sport, id, user); 
 				}
 			}
