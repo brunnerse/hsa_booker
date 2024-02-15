@@ -261,8 +261,9 @@ async function processDocument() {
         }
 
         if (await getOption("bypasscountdown")) {
-                bypassCountdown();
+            bypassCountdown();
         }
+
 
         if (userdata[user] && await getOption("fillform")) {
             fillForm(form, userdata[user]);
@@ -279,8 +280,26 @@ async function processDocument() {
             if (await getOption("submitimmediately")) {
                 // insert message that form will be submitted
                 setBookingMessage("Submitting once the countdown is done...", "green");
+
+                let submitImm = true;
+                // Check if user disables submitimmediately option
+                let listener = (changes) => {
+                    for (let item of Object.keys(changes)) {
+                        if (item == OPTIONS_FILE && !changes[item].newValue["submitimmediately"]) {
+                            submitImm = false;
+                            setBookingMessage("Aborted automatic submit.", "darkorange");
+                            sleep(1000).then(() => setBookingMessage("", "white"));
+                            removeStorageListener(listener);
+                        } 
+                    }
+                };
+                addStorageListener(listener);
+
                 // wait until countdown passed
                 while(submitElem.className != "sub") {
+                    // check if aborted
+                    if (!submitImm)
+                        break;
                     // if 8 seconds have passed but submitElem is still not enabled, bypass the countdown 
                     // This happens when javascript slows down because the tab is in the background
                     if (Date.now() - loadTime >= 8000) {
@@ -293,9 +312,25 @@ async function processDocument() {
                     await sleep(50);       
                 }
                 // check again if submitimmediately option is set, then submit
-                if (await getOption("submitimmediately", allowCache=false))
+                if (submitImm)
                     form.requestSubmit(submitElem);
-            }; 
+            } 
+        } else {
+            let listener = (changes) => {
+                for (let item of Object.keys(changes)) {
+                    if (item == OPTIONS_FILE && changes[item].newValue["fillform"] && userdata[user]) {
+                        fillForm(form, userdata[user]);
+                        removeStorageListener(listener);
+                        // Clear autofill elements
+                        for (let inputElem of form.getElementsByTagName("INPUT")) {
+                            if (inputElem.name.startsWith("pw")) {
+                                inputElem.value = "";
+                            }
+                        }
+                    } 
+                }
+            };
+            addStorageListener(listener);
         }
     } else if (STATE == "check") {
         if (user && courseID) {

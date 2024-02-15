@@ -142,7 +142,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			colorRow(newRowElem, "darkorange");
 			// also change booking button
 			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-				elem.value = "ERROR"; 
+				elem.value = "Booking error"; 
 			}
 		}
 	}
