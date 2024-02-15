@@ -17,8 +17,7 @@ let bookingState = {};
 
 let refreshTriggered = false;
 
-const refreshIntervals = [1000, 2000, 5000, 30000];
-const timeThresholds =   [0, 10000, 90000, Infinity]; 
+const intervals_sec = {0: 1, 10: 2, 20: 5, 30: 10, 45: 15, 60: 20, Infinity: 30}
 const statusUpdateInterval = 500;
 
 
@@ -241,24 +240,29 @@ async function arm(storedAsArmed=false) {
 
     if (numCoursesDone < choiceIDs.length) {
         // get time until refresh and start counter
-        let refreshInterval;
         let bookingTime;
         let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
+        let remainingTime = null;
         if (bookTimeElems.length > 0) {
             bookingTime = bookTimeElems[0].innerText;
-            let remainingTime = getRemainingTimeMS(bookingTime);
+            remainingTime = getRemainingTimeMS(bookingTime);
+        }
+        // determine refreshInterval; default is 5 seconds
+        let refreshInterval_sec = 5;
+        if (remainingTime) {
+            let remainingTime_sec = remainingTime / 1000.0;
             // find correct threshold for current remaining time
-            refreshInterval = refreshIntervals[refreshIntervals.length-1];
-            for (let i = 0; i < refreshIntervals.length-2; i++) {
-                if (remainingTime <= timeThresholds[i]) {
-                    refreshInterval = refreshIntervals[i];
+            let thresholds = Object.keys(intervals_sec).sort();
+            for (let i = 0; i < thresholds.length; i++) {
+                let thresh = thresholds[i];
+                // Check if remainingTime falls into threshold + safety margin
+                if (remainingTime_sec - intervals_sec[thresh] <= thresh) {
+                    refreshInterval_sec = intervals_sec[thresh];
                     break;
                 }
             }
-        } else {
-            // if no booking time is available, use a default refresh time
-            refreshInterval = refreshIntervals[2];
-        }
+        } 
+        let refreshInterval = refreshInterval_sec * 1000;
 
         // refresh window in refreshInterval seconds
         let lastRefreshTime = Date.now();
