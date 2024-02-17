@@ -96,23 +96,24 @@ function setStatusTemp(status, color, timeMS=1500, setInert=false) {
 
 
 async function onSelectChange(updateButtons=true) {
-    let selectedUser = getSelectedUser(userSelectElem);
-    if (selectedUser == "") {
-        if (userSelectElem.options[userSelectElem.selectedIndex].title == "adder") {
-            // open user edit page in new tab
+    let optionElem = getSelectedOption(userSelectElem);
+    if (optionElem.value == "") {
+        // if (optionElem.title == "adder") {
+        // open user edit page in new tab
+        try {
+            window.open(browser.runtime.getURL("Users.html"));
+        } catch {
+            // try different way if browser.runtime did not work
             try {
-                window.open(browser.runtime.getURL("Users.html"));
+                window.open(`chrome-extension://${chrome.runtime.id}/Users.html`);
             } catch {
-                try {
-                    window.open(`chrome-extension://${chrome.runtime.id}/Users.html`);
-                } catch {
-                    alert("Create a user profile by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
-                }
-            } 
-            // reset selection to the first blank one
-            setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
-            return;
-        }
+                // Just do an info alert instead
+                alert("Create a user profile by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
+            }
+        } 
+        // reset selection to the first blank one
+        setSelectedIdx(userSelectElem, await getOption("defaultuseridx"));
+        return;
     }
     if (updateButtons)
         modifyBookButtons();
@@ -128,7 +129,7 @@ function getCurrentSport() {
 }
 
 async function onAdd(button) {
-    let user = getSelectedUser(userSelectElem);
+    let user = getSelected(userSelectElem);
     if (!user) {
         alert("Create a user profile first by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
         return;
@@ -384,7 +385,7 @@ function modifyBookButtons() {
 
 async function updateChoice(c, checkAllCourses=false) {
     choice = c ?? {};
-    let user = getSelectedUser(userSelectElem);
+    let user = getSelected(userSelectElem);
     let sport = currentSport;
     choiceIDs = (user && sport && choice[sport] && choice[sport][user]) ?
          choice[sport][user] : [];

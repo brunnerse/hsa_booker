@@ -20,29 +20,33 @@ async function updateUserSelect(userSelectElem, userdata) {
         }
         if (Object.keys(userdata).length == 0) 
             userSelectElem.children[0].removeAttribute("hidden");
-        setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
+        setSelectedIdx(userSelectElem, await getOption("defaultuseridx"));
     }  
 }
 
-function setSelectedUser(userSelectElem, user) {
+function setSelected(selectElem, value) {
     let idx = -1;
-    for (let i = 0; i < userSelectElem.options.length; i++) {
-        if (userSelectElem.options[i].value == user) {
+    for (let i = 0; i < selectElem.options.length; i++) {
+        if (selectElem.options[i].value == value) {
             idx = i;
             break;
         }
     }
     console.assert(idx != -1);
-    setSelectedUserIdx(userSelectElem, idx);
+    setSelectedIdx(selectElem, idx);
 }
 
-function setSelectedUserIdx(userSelectElem, idx) {
-    console.assert(idx != -1);
-    userSelectElem.selectedIndex = idx;
-    userSelectElem.dispatchEvent(new Event("change"));
+function setSelectedIdx(selectElem, idx) {
+    console.assert(idx >= 0);
+    selectElem.selectedIndex = idx;
+    selectElem.dispatchEvent(new Event("change"));
 }
 
-function getSelectedUser(userSelectElem) {
-    let userElem = userSelectElem.options[userSelectElem.selectedIndex];
-    return userElem ? userElem.value : null; 
+function getSelected(selectElem) {
+    let option = selectElem.options[selectElem.selectedIndex];
+    return option ? option.value : null; 
+}
+
+function getSelectedOption(selectElem) {
+    return selectElem.options[selectElem.selectedIndex];
 }

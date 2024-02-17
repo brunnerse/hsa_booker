@@ -45,7 +45,7 @@ async function bypassCountdown() {
 }
 
 async function onSelectChange() {
-    let selectedUser = getSelectedUser(userSelectElem); 
+    let selectedUser = getSelected(userSelectElem); 
     if (selectedUser == "") {
         clearForm(); 
     } else {
@@ -211,7 +211,7 @@ async function processDocument() {
             userSelectElem = document.getElementById("userselect");
             userSelectElem.addEventListener("change", onSelectChange); 
             updateUserSelect(userSelectElem, userdata)
-            setSelectedUserIdx(userSelectElem, await getOption("defaultuseridx"));
+            setSelectedIdx(userSelectElem, await getOption("defaultuseridx"));
             onSelectChange();
         } 
         */

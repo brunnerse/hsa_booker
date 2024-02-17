@@ -137,7 +137,7 @@ async function addUser(user) {
         }
     }
     
-    let selectedUser = getSelectedUser(userSelectElem);
+    let selectedUser = getSelected(userSelectElem);
     const isUpdate = selectedUser == data.vorname;
     if (!isFormModified()) {
         setStatus("User " + user + " already saved: No changes in data", "green");
@@ -185,7 +185,7 @@ async function deleteUser(user) {
 
 // Updates form according to selected user
 async function onSelectChange() {
-    let selectedUser = getSelectedUser(userSelectElem); 
+    let selectedUser = getSelected(userSelectElem); 
     if (!selectedUser) {
         clearForm(); 
     } else {
@@ -288,18 +288,18 @@ document.getElementById("bs_submit").onclick = () => {
     }
 
     toggleInert();
-    addUser(selectedUser).then(() => setSelectedUser(userSelectElem, selectedUser)).finally(toggleInert);
+    addUser(selectedUser).then(() => setSelected(userSelectElem, selectedUser)).finally(toggleInert);
 };
 
 document.getElementById("btn_cancel").onclick = () => {
-    let selectedUser = getSelectedUser(userSelectElem);
+    let selectedUser = getSelected(userSelectElem);
     if (selectedUser == "")
         clearForm();
     else {
         if (confirm("Delete user " + selectedUser + "?")) {
             toggleInert(); 
             removeWarnMarks();
-            deleteUser(selectedUser).then(() => setSelectedUser(userSelectElem, "")).finally(toggleInert);
+            deleteUser(selectedUser).then(() => setSelected(userSelectElem, "")).finally(toggleInert);
         } 
     }
 };
@@ -334,7 +334,7 @@ statusorig.addEventListener("change", () => {
 
 function isFormModified() {
     let inputElems = formElem.getElementsByTagName("INPUT");
-    let selectedUser = getSelectedUser(userSelectElem);
+    let selectedUser = getSelected(userSelectElem);
     for (let inputElem of inputElems) {
         // check is text element has content and if that content differs from the saved user content
         if (inputElem["type"] == "text" && inputElem.getAttribute("disabled") != "disabled" && inputElem["value"]) {
