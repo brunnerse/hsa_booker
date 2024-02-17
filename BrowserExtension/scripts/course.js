@@ -196,21 +196,16 @@ async function arm(storedAsArmed=false) {
     armButton.setAttribute("style", style); 
     refreshSelectElem.parentElement.removeAttribute("hidden");
 
-    setStatusTemp("Checking if booking is possible...", "yellow", timeMS=1500);
+    setStatusTemp("Checking if booking is possible...", "yellow", 1500);
 
     // mark website as armed in storage
     if (!storedAsArmed)
         storeAsArmed(currentSport);
     let sport = currentSport;
 
-    if (choiceIDs.length == 0) {
-        setStatusTemp("Unarming: No courses were marked for booking.", "yellow", timeMS=1500, setInert=true)
-        .then(unarm);
-        return;
-    }
-
     let numCoursesDone = 0;
     let numCoursesFull = 0;
+    let unavailableCourses = [];
     // get all course number elements in the document
     let nrElems = document.getElementsByClassName("bs_sknr");
 
@@ -221,31 +216,46 @@ async function arm(storedAsArmed=false) {
                 numCoursesFull++;
             case "booking":
             case "booked":
-            case "unavailable":
                 numCoursesDone++;
+                break;
+            case "unavailable":
+                unavailableCourses.push(id); 
                 break;
             case "ready":
             case "error":
                 // book course: get form and bookbutton, then submit
                 let [nr, date] = id.split("_");
-                let bookButton;
+                // first find row element for id
+                let rowElem;
                 for (let nElem of nrElems) {
                     if (nElem.tagName == "TD" && nElem.innerText == nr) {
-                        bookButton = nElem.parentElement.getElementsByTagName("INPUT")[0];
+                        rowElem = nElem.parentElement;
                         break;
                     }
                 } 
-                if (!bookButton || !bookButton.className.includes("bs_btn_buchen"))
-                    break;
-                let formElem = bookButton.parentElement;
-                while (formElem.tagName != "FORM")
-                    formElem = formElem.parentElement;
-                formElem.requestSubmit(bookButton);
-                numCoursesDone++;
+                // if course has no nr or the date does not match, remove it
+                if (!rowElem || (date != getCourseDateStr(rowElem))) { 
+                    unavailableCourses.push(id);
+                    delete bookingState[id];
+                    removeBookingState(id);
+                } else {
+                    // next find book button to check whether course is bookable
+                    let bookButton = rowElem.getElementsByTagName("INPUT")[0];
+                    if (bookButton && bookButton.className.includes("bs_btn_buchen")) {
+                        // book course and set as done
+                        let formElem = bookButton.parentElement;
+                        while (formElem.tagName != "FORM")
+                            formElem = formElem.parentElement;
+                        formElem.requestSubmit(bookButton);
+                        numCoursesDone++;
+                    }
+                }
                 break;
             default:
         }
     } 
+
+    unavailableCourses.forEach((id) => choiceIDs.splice(choiceIDs.indexOf(id), 1));
 
     if (numCoursesDone < choiceIDs.length) {
         // Calculate auto refresh interval
@@ -306,7 +316,6 @@ async function arm(storedAsArmed=false) {
             }
 
             let remTime = refreshTime - Date.now(); 
-            console.log("Remaining msec: " + remTime)
             let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "\n" : ""; 
             setStatusTemp(statusStr + "Refreshing in " + Math.round(remTime/1000) + "...", "yellow", 1000);
             if (armed && remTime <= 0) {
@@ -323,9 +332,9 @@ async function arm(storedAsArmed=false) {
         refreshIntervalFun();
         refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
     } else {
-        setStatusTemp("Unarming: " + 
-            (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed."),
-            "yellow", 1500, true)
+        setStatusTemp("Unarming: " + (numCoursesDone == 0 ? "No courses are marked." :  
+            (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed.")),
+            "yellow", 1000, true)
         .then(unarm);
     }
 }
