@@ -3,6 +3,7 @@ const statusElem = document.getElementById("statustext");
 const userSelectElem = document.getElementById("userselect"); 
 const armButton = document.getElementById("armbutton"); 
 const armText =  document.getElementById("armbuttontext");
+let refreshSelectElem = document.getElementById("refreshselect");
 const hintElem = document.getElementById("hint");
 
 // store current url without anchor 
@@ -119,6 +120,12 @@ async function onSelectChange(updateButtons=true) {
         modifyBookButtons();
 }
 
+async function onRefreshChange(event) {
+    if (event.isTrusted) {
+        await upload(REFRESH_FILE, getSelected(refreshSelectElem));
+    }
+}
+
 function getCurrentSport() {
     try {
         let headElem = document.getElementsByClassName("bs_head")[0];
@@ -187,6 +194,7 @@ async function arm(storedAsArmed=false) {
     armText.innerText = "UNARM";
     let style = armButton.getAttribute("style").replace("green", "blue");
     armButton.setAttribute("style", style); 
+    refreshSelectElem.parentElement.removeAttribute("hidden");
 
     setStatusTemp("Checking if booking is possible...", "yellow", timeMS=1500);
 
@@ -240,7 +248,10 @@ async function arm(storedAsArmed=false) {
     } 
 
     if (numCoursesDone < choiceIDs.length) {
-        // get time until refresh and start counter
+        // Calculate auto refresh interval
+        // Default for auto is 5 seconds
+        let refreshInterval_auto = 5;
+        // Try to get time until booking is available and set refreshInterval_auto accordingly 
         let bookingTime;
         let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
         let remainingTime = null;
@@ -248,8 +259,6 @@ async function arm(storedAsArmed=false) {
             bookingTime = bookTimeElems[0].innerText;
             remainingTime = getRemainingTimeMS(bookingTime);
         }
-        // determine refreshInterval; default is 5 seconds
-        let refreshInterval_sec = 5;
         if (remainingTime) {
             let remainingTime_sec = remainingTime / 1000.0;
             // find correct threshold for current remaining time
@@ -258,27 +267,48 @@ async function arm(storedAsArmed=false) {
                 let thresh = thresholds[i];
                 // Check if remainingTime falls into threshold + safety margin
                 if (remainingTime_sec - intervals_sec[thresh] <= thresh) {
-                    refreshInterval_sec = intervals_sec[thresh];
+                    refreshInterval_auto = intervals_sec[thresh];
                     break;
                 }
             }
         } 
-        let refreshInterval = refreshInterval_sec * 1000;
 
         // refresh window in refreshInterval seconds
-        let lastRefreshTime = Date.now();
         let refreshIntervalID;
+        let refreshIntervalFun;
+
+        let refreshInterval_sec = parseInt(getSelected(refreshSelectElem), 10); 
+        refreshInterval_sec = isNaN(refreshInterval_sec) ? refreshInterval_auto : refreshInterval_sec; 
+        let refreshTime = Date.now() + refreshInterval_sec * 1000;
+
+        // Add listener that calls refresh
+        let refreshListenerFun = function (changes) {
+            for (let item of Object.keys(changes)) {
+                if (item == REFRESH_FILE) {
+                    // Recalculate refreshTime and call refreshIntervalFun() to update visuals
+                    refreshInterval_sec = parseInt(changes[item].newValue, 10); 
+                    refreshInterval_sec = isNaN(refreshInterval_sec) ? refreshInterval_auto : refreshInterval_sec; 
+                    refreshTime = Date.now() + refreshInterval_sec * 1000;
+                    clearInterval(refreshIntervalID);
+                    refreshIntervalFun();
+                    refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
+                }
+            }
+        }
+        addStorageListener(refreshListenerFun);
 
         refreshIntervalFun = function () {
             // if course has been unarmed in the meantime, stop 
             if (!armed) {
                 clearInterval(refreshIntervalID);
+                removeStorageListener(refreshListenerFun);
                 return;
             }
 
-            let remTime = refreshInterval - (Date.now() - lastRefreshTime); 
+            let remTime = refreshTime - Date.now(); 
+            console.log("Remaining msec: " + remTime)
             let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "\n" : ""; 
-            setStatusTemp(statusStr + "Refreshing in " + Math.ceil(remTime/1000) + "...", "yellow", 1000);
+            setStatusTemp(statusStr + "Refreshing in " + Math.round(remTime/1000) + "...", "yellow", 1000);
             if (armed && remTime <= 0) {
                 refreshTriggered = true;
                 // update arm timeout and then reload the window
@@ -300,10 +330,12 @@ async function arm(storedAsArmed=false) {
     }
 }
 
+
 function unarm() {
     armText.innerText = "ARM";
     let style = armButton.getAttribute("style").replace("blue", "green");
     armButton.setAttribute("style", style); 
+    refreshSelectElem.parentElement.setAttribute("hidden", "");
     // remove website from armed list in options
     storeAsUnarmed(currentSport);
     setStatusTemp("Unarmed.");
@@ -414,6 +446,12 @@ async function updateChoice(c, checkAllCourses=false) {
     modifyBookButtons();
 }
 
+function updateRefresh(interval) {
+    if (getSelected(refreshSelectElem) != interval) {
+        setSelected(refreshSelectElem, interval);
+    }
+}
+
 async function updateUserdata(d) {
 	// if userdata did not change, do nothing
 	if (userdata == d)
@@ -458,7 +496,9 @@ async function loadInitialData() {
         // add listeners
         userSelectElem.addEventListener("change", () => onSelectChange(true));
         armButton.addEventListener("click", onArm);
+        refreshSelectElem.addEventListener("change", onRefreshChange);
 
+        download(REFRESH_FILE).then((data) => updateRefresh(data ?? refreshSelectElem.options[0].value))
         await download(CHOICE_FILE).then((data) => updateChoice(data, true));    
 
         // check if website should be armed
@@ -476,6 +516,8 @@ async function loadInitialData() {
             for (let item of Object.keys(changes)) {
                 if (item == USERS_FILE) {
                     updateUserdata(changes[item].newValue); 
+                } else if (item == REFRESH_FILE) {
+                    updateRefresh(changes[item].newValue ?? refreshSelectElem.options[0].value);
                 } else if (item == ARMED_FILE+getCurrentSport()) {
                     // check if item was removed
                     let storedAsArmed = changes[item].newValue != undefined;  

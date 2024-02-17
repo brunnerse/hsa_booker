@@ -16,20 +16,34 @@ if (!document.getElementById(cssId))
 document.getElementsByTagName("BODY")[0].innerHTML += '\
 	<div id="topbar" class="bar">\
 		<div class="darkred" align="center" style="margin-top:0px;height:max-content">\
-			<div align="center" style="float:left;margin-left:5%;font-size:120%;font-weight:bolder;">\
-			Book for user:\
+			<div align="center" style="float:left;margin-left:3%;font-size:120%;font-weight:bolder;">\
+			User:\
 			</div>\
 			<div align="center" style="float:left;margin-left:1%;transform:translateY(-3px);">\
-				<select style="text-align:center;color:black;background-color:white;height:30px;padding: 0px; border-radius: 5px;border: 1px solid black;font-weight:bolder;font-size:120%;"\
+				<select style="text-align:center;color:black;background-color:white;height:30px;\
+					padding: 0px; border-radius: 5px;border: 1px solid black;font-weight:bolder;font-size:120%;"\
 				 name="users" size="0" id="userselect">\
 					<option value="" style="background-color: gray" title="adder">Add user</option>\
 				</select>\
 			</div>\
-			<div hidden align="center" style="float:left;margin-left:7%;font-size:120%;font-weight:bolder;width:20%">\
-				<div id="armbuttontext" style="float:left;width:50%;text-align:right;padding-right:5%">ARM</div>\
+			<div hidden align="center" style="float:left;margin-left:7%;font-size:120%;font-weight:bolder;width:120px">\
+				<div id="armbuttontext" style="float:left;width:70px;text-align:right;padding-right:5%">ARM</div>\
 				<button class="roundbutton" style="background-color:green;float:left;" id="armbutton" ></button>\
 			</div>\
-			<div align="center" style="overflow:hidden;float:none;margin-right:5%;padding-left:5%">\
+			<div hidden align="center" style="float:left;margin-left:10px;margin-bottom:-10px;margin-right:-30px;transform:translateY(-10px);" id="refresh">\
+				<div style="margin-left:0%;font-weight:bolder;margin-bottom:2px;">Refresh:</div>\
+				<select style="text-align:center;padding:0px; margin:0px; border-radius:5px; border:2px solid black;\
+							 font-weight:bolder;color:black;background-color:white"\
+				 name="refresh" size="1" id="refreshselect">\
+					<option selected value="auto" style="background-color:white">Auto</option>\
+					<option value="1" style="background-color:white">1 second</option>\
+					<option value="2"> 2 seconds</option>\
+					<option value="5" style="background-color: white"> 5 seconds</option>\
+					<option value="10" style="background-color: white">10 seconds</option>\
+					<option value="30" style="background-color: white">30 seconds</option>\
+				</select>\
+			</div>\
+			<div align="center" style="overflow:hidden;padding-right:3%;padding-left:5%;min-width:350px;">\
 				<div class="status" id="statustext" style="background-color:white;">&nbsp;</div>\
 			</div>\
 		</div>\

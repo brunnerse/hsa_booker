@@ -12,6 +12,7 @@ const BOOKSTATE_FILE_LOCAL = "booked-local-";
 const ARMED_FILE = "armed_";
 const OPTIONS_FILE = "options";
 const COURSELINKS_FILE = "courselinks";
+const REFRESH_FILE = "refresh";
 
 function getStorage(filename) {
     switch (filename) {

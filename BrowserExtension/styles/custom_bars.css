@@ -1,5 +1,4 @@
 .roundbutton {
-  border: groove;
   border-radius: 50%;
   color: white;
   height:40px;
@@ -7,7 +6,7 @@
   transform: translateY(-8px);
   text-align: center;
   text-decoration: none;
-  display: inline-block;
+  display: block;
   font-size: 14px;
   margin: 0px 2px;
 }
