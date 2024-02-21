@@ -385,16 +385,16 @@ function modifyBookButtons() {
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button) 
 
-       // set booking state if stored
+       // set booking state according to stored state and the booking button class
+       let bookStateSite = "none" ;
+        if ("bs_btn_buchen" == className)
+           bookStateSite = "ready";
+        else if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(className))
+           bookStateSite = "full";
+
        let bookState = bookingState[id] ? bookingState[id][0] : null;
-       if (!bookState) {
-            // set bookingState according to className of book button
-            if ("bs_btn_buchen" == className)
-                bookState = "ready";
-            else if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(className))
-                bookState = "full";
-            else 
-                bookState = "none";
+       if (!bookState || (bookState == "error" && bookStateSite == "full")) {
+            bookState = bookStateSite;
             bookingState[id] = [bookState, Date.now()];
        }
 
