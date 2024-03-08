@@ -537,15 +537,19 @@ async function loadInitialData() {
 	// update course links 
 	requestHTML("GET", "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/")
 	.then((doc) => {
+			let newCourselinks = {}
 			let rootElems = doc.getElementsByClassName("bs_menu");
 			for (let rootElem of rootElems) {
-				for (let elem of rootElem.getElementsByTagName("A")) {
-					courselinks[elem.innerText] = elem.href.split("/").pop();
-				}
+				for (let elem of rootElem.getElementsByTagName("A"))
+					newCourselinks[elem.innerText] = elem.href.split('/').pop(); 
 			}
-			upload(COURSELINKS_FILE, courselinks);
-			//console.log("Fetched course links:");
-			//console.log(courselinks);
+			// Update course links if they differ from the stored course links 
+			if (!objectsEqualFlat(newCourselinks, courselinks)) {
+				courselinks = newCourselinks;
+				upload(COURSELINKS_FILE, courselinks);
+				console.log("Fetched new course links:");
+				console.log(courselinks);
+			}
 		})
 	.catch((err) => {
 		console.error("Failed to update course links: Loading course site failed");

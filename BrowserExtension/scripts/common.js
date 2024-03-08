@@ -38,6 +38,12 @@ function hasExpired(timeStamp, expiry_msec) {
     return !timeStamp || (timeStamp + expiry_msec < Date.now()); 
 }
 
+function objectsEqualFlat(o1, o2) {
+    let entries = Object.entries(o1);
+    return entries.length == Object.keys(o2).length && 
+        entries.every((keyval) => keyval[1] == o2[keyval[0]]);
+}
+
 function removeClass(a, b) { 
     let classes = a.className.split(" ");
     let newClasses = []
