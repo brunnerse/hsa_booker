@@ -47,6 +47,19 @@ function removeClass(a, b) {
     a.className = newClasses.join(" ");
 }
 
+function colorRow(tRowElem, state) {
+    let classes = tRowElem.className.split(" ");
+    // Remove all old trstate classes
+    for (let i = classes.length-1; i >= 0; i--) {
+        if (classes[i].startsWith("trstate-"))
+            classes.splice(i, 1);
+    }
+    // Add fitting trstate class
+    classes.splice(0, 0, "trstate-"+state);
+    tRowElem.className = classes.join(" ");
+}
+
+
 function sleep(msec) {
     return new Promise(function (resolve, reject) {
         setTimeout(resolve, msec);
@@ -325,24 +338,6 @@ function getCourseDateStr(tRowElem) {
 
 function getCourseDate(tRowElem) {
     return dateFromDDMMYY(getCourseDateStr(tRowElem));
-}
-
-function colorRow(tRowElem, color) {
-    // Color the entire line light green
-    for (let c of tRowElem.children) {
-        let style = c.getAttribute("style") ?? "";
-        let colorDef = (color == "none") ? "" : "background-color:"+color+";" 
-        let idx = style.indexOf("background-color");
-        // if background-color not in style, add it in front
-        if (idx < 0) {
-            style = colorDef + style;
-        } else {
-            let lastIdx = style.indexOf(";", idx);
-            lastIdx = lastIdx >= 0 ? lastIdx : style.length-1; 
-            style = style.substr(0, idx) + colorDef + style.substr(lastIdx+1);
-        }
-        c.setAttribute("style", style);
-    }
 }
 
 

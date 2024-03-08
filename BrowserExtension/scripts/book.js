@@ -372,11 +372,12 @@ async function processDocument() {
             // Do nothing
         }
     } else if (STATE == "confirmed") {
-        console.log(`Course Nr. ${courseID.split("_").join(" starting on ")} has been successfully booked.`);
         // signalize success by setting the global booking state
-        if (user && courseID)
+        if (user && courseID) {
+            console.log(`Course Nr. ${courseID.split("_").join(" starting on ")} has been successfully booked.`);
             await removeBookingState(courseID, /*local=*/true);
             await setBookingState(courseID, "booked", /*local=*/false);
+        }
     } else {
         // signalize error
         console.log("An error occured during booking.");

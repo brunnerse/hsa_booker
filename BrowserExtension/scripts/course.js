@@ -398,29 +398,22 @@ function modifyBookButtons() {
             bookingState[id] = [bookState, Date.now()];
        }
 
-       // color line according to bookingState
-        switch (bookState) {
-            case "booked":
-                colorRow(trElem, "lawngreen");
-                button.innerText = "BOOKED";
-                break;
-            case "booking":
-                colorRow(trElem, "lightblue");
-                button.innerText = "BOOKING...";
-                break;
-            case "error":
-                colorRow(trElem, "darkorange");
-                button.innerText = "BOOKING ERROR";
-                break;
-            case "full":
-                if (choiceIDs.includes(id)) {
-                    colorRow(trElem, "salmon");
-                    button.innerText = "MARKED BUT FULL";
-                    break;
-                }
-            default:
+       // Color line and set button text according to bookingState
+       let bookText = {
+            "booked" : "BOOKED", "booking" : "BOOKING...",
+            "error": "BOOKING ERROR", "full": "MARKED BUT FULL"};
+       // Only color "full" courses if course is marked
+       if (bookState == "full" && !choiceIDs.includes(id)) {
+            colorRow(trElem, "fullunmarked");
+       } else {
+            let text = bookText[bookState];
+            if (text) {
+                button.innerText = text;
+                colorRow(trElem, bookState);
+            } else {
                 colorRow(trElem, "none");
-        };
+            }
+       }
     }
 }
 

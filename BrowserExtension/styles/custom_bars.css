@@ -55,6 +55,49 @@
     color: black;
 }
 
+.err {
+  color: red !important;
+}
+.err:hover {
+  background-color: #701700!important;
+}
+.trstate-none, .trstate-fullunmarked {
+    background-color: #FcFcFc!important;
+}
+.trstate-none:hover {
+    background-color: #FFFF99!important;
+}
+.trstate-full {
+  background-color: salmon!important;
+}
+.trstate-full:hover, .trstate-fullunmarked:hover {
+  background-color: #ff4733!important;
+}
+
+.trstate-full:hover {
+  background-color: #ff4733!important;
+}
+.trstate-error {
+  background-color: orange!important;
+}
+.trstate-error:hover {
+  background-color: darkorange!important;
+}
+.trstate-booked {
+  background-color: lime!important;
+}
+.trstate-booked:hover {
+  background-color: #009b00!important;
+}
+.trstate-booking {
+  background-color: lightblue!important;
+}
+.trstate-booking:hover {
+  background-color: #93cbdd!important;
+}
+
+
+
 .link {
     color: blue;
 }

@@ -23,11 +23,11 @@
     a {
         color: blue;
     }
-
-    .err {
-        color: red;
-        background-color: white;
+    /* Overwrite trstate-full background-color */
+    .trstate-full {
+      background-color: #FcFcFc!important;
     }
+
 </style>
 
 <body>
@@ -192,15 +192,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="bs_odd" id="bs_tr288313206C">
-                            <td inert class="bs_sknr err">XXXX</td>
-                            <td inert class="bs_sdet err"></td>
-                            <td inert class="bs_stag err"></td>
-                            <td inert class="bs_szeit err"></td>
-                            <td inert class="bs_szr err"></td>
-                            <td inert class="bs_sbuch err">
+                        <tr class="bs_odd err">
+                            <td class="bs_sknr">XXXX</td>
+                            <td class="bs_sdet"></td>
+                            <td class="bs_stag"></td>
+                            <td class="bs_szeit"></td>
+                            <td class="bs_szr"></td>
+                            <td class="bs_sbuch">
                                 <input inert type="submit" value="Unavailable" title="booking" name="BS_Kursid_12566"
-                                    class="bs_btn_buchen link err" style="color:red; background-color:white">
+                                    class="bs_btn_buchen" style="color:red; background-color:white">
                             </td>
                         </tr>
                     </tbody>

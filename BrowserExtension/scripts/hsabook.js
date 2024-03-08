@@ -107,43 +107,31 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
 	closeButton.addEventListener("click", () => onCloseButton(closeButton));
 
-	// Create href to course in the whole row
-	let openCourseFun = () => {
-		createTabIfNotExists(getHref(sport)+"#K"+nr, true)
-		.then(window.close);
-	}
-
+	// Create href to course in the row if entry is not already a link or in error state
 	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
-	for (let elem of newRowElem.children) {
-		if (elem.className.match("bs_sbuch") && elem.lastChild.className) {
-			elem.lastChild.addEventListener("click", openCourseFun);
-			if (!elem.lastChild.className.includes("link"))
-				elem.lastChild.className += " link";
-		} else { 
-			elem.addEventListener("click", openCourseFun);
-			if (!elem.className.includes("link"))
-				elem.className += " link";
-		} 
+	if (!newRowElem.className.match("link|err")) {
+		newRowElem.className = "link " + newRowElem.className;
+		newRowElem.addEventListener("click", 
+			() => createTabIfNotExists(getHref(sport)+"#K"+nr, true)
+			.then(window.close)
+		);
 	}
 
+	// Set bookingState to full if course if full and bookingState is error or none
+	let bookButton = (newRowElem.getElementsByTagName("INPUT") ?? [null])[0];  
+    if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(bookButton.className)) {
+		if (!bookingState[id] || bookingState[id][0] == "error") {
+			bookingState[id] = ["full", Infinity];
+		}	
+	}
 	// Color entry depending on the course's booking state
 	if (bookingState[id]) {
+		colorRow(newRowElem, bookingState[id][0]);
+		// change booking button text for some states
 		if (bookingState[id][0] == "booked") {
-			colorRow(newRowElem, "lawngreen");
-			// also change booking button
-			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-				elem.setAttribute("inert", "");
-				elem.value = "BOOKED"; 
-			}
-		} 
-		else if (bookingState[id][0] == "booking")
-			colorRow(newRowElem, "lightblue");
-		else if (bookingState[id][0] == "error") {
-			colorRow(newRowElem, "darkorange");
-			// also change booking button
-			for (let elem of newRowElem.getElementsByTagName("INPUT")) {
-				elem.value = "Booking error"; 
-			}
+			bookButton.value = "Booked";
+		} else if (bookingState[id][0] == "error") {
+			bookButton.value = "Booking error"; 
 		}
 	}
 }
