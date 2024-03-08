@@ -284,30 +284,9 @@ async function arm(storedAsArmed=false) {
         } 
 
         // refresh window in refreshInterval seconds
+        let refreshTime = Infinity;
         let refreshIntervalID;
-        let refreshIntervalFun;
-
-        let refreshInterval_sec = parseInt(getSelected(refreshSelectElem), 10); 
-        refreshInterval_sec = isNaN(refreshInterval_sec) ? refreshInterval_auto : refreshInterval_sec; 
-        let refreshTime = Date.now() + refreshInterval_sec * 1000;
-
-        // Add listener that calls refresh
-        let refreshListenerFun = function (changes) {
-            for (let item of Object.keys(changes)) {
-                if (item == REFRESH_FILE) {
-                    // Recalculate refreshTime and call refreshIntervalFun() to update visuals
-                    refreshInterval_sec = parseInt(changes[item].newValue, 10); 
-                    refreshInterval_sec = isNaN(refreshInterval_sec) ? refreshInterval_auto : refreshInterval_sec; 
-                    refreshTime = Date.now() + refreshInterval_sec * 1000;
-                    clearInterval(refreshIntervalID);
-                    refreshIntervalFun();
-                    refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
-                }
-            }
-        }
-        addStorageListener(refreshListenerFun);
-
-        refreshIntervalFun = function () {
+        let refreshIntervalFun = function () {
             // if course has been unarmed in the meantime, stop 
             if (!armed) {
                 clearInterval(refreshIntervalID);
@@ -328,9 +307,27 @@ async function arm(storedAsArmed=false) {
                 });
             }
         };
-        // execute function once immediately, then set interval
-        refreshIntervalFun();
-        refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
+
+        // Add storage listener that updates refreshTime and calls refreshIntervalFun
+        let refreshListenerFun = function (changes) {
+            for (let item of Object.keys(changes)) {
+                if (item == REFRESH_FILE) {
+                    // Recalculate refreshTime
+                    let refreshInterval_sec = parseInt(changes[item].newValue, 10); 
+                    refreshInterval_sec = isNaN(refreshInterval_sec) ? refreshInterval_auto : refreshInterval_sec; 
+                    refreshTime = Date.now() + refreshInterval_sec * 1000;
+                    // Call refreshIntervalFun() to update visuals and re-init the interval
+                    clearInterval(refreshIntervalID);
+                    refreshIntervalFun();
+                    refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
+                }
+            }
+        }
+        addStorageListener(refreshListenerFun);
+
+        // Execute refreshListenerFun once to calculate refreshTime and set up the interval for refreshIntervalFun 
+        refreshIntervalFun({REFRESH_FILE : {newValue: getSelected(refreshSelectElem)}}); 
+
     } else {
         setStatusTemp("Unarming: " + (numCoursesDone == 0 ? "No courses are marked." :  
             (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed.")),
