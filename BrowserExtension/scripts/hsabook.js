@@ -132,6 +132,8 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			bookButton.value = "Booked";
 		} else if (bookingState[id][0] == "error") {
 			bookButton.value = "Booking error"; 
+		} else if (bookingState[id][0] == "booking") {
+			bookButton.value = "Booking..."; 
 		}
 	}
 }
@@ -448,7 +450,7 @@ async function onOpenAll(closeAfter=false) {
 	// and if the popup window should be closed after opening all
 	let switchToLast = (closeAfter && !isCurrentTabIncluded); 
 	for (let i = 0; i < urls.length; i++)
-		await createTabIfNotExists(urls[i], i == urls.length-1 && switchToLast);
+		createTabIfNotExists(urls[i], i == urls.length-1 && switchToLast);
 	if (closeAfter)
 		window.close();
 }

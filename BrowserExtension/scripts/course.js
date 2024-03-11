@@ -22,37 +22,35 @@ const intervals_sec = {0: 1, 10: 2, 20: 5, 30: 10, 45: 15, 60: 20, Infinity: 30}
 const statusUpdateInterval = 500;
 
 
-function getRemainingTimeMS(timeStr) {
+function getBookDateFromTimeStr(timeStr) {
     if (!timeStr || !timeStr.match(/\d+\.\d+[\.,\s]*\d+:\d+/))
         return null;
     let arr = timeStr.match(/\d+[:\.]\d+/g);
     let day = arr[0].split(".")[0];
     let month = arr[0].split(".")[1];
     let year = new Date(Date.now()).getUTCFullYear();
-    let bookDate = new Date(`${year}-${month}-${day}T${arr[1]}`);
-    return bookDate - new Date(Date.now());
+    return new Date(`${year}-${month}-${day}T${arr[1]}`);
 }
 
-function getRemainingTimeString(timeStr) {
-    let remainMS = getRemainingTimeMS(timeStr);
-    if (!remainMS)
-        return null;
-    let s = remainMS >= 0 ? "" : "- "; 
-    remainMS = remainMS >= 0 ? remainMS : -remainMS; 
+function getDurationAsString(durationMS) {
+    if (!durationMS)
+        return "";
+    let s = (durationMS >= 0) ? "" : "- "; 
+    durationMS = (durationMS >= 0) ? durationMS : -durationMS; 
 
-    let remDays = Math.floor(remainMS / (1000 * 60 * 60 * 24));
-    remainMS -= remDays * (1000 * 60 * 60 * 24);
-    let remHours = Math.floor(remainMS / (1000 * 60 * 60));
-    remainMS -= remHours * (1000 * 60 * 60);
-    let remMins = Math.floor(remainMS / (1000 * 60));
-    remainMS -= remMins * (1000 * 60);
-    let remSecs = Math.floor(remainMS / (1000));
+    let days = Math.floor(durationMS / (1000 * 60 * 60 * 24));
+    durationMS -= days * (1000 * 60 * 60 * 24);
+    let hours = Math.floor(durationMS / (1000 * 60 * 60));
+    durationMS -= hours * (1000 * 60 * 60);
+    let mins = Math.floor(durationMS / (1000 * 60));
+    durationMS -= mins * (1000 * 60);
+    let secs = Math.floor(durationMS / (1000));
 
-    if (remDays > 0)
-        s += remDays + "d ";
-    if (remHours > 0)
-        s += remHours + "h ";
-    s += remMins + "m " + remSecs + "s";
+    if (days > 0)
+        s += days + "d ";
+    if (hours > 0)
+        s += hours + "h ";
+    s += mins + "m " + secs + "s";
     return s;
 }
 
@@ -258,44 +256,25 @@ async function arm(storedAsArmed=false) {
     unavailableCourses.forEach((id) => choiceIDs.splice(choiceIDs.indexOf(id), 1));
 
     if (numCoursesDone < choiceIDs.length) {
-        // Calculate auto refresh interval
-        // Default for auto is 5 seconds
-        let refreshInterval_auto = 5;
-        // Try to get time until booking is available and set refreshInterval_auto accordingly 
-        let bookingTime;
+        // Try to get Date when booking is available
+        let bookingDate = null;
         let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
-        let remainingTime = null;
-        if (bookTimeElems.length > 0) {
-            bookingTime = bookTimeElems[0].innerText;
-            remainingTime = getRemainingTimeMS(bookingTime);
-        }
-        if (remainingTime) {
-            let remainingTime_sec = remainingTime / 1000.0;
-            // find correct threshold for current remaining time
-            let thresholds = Object.keys(intervals_sec).sort();
-            for (let i = 0; i < thresholds.length; i++) {
-                let thresh = thresholds[i];
-                // Check if remainingTime falls into threshold + safety margin
-                if (remainingTime_sec - intervals_sec[thresh] <= thresh) {
-                    refreshInterval_auto = intervals_sec[thresh];
-                    break;
-                }
-            }
-        } 
+        if (bookTimeElems.length > 0) 
+            bookingDate = getBookDateFromTimeStr(bookTimeElems[0].innerText);
 
         // refresh window in refreshInterval seconds
         let refreshTime = Infinity;
         let refreshIntervalID;
+        let refreshChangeFun;
         let refreshIntervalFun = function () {
             // if course has been unarmed in the meantime, stop 
             if (!armed) {
                 clearInterval(refreshIntervalID);
-                removeStorageListener(refreshListenerFun);
+                refreshSelectElem.removeEventListener("change", refreshChangeFun);
                 return;
             }
-
             let remTime = refreshTime - Date.now(); 
-            let statusStr = bookingTime ? "Booking available in " + getRemainingTimeString(bookingTime) + "\n" : ""; 
+            let statusStr = bookingDate ? "Booking available in " + getDurationAsString(bookingDate - Date.now()) + "\n" : ""; 
             setStatusTemp(statusStr + "Refreshing in " + Math.round(remTime/1000) + "...", "yellow", 1000);
             if (armed && remTime <= 0) {
                 refreshTriggered = true;
@@ -309,25 +288,34 @@ async function arm(storedAsArmed=false) {
         };
 
         // Add storage listener that updates refreshTime and calls refreshIntervalFun
-        let refreshListenerFun = function (changes) {
-            for (let item of Object.keys(changes)) {
-                if (item == REFRESH_FILE) {
-                    // Recalculate refreshTime
-                    let refreshInterval_sec = parseInt(changes[item].newValue, 10); 
-                    refreshInterval_sec = isNaN(refreshInterval_sec) ? refreshInterval_auto : refreshInterval_sec; 
-                    refreshTime = Date.now() + refreshInterval_sec * 1000;
-                    // Call refreshIntervalFun() to update visuals and re-init the interval
-                    clearInterval(refreshIntervalID);
-                    refreshIntervalFun();
-                    refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
+        refreshChangeFun = function () {
+            // Recalculate refreshTime
+            let refreshInterval_sec = parseInt(getSelected(refreshSelectElem), 10); 
+            if (isNaN(refreshInterval_sec)) {
+                // calculate auto refresh
+                refreshInterval_sec = 5;  //default value
+                if (bookingDate) {
+                    let remainingTime_sec = (bookingDate - Date.now()) / 1000.0;
+                    // find correct threshold for current remaining time
+                    let thresholds = Object.keys(intervals_sec).sort();
+                    for (let thresh of thresholds) {
+                        // Check if remainingTime falls into threshold + safety margin
+                        if (remainingTime_sec - intervals_sec[thresh] <= thresh) {
+                            refreshInterval_sec = intervals_sec[thresh];
+                            break;
+                        }
+                    }
                 }
             }
+            refreshTime = Date.now() + refreshInterval_sec * 1000;
+            // Call refreshIntervalFun() to update visuals and re-init the periodic call
+            clearInterval(refreshIntervalID);
+            refreshIntervalFun();
+            refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
         }
-        addStorageListener(refreshListenerFun);
-
+        refreshSelectElem.addEventListener("change", refreshChangeFun);
         // Execute refreshListenerFun once to calculate refreshTime and set up the interval for refreshIntervalFun 
-        refreshIntervalFun({REFRESH_FILE : {newValue: getSelected(refreshSelectElem)}}); 
-
+        refreshChangeFun(); 
     } else {
         setStatusTemp("Unarming: " + (numCoursesDone == 0 ? "No courses are marked." :  
             (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed.")),
