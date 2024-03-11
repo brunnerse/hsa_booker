@@ -13,6 +13,7 @@ const ARMED_FILE = "armed_";
 const OPTIONS_FILE = "options";
 const COURSELINKS_FILE = "courselinks";
 const REFRESH_FILE = "refresh";
+const POPUP_FILE = "popup_allowed"
 
 function getStorage(filename) {
     switch (filename) {
@@ -22,6 +23,7 @@ function getStorage(filename) {
         case BOOKSTATE_FILE:
             return base.storage.sync;
         //case BOOKSTATE_FILE_LOCAL:
+        //case POPUP_FILE:
         //case ARMED_FILE:
         default:
             return base.storage.local;

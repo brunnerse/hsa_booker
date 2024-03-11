@@ -34,7 +34,7 @@
 
 	"web_accessible_resources": [
 		{
-	       "resources": ["styles/custom_bars.css", "Users.html"],
+	       "resources": ["styles/custom_bars.css", "Users.html", "popupcheck.html", "close.js"],
 		   "matches": [ "*://*/*" ]
 		}
 	],

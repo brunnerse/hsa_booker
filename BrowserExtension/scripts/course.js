@@ -196,6 +196,37 @@ async function arm(storedAsArmed=false) {
 
     setStatusTemp("Checking if booking is possible...", "yellow", 1500);
 
+    // Check if popups are allowed
+    let popupsAllowedTimestamp = (await download(POPUP_FILE)) ?? 0; 
+    // if timestamp is more than one hour old, test again if popups are possible 
+    if (popupsAllowedTimestamp < Date.now() - 60*60*1000) {
+        let popupTestUrl;
+        try {
+            popupTestUrl = browser.runtime.getURL("popupcheck.html");
+        } catch {
+            // use different url if browser.runtime did not work
+            try {
+                popupTestUrl = `chrome-extension://${chrome.runtime.id}/popupcheck.html`;
+            } catch {
+                popupTestUrl = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
+            }
+        } 
+        // Test-open popup
+        var popup_window = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
+        if (popup_window) {
+            upload(POPUP_FILE, Date.now()); 
+            try {
+                popup_window.close();
+            } catch {}
+        } else {
+            alert("Pop-ups must be allowed for the automatic booking to work. "+
+            "Change the pop-up settings for this website.");
+            unarm();
+            return;
+        }
+    }
+
+
     // mark website as armed in storage
     if (!storedAsArmed)
         storeAsArmed(currentSport);
