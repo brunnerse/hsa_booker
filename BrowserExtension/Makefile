@@ -1,17 +1,28 @@
-TEMPDIR=.hsa_firefox
+SHELL=/bin/bash -O extglob -c
+
+TEMPDIR=hsa_zip
+SRCS=$(wildcard *.html scripts/* styles/* img/*)
 
 .PHONY: all
 
-ALL: firefox
-
-firefox: node_hsa.xpi
-
-%.xpi: *.html scripts/* styles/* manifest*
-	rm -f $@ 
-	mkdir -p $(TEMPDIR) 
-	cp -r * $(TEMPDIR) 
-	# remove wrongly copied files
-	rm -f $(TEMPDIR)/*.zip $(TEMPDIR)/*.xpi $(TEMPDIR)/Makefile
-	mv $(TEMPDIR)/manifest_firefox.json $(TEMPDIR)/manifest.json
-	cd $(TEMPDIR) ;	zip -r ../$@ *
+ALL: hsa_booker.xpi hsa_booker.crx
 	rm -r $(TEMPDIR)
+
+firefox: hsa_booker.xpi 
+	rm -r $(TEMPDIR)
+chrome: hsa_booker.crx 
+	rm -r $(TEMPDIR)
+
+$(TEMPDIR): $(SRCS)
+	mkdir -p $@	
+	cp -r !(*.crx|*.zip|*.xpi|Makefile|manifest*|$@) $@ 
+
+%.xpi: manifest_firefox.json $(TEMPDIR) 
+	rm -f $@
+	cp $< $(TEMPDIR)/manifest.json
+	cd $(TEMPDIR); zip -r ../$@ * > /dev/null 
+
+%.crx: manifest.json $(TEMPDIR)
+	rm -f $@
+	cp $< $(TEMPDIR)/manifest.json 
+	cd $(TEMPDIR); zip -r ../$@ *
