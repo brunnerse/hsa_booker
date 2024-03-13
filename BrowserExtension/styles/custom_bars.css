@@ -17,13 +17,14 @@
      width: 105px;
 }
 
-.bar {
+#topbar {
     display: block;
-    position: fixed;
+    position: sticky;
     top: 0px;
+    z-index: 999;
     background-color: black;
     border: thick solid black;
-    border-radius: 5px;
+    border-radius: 0px;
     height: max-content;
     width: 100%;
 }
@@ -35,24 +36,20 @@
     text-align: center;
 }
 
-.bottombar {
-    position: fixed;
+#bottombar {
     display: block;
+    position: sticky;
     bottom: 0px;
-    height: 20px;
     width: 100%;
+    height: 20px;
     background-color: white;
     color: black;
 }
-.hint {
+#bottombar #hint {
     float: right;
     margin-right:5%;
     text-align: center;
-    vertical-align: center;
-    height: 20px;
     font-weight: bold;
-    background-color: white;
-    color: black;
 }
 
 .err {

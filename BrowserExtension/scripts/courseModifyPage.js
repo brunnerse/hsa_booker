@@ -2,19 +2,20 @@
 var cssId = 'custom_bars'; 
 if (!document.getElementById(cssId))
 {
-    var head  = document.getElementsByTagName('head')[0];
-    var link  = document.createElement('link');
+    let link  = document.createElement('link');
     link.id   = cssId;
     link.rel  = 'stylesheet';
     link.type = 'text/css';
     link.href = chrome.runtime.getURL('styles/custom_bars.css');
     link.media = 'all';
+    let head  = document.getElementsByTagName('head')[0];
     head.appendChild(link);
 }
 
 // insert top bar
-document.getElementsByTagName("BODY")[0].innerHTML += '\
-	<div id="topbar" class="bar">\
+let topBar = document.createElement("DIV");
+topBar.id = "topbar";
+topBar.innerHTML = '\
 		<div class="darkred" align="center" style="margin-top:0px;height:max-content">\
 			<div align="center" style="float:left;margin-left:3%;font-size:120%;font-weight:bolder;">\
 			User:\
@@ -47,13 +48,21 @@ document.getElementsByTagName("BODY")[0].innerHTML += '\
 				<div class="status" id="statustext" style="background-color:white;">&nbsp;</div>\
 			</div>\
 		</div>\
-	</div>\
-	<div class="bottombar"></div>\
-	<div class="bottombar">\
-		<div id="hint" class="hint">\
-		</div>\
-	</div>\
 ';
+
+let bottomBar = document.createElement("DIV");
+bottomBar.id = "bottombar";
+bottomBar.innerHTML = '\
+		<div id="hint"></div>\
+';
+
+
+// insert topbar and bottombar at the start and end of body
+let body = document.getElementsByTagName("BODY")[0];
+body.insertBefore(topBar, body.children[0]);
+body.appendChild(bottomBar);
+
+
 
 let thElem = document.createElement("TH");
 thElem.style = "text-align:center;";
