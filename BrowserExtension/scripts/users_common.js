@@ -1,27 +1,38 @@
 async function updateUserSelect(userSelectElem, userdata) {
     let childrenToRemove = [];
+    let emptyElem;
+    // First remove all users...
     for (let child of userSelectElem.children) {
-        if (child.value != "") {
+        if (child.value != "") 
             childrenToRemove.push(child);
-        }
+        else 
+            emptyElem = child;
     }
     childrenToRemove.forEach((child) => userSelectElem.removeChild(child));
+    // Then add all current users again
     for (let user of Object.keys(userdata)) {
         let elem = document.createElement("OPTION");
         elem.value = user;
         elem.innerText = user; 
-        userSelectElem.appendChild(elem);
+        userSelectElem.insertBefore(elem, emptyElem);
     }
-    if (!(await getOption("multipleusers"))) {
-        for (let idx = 0; idx < userSelectElem.children.length; idx++) {
-            if (idx != await getOption("defaultuseridx")) {
-                userSelectElem.children[idx].setAttribute("hidden", "");
-            }
+
+    let numUsers = Object.keys(userdata).length;
+    if (!(await getOption("multipleusers")) && numUsers > 1) {
+        // Hide all child elements 
+        for (let child of userSelectElem.children) {
+            if (child.value != "")
+                child.setAttribute("hidden", "");
         }
-        if (Object.keys(userdata).length == 0) 
-            userSelectElem.children[0].removeAttribute("hidden");
-        setSelectedIdx(userSelectElem, await getOption("defaultuseridx"));
-    }  
+        userSelectElem.children[await getOption("defaultuseridx")].removeAttribute("hidden"); 
+    } 
+    if (numUsers == 0 || await getOption("multipleusers")) {
+        emptyElem.innerText = "Add user";
+    } else {
+        emptyElem.innerText = "Edit user";
+    }
+    setSelectedIdx(userSelectElem, numUsers > 0 ? await getOption("defaultuseridx") : 0);
+
 }
 
 function setSelected(selectElem, value) {

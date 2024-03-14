@@ -56,10 +56,13 @@ bottomBar.innerHTML = '\
 		<div id="hint"></div>\
 ';
 
+let b = document.createElement("DIV");
+b.setAttribute("style", "height:65px;background-color:black");
 
 // insert topbar and bottombar at the start and end of body
 let body = document.getElementsByTagName("BODY")[0];
 body.insertBefore(topBar, body.children[0]);
+body.insertBefore(b, body.children[0]);
 body.appendChild(bottomBar);
 
 

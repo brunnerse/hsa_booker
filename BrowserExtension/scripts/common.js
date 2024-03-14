@@ -273,7 +273,7 @@ async function getOption(val, allowcache=true) {
    if (val == "multipleusers")
         return 0;
     if (val == "defaultuseridx")
-        return 1;
+        return 0;
     if (val == "bypasscountdown")
         return 0;
 
@@ -286,10 +286,12 @@ async function getOption(val, allowcache=true) {
         // return default values
         if (val == "fillform")
             return 1;
+        if (val == "submitimmediately")
+            return 1;
         if (val == "multipleusers")
             return 0;
         if (val == "defaultuseridx")
-            return 1;
+            return 0;
         if (val == "bypasscountdown")
             return 0;
         return null;
