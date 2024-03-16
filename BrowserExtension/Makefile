@@ -1,5 +1,3 @@
-SHELL=bash -O extglob -c
-
 TEMPDIR=hsa_zip
 SRCS=$(wildcard *.html scripts/* styles/* img/*)
 
@@ -20,7 +18,7 @@ chrome: hsa_booker.crx
 
 $(TEMPDIR): $(SRCS)
 	mkdir -p $@	
-	cp -r !(*.crx|*.zip|*.xpi|Makefile|manifest*|$@) $@ 
+	cp -r --parents $^ $@ 
 
 %.xpi: manifest_firefox.json $(TEMPDIR) 
 	rm -f $@

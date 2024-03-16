@@ -476,6 +476,8 @@ async function updateUserdata(d) {
 		return;
 	userdata = d ?? {};
     await updateUserSelect(userSelectElem, userdata);
+    if (choice && Object.keys(choice).length > 0)
+        updateChoice(choice, false);
 }
 
 // check the current site if it is a course site
