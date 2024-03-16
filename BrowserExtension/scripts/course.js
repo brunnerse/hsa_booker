@@ -211,13 +211,23 @@ async function arm(storedAsArmed=false) {
                 popupTestUrl = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
             }
         } 
-        // Test-open popup
-        var popup_window = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
-        if (popup_window) {
+        // Test with setTimeout
+        let popup_window_t;
+        let popup_t_test = new Promise((resolve) => setTimeout(() => {
+                popup_window_t = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
+                if (popup_window_t)
+                    try { popup_window_t.close(); } catch {}
+                resolve();
+            }, 0));
+        // Test-open popup directly
+        let popup_window = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
+        if (popup_window)
+            try { popup_window.close(); } catch {}
+        await popup_t_test;
+        // If both tests were successful, store it as successful to not test again
+        if (popup_window && popup_window_t) {
+            //await setStatusTemp("Popup check successful", "yellow", 500);
             upload(POPUP_FILE, Date.now()); 
-            try {
-                popup_window.close();
-            } catch {}
         } else {
             alert("Pop-ups must be allowed for the automatic booking to work. "+
             "Change the pop-up settings for this website.");
@@ -225,7 +235,6 @@ async function arm(storedAsArmed=false) {
             return;
         }
     }
-
 
     // mark website as armed in storage
     if (!storedAsArmed)
