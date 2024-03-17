@@ -30,6 +30,48 @@ async function setBookingMessage(message, color="black") {
     messageElem.innerText =  message;
 }
 
+let countdownId; 
+function startCountdownMsg() {
+    if (countdownId)
+        clearInterval(countdownId);
+    let msgElem = document.getElementById("countdownmessage");
+    if (!msgElem)  {
+        msgElem = document.createElement("DIV");
+        msgElem.id = "countdownmessage";
+        msgElem.setAttribute("style", 
+            "background-color:#F1F1E3;color:green;font-size: 12pt; font-weight:bold;text-align:center;padding:8px;")
+        let parent = document.getElementById("bs_form_head");
+        if (!parent)
+            return; // error: element bs_ag not found
+        parent.insertBefore(msgElem, parent.children[1]);
+        let spaceDiv = document.createElement("div");
+        spaceDiv.className = "bs_space";
+        spaceDiv.setAttribute("style", "margin: 0");
+        parent.insertBefore(spaceDiv, msgElem);
+    }
+    let counterElem = document.getElementById("bs_counter");
+    if (!counterElem)
+        return;
+    countdownId = setInterval(() => {
+        let duration = parseFloat(counterElem.innerText.replaceAll(".", " "));
+        if (!isNaN(duration)) {
+            duration = (duration-1) / 3.0;
+            msgElem.innerText = "HSA Booker: Automatically submitting in " + duration.toFixed(1) + " ...";
+        } else {
+            msgElem.innerText = "HSA Booker: Automatically submitting after countdown..."
+        }
+    }, 333); 
+
+} 
+
+function stopCountdownMsg() {
+    clearInterval(countdownId);
+    let msgElem = document.getElementById("countdownmessage");
+    if (msgElem)
+        msgElem.remove();
+} 
+
+
 async function bypassCountdown() {
     // Listener for onsubmit event does not let form submit until countdown is done 
     // -> Replace whole form with itself while removing the listener
@@ -279,6 +321,7 @@ async function processDocument() {
 
             if (await getOption("submitimmediately")) {
                 // insert message that form will be submitted
+                startCountdownMsg();
                 setBookingMessage("Submitting once the countdown is done...", "green");
 
                 let submitImm = true;
@@ -288,6 +331,7 @@ async function processDocument() {
                         if (item == OPTIONS_FILE && !changes[item].newValue["submitimmediately"]) {
                             submitImm = false;
                             setBookingMessage("Aborted automatic submit.", "darkorange");
+                            stopCountdownMsg();
                             sleep(1000).then(() => setBookingMessage("", "white"));
                             removeStorageListener(listener);
                         } 
@@ -312,8 +356,15 @@ async function processDocument() {
                     await sleep(50);       
                 }
                 // check again if submitimmediately option is set, then submit
-                if (submitImm)
+                if (submitImm) {
                     form.requestSubmit(submitElem);
+                    setBookingMessage("Submitting...", "green");
+                    // Inform error if submit did not work after two seconds
+                    sleep(2000)
+                    .then(() => setBookingMessage("Automatic submit failed. Check the form and submit manually.", "red"))
+                    .then(() => submitElem.focus())
+                    .then(stopCountdownMsg);
+                }
             } 
         } else {
             let listener = (changes) => {

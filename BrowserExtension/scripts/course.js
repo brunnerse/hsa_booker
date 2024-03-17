@@ -164,7 +164,7 @@ async function addCourse(user, courseID) {
         await upload(CHOICE_FILE, choice)
         .then(() => setStatusTemp("Marked course " + courseID.split("_")[0] + " for booking", "green"))
         .catch((err) => {
-            setStatusTemp( err, "red");
+            setStatusTemp( err.toString(), "red");
             throw err;
         });
     } else {
@@ -179,7 +179,7 @@ async function removeCourse(user, courseID) {
         .then(() => removeBookingState(courseID))
         .then(() => setStatusTemp("Unmarked course " + courseID.split("_")[0], "green"))
         .catch((err) => {
-            setStatusTemp( err, "red");
+            setStatusTemp( err.toString(), "red");
             throw err;
         });
     } else {
@@ -187,8 +187,11 @@ async function removeCourse(user, courseID) {
     }
 }
 
+let armCounter = 0;
+
 async function arm(storedAsArmed=false) {
     armed = true;
+    armCounter += 1;
     armText.innerText = "UNARM";
     let style = armButton.getAttribute("style").replace("green", "blue");
     armButton.setAttribute("style", style); 
@@ -306,9 +309,10 @@ async function arm(storedAsArmed=false) {
         let refreshTime = Infinity;
         let refreshIntervalID;
         let refreshChangeFun;
+        let armCounterVal = armCounter;
         let refreshIntervalFun = function () {
-            // if course has been unarmed in the meantime, stop 
-            if (!armed) {
+            // if course has been unarmed (or re-armed) in the meantime, stop 
+            if (!armed || armCounterVal != armCounter) {
                 clearInterval(refreshIntervalID);
                 refreshSelectElem.removeEventListener("change", refreshChangeFun);
                 return;
