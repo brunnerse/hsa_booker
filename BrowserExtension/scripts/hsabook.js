@@ -431,26 +431,18 @@ function onArmAll() {
 async function onOpenAll(closeAfter=false) {
 	let user = Object.keys(userdata)[0];
 	let urls = [];
-	let currentTab = (await getCurrentTabHref()).split("#")[0];
-	let isCurrentTabIncluded = false;
 
 	for (let sport of Object.keys(choice)) {
 		// get all tabs and do not reopen the ones already open
 		if (choice[sport][user]) {
 			let href = getHref(sport);
-			if (href == currentTab) 
-				isCurrentTabIncluded = true;
 			// create url with anchor to first course nr appended
 			let nrs = [];
 			choice[sport][user].forEach((id) => nrs.push(id.split("_")[0]));
 			urls.push(href + "#K" + Math.min(...nrs));
 		}
 	}
-	// only switch to last tab if the current tab is not a course tab (isCurrentTabIncluded)
-	// and if the popup window should be closed after opening all
-	let switchToLast = (closeAfter && !isCurrentTabIncluded); 
-	for (let i = 0; i < urls.length; i++)
-		createTabIfNotExists(urls[i], i == urls.length-1 && switchToLast);
+	await createTabsIfNotExist(urls);
 	if (closeAfter)
 		window.close();
 }
@@ -549,8 +541,8 @@ async function loadInitialData() {
 			if (!objectsEqualFlat(newCourselinks, courselinks)) {
 				courselinks = newCourselinks;
 				upload(COURSELINKS_FILE, courselinks);
-				console.log("Fetched new course links:");
-				console.log(courselinks);
+				//console.log("Fetched new course links:");
+				//console.log(courselinks);
 			}
 		})
 	.catch((err) => {

@@ -108,17 +108,6 @@ function requestHTML(method, url) {
     });
 }
 
-function getCurrentTabHref() {
-    return new Promise((resolve) => {
-        base.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            // since only one tab should be active and in the current window at once
-            // the return variable should only have one entry
-            var activeTab = tabs[0];
-            resolve(activeTab.url);
-        });
-    });
-}
-
 function getAllTabsHref() {
     return new Promise((resolve) => {
         base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
@@ -172,6 +161,43 @@ function createTabIfNotExists(tabUrl, switchToTab=true) {
         );
    });
 }
+
+function createTabsIfNotExist(tabUrls) {
+    return new Promise((resolve) => {
+        // remove anchors
+        base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"},
+            async function (tabs) {
+                let switchToFinalTab =  true;
+                for (let i = 0; i < tabUrls.length; i++) {
+                    let tabUrl = tabUrls[i];
+                    let urlRaw = tabUrl.split("#")[0];
+                    let isOpen = false;
+                    for (let tab of tabs) {
+                        // Compare url without anchor
+                        if (tab.url.split("#")[0] == urlRaw) {
+                            isOpen = true;
+                            if (tab.active)
+                                switchToFinalTab = false;
+                            // For final tab: Set active if no previous tab was active
+                            if (i == tabUrls.length-1 && switchToFinalTab)
+                                await base.tabs.update(tab.id, {active: true, url: tabUrl});
+                        }
+                    }
+                    if (!isOpen) {
+                        // apparently no tab with that url open; open in new tab
+                        // For final tab: Set active if no previous tab was active
+                        let setActive = (switchToFinalTab && i == tabUrls.length-1) ? true : false;
+                        await base.tabs.create({active: setActive, url: tabUrl});
+                    }
+                }
+                resolve();
+            }
+        );
+   });
+}
+
+
+
 
 function getJSONFileString(obj) {
     const tab="    ";

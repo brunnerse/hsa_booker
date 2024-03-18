@@ -2,7 +2,7 @@
 	"manifest_version": 2,
 	"name": "HSA Booker",
 	"description": "Automatically books and fills out booking form for booking sport courses of the HSA",
-	"version": "1.2.3",
+	"version": "1.2.4",
 
 	"icons": {
     	"16": "img/favicon.png"
@@ -28,7 +28,7 @@
 	],
 
 	"permissions": [
-		"storage", "tabs", "*://anmeldung.sport.uni-augsburg.de/*"
+		"storage", "*://anmeldung.sport.uni-augsburg.de/*"
 	],
 
 	"web_accessible_resources": [
