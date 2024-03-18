@@ -97,7 +97,6 @@ function setStatusTemp(status, color, timeMS=1500, setInert=false) {
 async function onSelectChange(updateButtons=true) {
     let optionElem = getSelectedOption(userSelectElem);
     if (optionElem.value == "") {
-        // if (optionElem.title == "adder") {
         // open user edit page in new tab
         try {
             window.open(browser.runtime.getURL("Users.html"));
@@ -111,7 +110,8 @@ async function onSelectChange(updateButtons=true) {
             }
         } 
         // reset selection to the first blank one
-        setSelectedIdx(userSelectElem, await getOption("defaultuseridx"));
+        setSelectedIdx(userSelectElem, 
+            (userSelectElem.options.length > 1) ? await getOption("defaultuseridx") : 1);
         return;
     }
     if (updateButtons)
@@ -515,7 +515,7 @@ async function loadInitialData() {
 
     if (!isCourseSite) {
         // add listeners
-        userSelectElem.addEventListener("change", () => onSelectChange(false));
+        userSelectElem.addEventListener("change", (event) => event.isTrusted && onSelectChange(false));
 
         // only simple storage listener listening for user data
         addStorageListener((changes) => {
@@ -527,7 +527,7 @@ async function loadInitialData() {
         });
     } else {
         // add listeners
-        userSelectElem.addEventListener("change", () => onSelectChange(true));
+        userSelectElem.addEventListener("change", (event) => event.isTrusted && onSelectChange(true));
         armButton.addEventListener("click", onArm);
         refreshSelectElem.addEventListener("change", onRefreshChange);
 

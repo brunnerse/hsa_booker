@@ -19,7 +19,7 @@ async function updateUserSelect(userSelectElem, userdata) {
 
     let numUsers = Object.keys(userdata).length;
     if (!(await getOption("multipleusers")) && numUsers > 1) {
-        // Hide all child elements 
+        // Hide all child elements except defaultuseridx 
         for (let child of userSelectElem.children) {
             if (child.value != "")
                 child.setAttribute("hidden", "");
@@ -31,7 +31,7 @@ async function updateUserSelect(userSelectElem, userdata) {
     } else {
         emptyElem.innerText = "Edit user";
     }
-    setSelectedIdx(userSelectElem, numUsers > 0 ? await getOption("defaultuseridx") : 0);
+    setSelectedIdx(userSelectElem, (numUsers > 0) ? await getOption("defaultuseridx") : 1);
 
 }
 
