@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-    <title>HSA Booker</title>
+    <title>HSA Booker - Options</title>
     <link href="/styles/modal.css" rel="stylesheet" type="text/css" />
     <link href="/styles/attachments_hide.css" rel="stylesheet" type="text/css" />
     <link href="/styles/attachments_list.css" rel="stylesheet" type="text/css" />
@@ -31,19 +31,6 @@
 </style>
 
 <body>
-    <div class='container-fluid noPad banner' style="min-width:500px; height:100px" ;>
-        <div class='title link' id="titlelink" style="top:35px;">
-            <div class="col-xs-10" style="line-height: 44px;">HSA Booker</div>
-            <div class='col-xs-2 logo-cont'>
-                <img class='hsa-logo img-responsive' src='/img/logo_entwurf.jpg' />
-            </div>
-        </div>
-    </div>
-    <div hidden class="" style="height:40px">
-        <a class="custom darkred link" style="width:90%;height:30px;margin-left:10px;" id="go-to-options">Go to
-            interactive booker</a>
-    </div>
-
     <h1>Configuration</h1>
     <div id="configuration">
         <div class="bs_form_row" style="margin-left:10px;position:relative;">
@@ -157,65 +144,12 @@
     </div>
     <div class="bs_form_row">
         <div class="bs_button" style="margin: 0 auto; padding:0; margin-top: 10px;" id="edituserbutton">
-            <a href="Users.html" style="font-weight:bold;">Edit user data</a>
+            <a href="Users.html" target="_blank" style="font-weight:bold;">Edit user data</a>
         </div>
     </div>
-    <h1>Marked courses</h1>
-    <div id="armchoice" style="margin-left:5%;height:40px;">
-        <a class="link" style="float:left;font-weight:bold;margin-right:270px;" id="openall">Open all</a>
-        <div class="tooltip">
-            <div class="link" id="armall" style="margin-top:5%;font-weight:bold;">
-                <div id="armbuttontext" style="float:left;text-align:right;padding-right:3%">Arm all</div>
-                <button class="roundbutton" style="background-color:green;float:left;" id="armallbutton"></button>
-            </div>
-            <div class="tooltiptext" style="margin-left:230px;margin-top:40px;">Open all course sites and book the
-                courses</div>
-        </div>
-    </div>
-    <a class="link" style="float:left;font-weight:bold;margin-left:40px;margin-bottom:30px;" hidden
-        id="openchoicesite">Find courses to add</a>
-    <div id="choice" style="margin-left:3%;margin-top: 10px">
-
-    </div>
-
-    <div hidden id="notavail" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
-        <div id="bs_content">
-            <div class="bs_kursangebot">
-                <table class="bs_kurse" style="border-style: none">
-                    <thead>
-                        <tr>
-                            <th class="bs_sknr"><span class="bslang_de">Kursnr</span></th>
-                            <th class="bs_sdet"><span class="bslang_de">Details</span></th>
-                            <th class="bs_stag"><span class="bslang_de">Tag</span></th>
-                            <th class="bs_szeit" style="width:70px"><span class="bslang_de">Zeit</span></th>
-                            <th class="bs_szr"><span class="bslang_de">Startdatum</span></th>
-                            <th class="bs_sbuch"><span class="bslang_de">Buchung</span></th>
-                            <th class="closebutton link" style="text-align:center;background-color:red;width:25px">x
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="bs_odd err">
-                            <td class="bs_sknr">XXXX</td>
-                            <td class="bs_sdet"></td>
-                            <td class="bs_stag"></td>
-                            <td class="bs_szeit"></td>
-                            <td class="bs_szr"></td>
-                            <td class="bs_sbuch">
-                                <input inert type="submit" value="Unavailable" title="booking" name="BS_Kursid_12566"
-                                    class="bs_btn_buchen" style="color:red; background-color:white">
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-
 </body>
 <script src="scripts/common.js"></script>
 <script src="scripts/users_common.js"></script>
-<script src="scripts/hsabook.js"></script>
+<script src="scripts/options.js"></script>
 
 </html>
