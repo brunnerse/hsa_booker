@@ -132,7 +132,9 @@ async function loadInitialData() {
 		for (let item of Object.keys(changes)) {
 			if (item == USERS_FILE) {
 				updateUserdata(changes[USERS_FILE].newValue);
-			} // TODO OPTIONS_FILE
+			} else if (item == OPTIONS_FILE) {
+				loadOptions(false);	
+			}
 		}
 	});
 }

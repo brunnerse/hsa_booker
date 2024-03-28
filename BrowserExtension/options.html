@@ -63,8 +63,10 @@
         </div>
         <ol hidden id="advice">
             <li>First add a user (below here).</li> 
-            <li>To mark a course for booking, go to the corresponding course site and mark the course by clicking 
-                the button on the right of the table row.
+            <li>To mark a course for booking, go to the 
+                <a href="https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" target="_blank">
+                corresponding course site</a> 
+                and mark the course by clicking the button on the right of the table row.
             </li>
             <li>When clicking the <b>ARM</b> button on the top of a course site, the site will refresh continuously until
                 the marked courses are bookable, and then the book buttons will be pressed automatically.</li>
@@ -106,27 +108,27 @@
     </div>
 
     <h1>User data</h1>
-    <div id="storeduserdata" style="margin: 0 auto" class="bs_form_content anmeldung">
-        <table align="center">
+    <div id="storeduserdata" style="margin: 0 20px;width:500px;" class="bs_form_content anmeldung">
+        <table>
             <tr>
-                <td><label style="font-size:85%" for="vornameinput">Vorname:</label>
+                <td><label for="vornameinput">Vorname:</label>
                 </td>
-                <td> <input style="font-size:85%" inert class="" type="text" name="vorname" maxlength="50"
+                <td> <input inert style="width:100%" type="text" name="vorname" maxlength="50"
                         id="vornameinput">
                 </td>
             </tr>
             <tr>
-                <td> <label style="font-size:85%;margin-top:5px;margin-bottom:5px;margin-right:20px"
+                <td> <label style="margin-top:5px;margin-bottom:5px;margin-right:20px"
                         for="nameinput">Familienname:</label></td>
-                <td> <input style="font-size:85%" inert class="" type="text" name="name" maxlength="60"
+                <td> <input inert style="width:100%" type="text" name="name" maxlength="60"
                         autocomplete="off" id="nameinput">
                 </td>
             </tr>
             <tr>
-                <td><label style="font-size:85%" for="usershowelem">Status:</label></td>
+                <td><label for="usershowelem">Status:</label></td>
                 <td>
                     <select class="bs_form_field bs_fval_req" inert name="statusorig" size="1" id="usershowelem"
-                        style="font-size:85%">
+                        style="font-size:100%;width:100%">
                         <option style="font-size:85%" value="" selected="selected"></option>
                         <option style="font-size:85%" value="S-UNIA">StudentIn der UNI Augsburg</option>
                         <option style="font-size:85%" value="S-HS">StudentIn der HS Augsburg</option>
@@ -143,8 +145,8 @@
 
     </div>
     <div class="bs_form_row">
-        <div class="bs_button" style="margin: 0 auto; padding:0; margin-top: 10px;" id="edituserbutton">
-            <a href="Users.html" target="_blank" style="font-weight:bold;">Edit user data</a>
+        <div class="bs_button" style="margin: 10px auto; padding:0;" id="edituserbutton">
+            <a href="Users.html" target="_self" style="font-weight:bold;">Edit user data</a>
         </div>
     </div>
 </body>

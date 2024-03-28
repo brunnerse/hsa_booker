@@ -388,5 +388,6 @@ document.getElementById("backbutton").addEventListener("click", () => {
     if (window.history.length <= 1)
         window.close();
     else
-        window.location.replace("hsabook.html");
+        window.history.back();
+        //window.location.replace("hsabook.html");
 }); 
