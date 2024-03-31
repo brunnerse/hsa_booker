@@ -116,6 +116,11 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			.then(window.close)
 		);
 	}
+	// Remove booking error state if course is in err state
+	if (bookingState[id] && bookingState[id][0] == "error" 
+			&& newRowElem.className.includes("err")) {
+		delete bookingState[id];
+	}
 
 	// Set bookingState to full if course if full and bookingState is error or none
 	let bookButton = (newRowElem.getElementsByTagName("INPUT") ?? [null])[0];  
@@ -185,9 +190,8 @@ async function updateChoice(c, initElems=false) {
 					} else if (getCourseDateStr(tRowElem) != date) {
 						//console.warn(`Date for course ${sport}_${id} does not match: ${date} != ${getCourseDateStr(tRowElem)}`)
 						// If course with same number lies in the future, remove that course as it expired
-						// TODO test if this is correct
 						if (getCourseDate(tRowElem) > dateFromDDMMYY(date)) {
-							console.log(`Course ${id} expired as a course with the same nr`+
+							console.log(`Course ${id} (${sport}) expired as a course with the same nr`+
 								` and a higher date exists, removing the course...`);
 							if (removeIdFromChoice(choice, sport, user, id)) {
 								upload(CHOICE_FILE, choice)
@@ -226,12 +230,14 @@ async function updateChoice(c, initElems=false) {
 			}
 		})
 		.catch((err) => {
-			for (let user of Object.keys(choice[sport])) {
-				for (let id of choice[sport][user]) {
-					let entryElem = getErrorTable(id, `${sport}`, "Site load error");
-					updateEntryInTable(entryElem, sport, id, user); 
+			if (choice[sport]) {
+				for (let user of Object.keys(choice[sport])) {
+					for (let id of choice[sport][user]) {
+						let entryElem = getErrorTable(id, `${sport}`, "Site load error");
+						updateEntryInTable(entryElem, sport, id, user); 
+					}
 				}
-			}
+			}	
 		});
 	}
 }
