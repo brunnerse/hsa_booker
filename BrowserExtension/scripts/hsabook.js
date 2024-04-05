@@ -123,8 +123,10 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	}
 
 	// Set bookingState to full if course if full and bookingState is error or none
-	let bookButton = (newRowElem.getElementsByTagName("INPUT") ?? [null])[0];  
-    if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(bookButton.className)) {
+	let bookButtonElems = newRowElem.getElementsByTagName("INPUT");
+	let bookButton = (bookButtonElems.length > 0) ? bookButtonElems[0] : null; 
+	let bookButtonClass = (bookButtonElems.length > 0) ? bookButtonElems[0].className : ""; 
+    if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(bookButtonClass)) {
 		if (!bookingState[id] || bookingState[id][0] == "error") {
 			bookingState[id] = ["full", Infinity];
 		}	
@@ -132,13 +134,15 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	// Color entry depending on the course's booking state
 	if (bookingState[id]) {
 		colorRow(newRowElem, bookingState[id][0]);
-		// change booking button text for some states
-		if (bookingState[id][0] == "booked") {
-			bookButton.value = "Booked";
-		} else if (bookingState[id][0] == "error") {
-			bookButton.value = "Booking error"; 
-		} else if (bookingState[id][0] == "booking") {
-			bookButton.value = "Booking..."; 
+		// change book button text for some states
+		if (bookButton) {
+			if (bookingState[id][0] == "booked") {
+				bookButton.value = "Booked";
+			} else if (bookingState[id][0] == "error") {
+				bookButton.value = "Booking error"; 
+			} else if (bookingState[id][0] == "booking") {
+				bookButton.value = "Booking..."; 
+			}
 		}
 	}
 }
@@ -253,7 +257,7 @@ function updateBooked(courseID, statestampArr) {
 	else
 		bookingState[courseID] = statestampArr; 
 
-	// no changes necessary if state has not changed (i.e. same state + old state not expired)
+	// no changes necessary if state has not changed (i.e. same state + old state did not expire yet)
 	if (state == oldState && 
 			!(oldState =="booking" && hasExpired(oldStamp, booking_expiry_msec)))
 		return;
@@ -530,6 +534,8 @@ async function loadInitialData() {
 			} else if (item.startsWith(BOOKSTATE_FILE)) {
 				let courseID = item.split("-").pop();
 				updateBooked(courseID, changes[item].newValue);
+			} else if (item == OPTIONS_FILE) {
+				loadOptions(false);
 			}
 		}
 	});
