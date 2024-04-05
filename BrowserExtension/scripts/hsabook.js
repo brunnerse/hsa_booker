@@ -97,8 +97,22 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		}
 	}
 	if (!replaceEntry) {
-		choiceElem.appendChild(entryElem.cloneNode(true));
-		replaceEntry = choiceElem.lastChild; 
+		// Find correct position: Sort by sport and nr, booked courses first 
+		let isEntryBooked = (bookingState[id] ?? [null])[0] == "booked";
+		let i;
+		for (i = 0; i < choiceElem.children.length; i++) {
+			let [compSport, compNr, compDate, __] = 
+				choiceElem.children[i].getAttribute("title").split("_");
+			let compIsBooked = (bookingState[compNr+"_"+compDate] ?? [null])[0] == "booked";
+			if (isEntryBooked && !compIsBooked)
+				break;
+			else if (!isEntryBooked && compIsBooked)
+				continue; 
+			else if (compSport > sport || (compSport == sport && parseInt(compNr) > parseInt(nr)))
+				break; 
+		}
+		choiceElem.insertBefore(entryElem.cloneNode(true), choiceElem.children[i]);
+		replaceEntry = choiceElem.children[i]; 
 		replaceEntry.setAttribute("title", title);
 	}
 	// replace the replaceEntry tableRow with entryElem
@@ -490,11 +504,6 @@ async function loadInitialData() {
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
 	updateUserdata(storageContent[USERS_FILE]);
 
-	// load and clean up the choice data
-	choice = storageContent[CHOICE_FILE] ?? {}; 
-	cleanupChoice();
-	updateChoice(choice, true);
-
 	// get armed and bookstate files and remove expired ones 
 	for (let file of Object.keys(storageContent)) {
 		if (file.startsWith(ARMED_FILE)) {
@@ -514,6 +523,11 @@ async function loadInitialData() {
 				updateBooked(courseID, statestamp);
 		}
 	}
+
+	// load and clean up the choice data
+	choice = storageContent[CHOICE_FILE] ?? {}; 
+	cleanupChoice();
+	updateChoice(choice, true);
 
 	updateArm();
 
