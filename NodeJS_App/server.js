@@ -159,6 +159,8 @@ async function respondFile(req, res) {
 		console.log(folder + filename + " File exists: " + fs.existsSync(folder+filename));
 		if (fs.existsSync(folder + filename))
 			filename = folder + filename; 
+		else
+			filename = "./src/"+filename;
 
 		fs.readFile(filename, (err,data) => {
 			if (err) {
