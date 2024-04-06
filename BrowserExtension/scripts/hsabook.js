@@ -181,7 +181,7 @@ async function updateChoice(c, initElems=false) {
 			for (let user of Object.keys(choice[sport])) {
 				for (let id of choice[sport][user]) {
 					let title = `${sport}`;
-					let entryElem = getErrorTable(id, title, "");
+					let entryElem = getErrorTable(id, title, "Loading...");
 					updateEntryInTable(entryElem, sport, id, user);
 				}
 			}

@@ -42,8 +42,8 @@
 	},
 
 	"options_ui": {
-    	"page": "hsabook.html",
- 	    "open_in_tab": true
+    	"page": "options.html",
+ 	    "open_in_tab": false
     },
 	
 	"browser_specific_settings": {
