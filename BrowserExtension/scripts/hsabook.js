@@ -44,7 +44,7 @@ function getErrorTable(id, details, errorStr) {
 }
 
 // remove expired courses from choice and upload it 
-async function cleanupChoice() {
+async function cleanupChoice(expiry_msec=default_expiry_msec) {
 	let changed = false;
 	for (let sport of Object.keys(choice)) {
 		for (let user of Object.keys(choice[sport])) {
@@ -53,7 +53,8 @@ async function cleanupChoice() {
 				let [nr, dateStr] = id.split("_");
 				let date = dateFromDDMMYY(dateStr); 
 				// if start date is too long ago, remove the course from choice 
-				if (Date.now() - date > default_expiry_msec) {
+				if (Date.now() - date > expiry_msec) {
+					console.log(`Removing course Nr. ${nr} (${sport}, started at ${dateStr}) as it is in the past.`)
 					changed = true;
 					removeIdFromChoice(choice, sport, user, id)
 					remove(BOOKSTATE_FILE+id);
@@ -570,6 +571,14 @@ async function loadInitialData() {
 				//console.log("Fetched new course links:");
 				//console.log(courselinks);
 			}
+			// Check start date on top of page and remove old courses
+			let title = doc.getElementById("bs_top").innerText; 
+			let dateStr = title.match(/\d+\.\d+\.\d+/)[0];
+			let date = dateFromDDMMYY(dateStr);
+			// Remove all courses that are older than date; one week as safety margin
+			let expiry_ms = Date.now() - date + 7*24*60*60*1000;
+			//console.log("Removing all courses that started before " + dateStr + "...");
+			cleanupChoice(expiry_ms);
 		})
 	.catch((err) => {
 		console.error("Failed to update course links: Loading course site failed");
