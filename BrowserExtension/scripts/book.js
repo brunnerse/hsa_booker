@@ -130,7 +130,7 @@ function fillForm(form, data) {
         else if (inputElem.name == "tnbed")
             inputElem.checked = true;
         else if (data[inputElem.name]){
-            inputElem.value = data[inputElem["name"]];
+            inputElem.value = data[inputElem.name];
         } 
    }
 }

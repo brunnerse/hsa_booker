@@ -61,7 +61,10 @@
 .trstate-none, .trstate-fullunmarked {
     background-color: #FcFcFc!important;
 }
-.trstate-none:hover {
+.trstate-marked {
+    background-color: #FFFFCC!important;
+}
+.trstate-none:hover, .trstate-marked:hover {
     background-color: #FFFF99!important;
 }
 .trstate-full {

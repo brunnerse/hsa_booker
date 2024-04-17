@@ -407,7 +407,6 @@ function modifyBookButtons() {
         aktionElem.replaceChildren();
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
-        button.innerText = choiceIDs.includes(id) ? "MARKED" : "MARK FOR BOOKING"; 
         button.style = "width:95%; border-radius:5px;text-align:center;" 
             + (choiceIDs.includes(id) ? "background-color: green;color:white" : "");
         button.type = "button";
@@ -431,17 +430,19 @@ function modifyBookButtons() {
        let bookText = {
             "booked" : "BOOKED", "booking" : "BOOKING...",
             "error": "BOOKING ERROR", "full": "MARKED BUT FULL"};
-       // Only color "full" courses if course is marked
-       if (bookState == "full" && !choiceIDs.includes(id)) {
-            colorRow(trElem, "fullunmarked");
-       } else {
+       let isMarked = choiceIDs.includes(id);
+       if (isMarked) {
             let text = bookText[bookState];
             if (text) {
                 button.innerText = text;
                 colorRow(trElem, bookState);
             } else {
-                colorRow(trElem, "none");
+                button.innerText = "MARKED";
+                colorRow(trElem, "marked");
             }
+       } else { 
+            button.innerText = "MARK FOR BOOKING"; 
+            colorRow(trElem, (bookState == "full") ? "fullunmarked" : "none");
        }
     }
 }
