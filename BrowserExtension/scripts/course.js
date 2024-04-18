@@ -510,6 +510,25 @@ if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktuell
     setStatus("Not a course website", "white");
 }
 
+function courseSiteOnChoice(choice) {
+    choice = choice ?? {};
+    for (let elem of document.querySelectorAll("dd a")) {
+        let isElemProcessed = elem.parentElement.className.includes("trstate");
+        let chosen = choice[elem.innerText];
+        if (chosen && !isElemProcessed) {
+            elem.parentElement.className = " trstate-marked";
+            let spanElem = document.createElement("SPAN");
+            spanElem.setAttribute("style", "color: green;float:left");
+            spanElem.innerText = "✔";
+            let sport = elem.innerText;
+            elem.parentElement.insertBefore(spanElem, elem);
+        } else if (!chosen && isElemProcessed) {
+            elem.parentElement.className = "";
+            let spanChildren = elem.parentElement.getElementsByTagName("SPAN");
+            spanChildren.length > 0 && elem.parentElement.removeChild(spanChildren[0]);
+        }
+    }
+}
 
 async function loadInitialData() {
     await download(USERS_FILE).then(updateUserdata);
@@ -523,9 +542,12 @@ async function loadInitialData() {
             for (let item of Object.keys(changes)) {
                 if (item == USERS_FILE) {
                     updateUserdata(changes[item].newValue); 
+                } else if (item == CHOICE_FILE) {
+                    courseSiteOnChoice(changes[item].newValue); 
                 } 
             }
         });
+        download(CHOICE_FILE).then(courseSiteOnChoice); 
     } else {
         // add listeners
         userSelectElem.addEventListener("change", (event) => event.isTrusted && onSelectChange(true));
