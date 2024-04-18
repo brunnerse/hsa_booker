@@ -414,13 +414,38 @@ async function processDocument() {
             }
         }
 
-        if (await getOption("submitimmediately"))  {
+        submitButton && setTimeout(() => submitButton.focus(), 100);
+
+        let isUserActionRequired = false; 
+        for (let enElem of document.getElementsByClassName("bs_form_entext")) {
+        if (enElem.innerText.match(/[eE]nter\s/) && !enElem.innerText.match(/e[-\s]*mail/)) {
+                console.log("User action required for: ", enElem.innerText);
+                enElem.parentElement.className += " warn";
+                setTimeout(() => enElem.parentElement.focus(), 100);
+                isUserActionRequired = true;
+            }
+        }
+        if (isUserActionRequired) {
+            titleChangeFun = async () => {
+                const appstr = "[USER ACTION REQUIRED] ";
+                if (document.title.startsWith(appstr))
+                    document.title = document.title.substring(appstr.length);
+                else
+                    document.title = appstr + document.title;
+            }
+            for (let i = 0; i < 11; i++)
+                await titleChangeFun().then(() => sleep(333));
+        }
+
+        if (!isUserActionRequired && await getOption("submitimmediately"))  {
             // submit
             console.assert(submitButton);
             //submitButton.setAttribute("inert", "");
             form.requestSubmit(submitButton); 
         } else {
             // Do nothing
+            // submitButton.setAttribute("inert", "");
+
         }
     } else if (STATE == "confirmed") {
         // signalize success by setting the global booking state
