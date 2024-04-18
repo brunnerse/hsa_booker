@@ -307,6 +307,7 @@ async function arm(storedAsArmed=false) {
 
         // refresh window in refreshInterval seconds
         let refreshTime = Infinity;
+        let prevRemainingTime = Infinity;
         let refreshIntervalID;
         let refreshChangeFun;
         let armCounterVal = armCounter;
@@ -317,10 +318,14 @@ async function arm(storedAsArmed=false) {
                 refreshSelectElem.removeEventListener("change", refreshChangeFun);
                 return;
             }
-            let remTime = refreshTime - Date.now(); 
-            let statusStr = bookingDate ? "Booking available in " + getDurationAsString(bookingDate - Date.now()) + "\n" : ""; 
-            setStatusTemp(statusStr + "Refreshing in " + Math.round(remTime/1000) + "...", "yellow", 1000);
-            if (armed && remTime <= 0) {
+            // Update status if remaining time display changes
+            let remainingTime = refreshTime - Date.now(); 
+            if (Math.ceil(remainingTime/1000) != Math.ceil(prevRemainingTime/1000)) {
+                prevRemainingTime = remainingTime;
+                let statusStr = bookingDate ? "Booking available in " + getDurationAsString(bookingDate - Date.now()) + "\n" : ""; 
+                setStatus(statusStr + "Refreshing in " + Math.ceil(remainingTime/1000) + "...", "yellow", 1000);
+            }
+            if (armed && remainingTime <= 0) {
                 refreshTriggered = true;
                 // update arm timeout and then reload the window
                 storeAsArmed(sport)
@@ -355,7 +360,7 @@ async function arm(storedAsArmed=false) {
             // Call refreshIntervalFun() to update visuals and re-init the periodic call
             clearInterval(refreshIntervalID);
             refreshIntervalFun();
-            refreshIntervalID = setInterval(refreshIntervalFun, 1000); 
+            refreshIntervalID = setInterval(refreshIntervalFun, 200);   
         }
         refreshSelectElem.addEventListener("change", refreshChangeFun);
         // Execute refreshListenerFun once to calculate refreshTime and set up the interval for refreshIntervalFun 
