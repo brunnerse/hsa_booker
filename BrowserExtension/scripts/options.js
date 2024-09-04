@@ -115,13 +115,11 @@ async function loadInitialData() {
 	for (let file of Object.keys(storageContent)) {
 		if (file.startsWith(ARMED_FILE)) {
 			let stamp = storageContent[file];
-			if (hasExpired(stamp, armed_expiry_msec))
+			if (hasArmedExpired(stamp))
 				remove(file);
 		} else if (file.startsWith(BOOKSTATE_FILE)) {
 			let statestamp = storageContent[file];
-			let [state, stamp] = statestamp ?? [undefined, 0];
-			if (hasExpired(stamp, default_expiry_msec) || 
-					 (state == "booking" && hasExpired(stamp, booking_expiry_msec)))
+			if (statestamp && hasBookingStateExpired(statestamp[0], statestamp[1]))
 				remove(file);
 		}
 	}

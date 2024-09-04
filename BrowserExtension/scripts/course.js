@@ -564,7 +564,7 @@ async function loadInitialData() {
 
         // check if website should be armed
         let armTimestamp = await download(ARMED_FILE+currentSport);
-        if (!hasExpired(armTimestamp, armed_expiry_msec)) {
+        if (!hasArmedExpired(armTimestamp)) {
             await arm(true);
             if (Date.now() - armTimestamp > 10000)
                 storeAsArmed(currentSport);
@@ -612,7 +612,7 @@ async function loadInitialData() {
             let changed = false;
             for (let id of Object.keys(bookingState)) {
                 let [state, stamp] = bookingState[id];
-                if (state == "booking" && hasExpired(stamp, booking_expiry_msec)) {
+                if (hasBookingStateExpired(state, stamp, true)) { 
                     delete bookingState[id];
                     changed = true;
                 }

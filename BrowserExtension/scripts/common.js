@@ -40,6 +40,20 @@ function hasExpired(timeStamp, expiry_msec) {
     return !timeStamp || (timeStamp + expiry_msec < Date.now()); 
 }
 
+function hasBookingStateExpired(bookingState, timeStamp, simpleCheck=false) {
+    switch (bookingState) {
+        case "booking":
+        case "error":
+            return hasExpired(timeStamp, booking_expiry_msec);
+        default:
+            return simpleCheck ? false : hasExpired(timeStamp, default_expiry_msec);
+    }
+}
+
+function hasArmedExpired(timeStamp) {
+    return !timeStamp || hasExpired(timeStamp, armed_expiry_msec);
+}
+
 function objectsEqualFlat(o1, o2) {
     let entries = Object.entries(o1);
     return entries.length == Object.keys(o2).length && 
@@ -402,7 +416,7 @@ async function storeAsUnarmedCourses(sports) {
 
 async function isArmed(sport) {
     let stamp = await download(ARMED_FILE+sport);
-    return !hasExpired(stamp, armed_expiry_msec);
+    return !hasArmedExpired(stamp);
 }
 
 function removeIdFromChoice(choice, sport, user, id) {
@@ -435,11 +449,8 @@ async function getBookingState(courseID, includeTimestamp=false, localOnly=false
     if (includeTimestamp || !bookState)
         return bookState;
     let [state, stamp] = bookState;
-    stamp = parseInt(stamp);
-    if (state == "booking")
-        return !hasExpired(stamp, booking_expiry_msec) ? state : null;
-    else
-        return state;
+    //stamp = parseInt(stamp);
+    return !hasBookingStateExpired(state, stamp, true) ? state : null;
 }
 
 async function setBookingState(courseID, state, local) {

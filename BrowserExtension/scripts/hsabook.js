@@ -44,7 +44,7 @@ function getErrorTable(id, details, errorStr) {
 }
 
 // remove expired courses from choice and upload it 
-async function cleanupChoice(expiry_msec=default_expiry_msec) {
+async function cleanupChoice(expiry_msec) {
 	let changed = false;
 	for (let sport of Object.keys(choice)) {
 		for (let user of Object.keys(choice[sport])) {
@@ -273,8 +273,7 @@ function updateBooked(courseID, statestampArr) {
 		bookingState[courseID] = statestampArr; 
 
 	// no changes necessary if state has not changed (i.e. same state + old state did not expire yet)
-	if (state == oldState && 
-			!(oldState =="booking" && hasExpired(oldStamp, booking_expiry_msec)))
+	if (state == oldState && !hasBookingStateExpired(oldState, oldStamp, true)) 
 		return;
 
 	// find element in table and change it
@@ -503,13 +502,13 @@ async function loadInitialData() {
 	console.log(storageContent);
 
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
-	updateUserdata(storageContent[USERS_FILE]);
+	await updateUserdata(storageContent[USERS_FILE]);
 
 	// get armed and bookstate files and remove expired ones 
 	for (let file of Object.keys(storageContent)) {
 		if (file.startsWith(ARMED_FILE)) {
 			let stamp = storageContent[file];
-			if (hasExpired(stamp, armed_expiry_msec))
+			if (hasArmedExpired(stamp))
 				remove(file);
 			else 
 				armedCourses[file.substring(ARMED_FILE.length)] = stamp;
@@ -517,8 +516,7 @@ async function loadInitialData() {
 			let statestamp = storageContent[file];
 			let courseID = file.split("-").pop();
 			let [state, stamp] = statestamp ?? [undefined, 0];
-			if (hasExpired(stamp, default_expiry_msec) || 
-					 (state == "booking" && hasExpired(stamp, booking_expiry_msec)))
+			if (hasBookingStateExpired(state, stamp))
 				remove(file);
 			else
 				updateBooked(courseID, statestamp);
@@ -527,10 +525,10 @@ async function loadInitialData() {
 
 	// load and clean up the choice data
 	choice = storageContent[CHOICE_FILE] ?? {}; 
-	cleanupChoice();
-	updateChoice(choice, true);
+	await cleanupChoice(default_expiry_ms);
+	await updateChoice(choice, true);
 
-	updateArm();
+	await updateArm();
 
 	addStorageListener((changes) => {
 		//console.log("[Storage Listener] Change:")
@@ -591,7 +589,7 @@ loadInitialData();
 setInterval(() => {
 	for (let id of Object.keys(bookingState)) {
 		let [state, stamp] = bookingState[id];
-		if (state == "booking" && hasExpired(stamp, booking_expiry_msec)) {
+		if (hasBookingStateExpired(state, stamp, true)) {
 			updateBooked(id, null);
 		}
 	}
