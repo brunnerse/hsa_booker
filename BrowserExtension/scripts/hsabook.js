@@ -11,7 +11,8 @@ const emptyTableElem = document.getElementById("notavail");
 
 let userdata = {};
 let choice = {};
-let armed = false;
+let armed_all = false;
+let armed_one = false;
 let armedCourses = {};
 let bookingState = {};
 
@@ -330,24 +331,25 @@ async function updateArm() {
 	// check for expiry and remove expired titles 
 	let expiredCourses = [];
 	for (let c in Object.keys(armedCourses)) {
-		if (hasExpired(armedCourses[c], armed_expiry_msec))
+		if (hasArmedExpired(armedCourses[c]))
 			expiredCourses.push(c)	
 	}
 	expiredCourses.forEach((c) => delete armedCourses[c]);
 
 	let numArmedTitles = Object.keys(armedCourses).length;  
 	// set arm Button and text according to whether all are armed or not
-	if (numArmedTitles == 0) {
-		armText.innerText = "Arm all";
-		let style = armButton.getAttribute("style").replace("blue", "green");
-		armButton.setAttribute("style", style); 
-		armed = false;
-	}
-	else if (numArmedTitles == Object.keys(choice).length) {
+	armed_all = (numArmedTitles == Object.keys(choice).length) ? true : false;
+	armed_one = (numArmedTitles > 0) ? true : false;
+	if (armed_all) {
 		armText.innerText = "Unarm all";
 		let style = armButton.getAttribute("style").replace("green", "blue");
 		armButton.setAttribute("style", style); 
-		armed = true;
+	}
+	else //if (armed_one)
+	{
+		armText.innerText = "Arm all";
+		let style = armButton.getAttribute("style").replace("blue", "green");
+		armButton.setAttribute("style", style); 
 	}
 }
 
@@ -419,7 +421,8 @@ async function loadOptions(allowCache=true) {
 }
 
 function armAll() {
-	armed = true;
+	armed_all = true;
+	armed_one = true;
 	let user = Object.keys(userdata)[0];
 	let courselist = [];
 	for (let sport of Object.keys(choice)) {
@@ -431,18 +434,19 @@ function armAll() {
 }
 
 function unarmAll() {
-	armed = false;
+	armed_all = false;
+	armed_one = false;
 	let user = Object.keys(userdata)[0];
 	let courselist = [];
 	for (let sport of Object.keys(choice)) {
 		if (choice[sport][user])
 			courselist.push(sport);
 	}
-    return storeAsUnarmed(courselist); 
+    return storeAsUnarmedCourses(courselist); 
 }
 
 function onArmAll() {
-    if (!armed) 
+    if (!armed_all) 
 		return confirm("Arm all courses?") && armAll();  
     else 
 		return unarmAll();
@@ -521,7 +525,7 @@ async function loadInitialData() {
 
 	// load and clean up the choice data
 	choice = storageContent[CHOICE_FILE] ?? {}; 
-	await cleanupChoice(default_expiry_ms);
+	await cleanupChoice(default_expiry_msec);
 	await updateChoice(choice, true);
 
 	await updateArm();
