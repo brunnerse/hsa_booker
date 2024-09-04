@@ -455,11 +455,29 @@ async function processDocument() {
             await setBookingState(courseID, "booked", /*local=*/false);
         }
     } else {
-        // signalize error
         console.log("An error occured during booking.");
+
+        // Constantly set bookingstate "error" until another tab sets another booking state
         if (user && courseID && (await getBookingState(courseID, false, false, /*syncOnly=*/true) != "booked")) {
             await removeBookingState(courseID, /*local=*/true);
-            await setBookingState(courseID, "error", /*local=*/false);
+            let lastTimestamp = await setBookingState(courseID, "error", /*local=*/true);
+            removeBookingStateOnClose(courseID);
+            setInterval(async () => {
+                // check if the last timestamp is the own one;
+                // if not, another tab is writing and we should abort
+                let bookState = await getBookingState(courseID, /*includeTimestamp=*/true, /*localOnly=*/true); 
+                if (!bookState)
+                    console.error("Error state somehow did not get stored; maybe it expired before reading?");
+                else {
+                    let [state, stamp] = bookState;
+                    if (stamp != lastTimestamp) {
+                        window.close();
+                        return;
+                    }
+                }
+                // update booking state timestamp constantly to show the site did not timeout
+                lastTimestamp = await setBookingState(courseID, "error", /*local=*/true);
+            }, booking_expiry_msec * 0.4);
         }
     }
 }

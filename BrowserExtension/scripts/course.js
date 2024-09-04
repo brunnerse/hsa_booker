@@ -432,20 +432,20 @@ function modifyBookButtons() {
        }
 
        // Color line and set button text according to bookingState
-       let bookText = {
+       const bookTexts = {
             "booked" : "BOOKED", "booking" : "BOOKING...",
             "error": "BOOKING ERROR", "full": "MARKED BUT FULL"};
        let isMarked = choiceIDs.includes(id);
-       if (isMarked) {
-            let text = bookText[bookState];
-            if (text) {
-                button.innerText = text;
-                colorRow(trElem, bookState);
-            } else {
+       let text = bookTexts[bookState];
+
+       // If in any booking state (except full when not marked), show that state
+       if (text && !(bookState == "full" && !isMarked)) {
+            button.innerText = text;
+            colorRow(trElem, bookState);
+       } else if (isMarked) { // Not in any booking state but marked
                 button.innerText = "MARKED";
                 colorRow(trElem, "marked");
-            }
-       } else { 
+       } else { // Not marked, not in any booking state (except maybe full)
             button.innerText = "MARK FOR BOOKING"; 
             colorRow(trElem, (bookState == "full") ? "fullunmarked" : "none");
        }

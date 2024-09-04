@@ -131,11 +131,6 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			.then(window.close)
 		);
 	}
-	// Remove booking error state if course is in err state
-	if (bookingState[id] && bookingState[id][0] == "error" 
-			&& newRowElem.className.includes("err")) {
-		delete bookingState[id];
-	}
 
 	// Set bookingState to full if course if full and bookingState is error or none
 	let bookButtonElems = newRowElem.getElementsByTagName("INPUT");
@@ -147,7 +142,8 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		}	
 	}
 	// Color entry depending on the course's booking state
-	if (bookingState[id]) {
+	if (bookingState[id])
+	{
 		colorRow(newRowElem, bookingState[id][0]);
 		// change book button text for some states
 		if (bookButton) {
