@@ -11,6 +11,7 @@ const emptyTableElem = document.getElementById("notavail");
 
 let userdata = {};
 let choice = {};
+let active_course = null;
 let armed_all = false;
 let armed_one = false;
 let armedCourses = {};
@@ -522,6 +523,8 @@ async function loadInitialData() {
 	let storageContent = await downloadAll();
 	console.log(storageContent);
 
+
+
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
 	await updateUserdata(storageContent[USERS_FILE]);
 
@@ -541,12 +544,25 @@ async function loadInitialData() {
 				remove(file);
 			else
 				updateBooked(courseID, statestamp);
-		}
+		} 
 	}
 
 	// load and clean up the choice data
 	choice = storageContent[CHOICE_FILE] ?? {}; 
 	await cleanupChoice(default_expiry_msec);
+
+	// Find and set active_course
+    base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*", active: true},
+		(tabs) => tabs.forEach((tab) => {
+			for (let course of Object.keys(choice)) {
+				if (getHref(course) == tab.url.split("#")[0]) {
+					active_course = course;
+					break;
+				}
+			}
+		})
+	);
+
 	await updateChoice(choice, true);
 
 	await updateArm();
