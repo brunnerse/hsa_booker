@@ -157,6 +157,7 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 			}
 		}
 	}
+	setEntryArmStatus(replaceEntry);
 }
 
 async function updateChoice(c, initElems=false) {
@@ -327,14 +328,30 @@ async function updateUserdata(d) {
 	}
 }
 
+
+async function setEntryArmStatus(entry) {
+	let title = entry.getAttribute("title");
+	let course = title.split("_")[0]; 
+	if (armedCourses[course])
+		Array.from(entry.getElementsByClassName("armed_tag")).forEach((e) => e.removeAttribute("hidden"));
+	else
+		Array.from(entry.getElementsByClassName("armed_tag")).forEach((e) => e.setAttribute("hidden", ""));
+
+}
+
 async function updateArm() {
 	// check for expiry and remove expired titles 
 	let expiredCourses = [];
-	for (let c in Object.keys(armedCourses)) {
+	for (let c of Object.keys(armedCourses)) {
 		if (hasArmedExpired(armedCourses[c]))
 			expiredCourses.push(c)	
 	}
 	expiredCourses.forEach((c) => delete armedCourses[c]);
+
+	// Display/hide the armed tag for each course 
+	for (let child of choiceElem.children)
+		setEntryArmStatus(child);
+
 
 	let numArmedTitles = Object.keys(armedCourses).length;  
 	// set arm Button and text according to whether all are armed or not
@@ -581,16 +598,24 @@ async function loadInitialData() {
 	.catch((err) => {
 		console.error("Failed to update course links: Loading course site failed");
 	});	
+
 }
+
 
 loadInitialData();
 
-// Create function that periodically checks whether a booking state has expired
+// Create function that periodically checks whether a booking state or armed course has expired
 setInterval(() => {
 	for (let id of Object.keys(bookingState)) {
 		let [state, stamp] = bookingState[id];
 		if (hasBookingStateExpired(state, stamp, true)) {
 			updateBooked(id, null);
+		}
+	}
+	for (let course of Object.keys(armedCourses)) {
+		if (hasArmedExpired(armedCourses[course])) {
+			delete armedCourses[course];	
+			updateArm();
 		}
 	}
 }, 500);
