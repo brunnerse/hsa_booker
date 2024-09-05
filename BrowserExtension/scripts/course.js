@@ -8,7 +8,7 @@ const hintElem = document.getElementById("hint");
 
 // store current url without anchor 
 const currentUrl = window.location.href.split('#')[0];
-const currentSport = getCurrentSport();
+const currentCourse = getCurrentCourse();
 
 let userdata = {};
 let choice = {};
@@ -124,7 +124,7 @@ async function onRefreshChange(event) {
     }
 }
 
-function getCurrentSport() {
+function getCurrentCourse() {
     try {
         let headElem = document.getElementsByClassName("bs_head")[0];
         return headElem ? headElem.innerText : null; 
@@ -144,23 +144,23 @@ async function onAdd(button) {
     let nr = getCourseNr(trElem);
     let date = getCourseDateStr(trElem); 
     let courseID = nr + "_" + date;
-    let sport = currentSport;
+    let course = currentCourse;
 
     setStatusTemp("Updating course data...", "white", 1000);
-    if(choice[sport] && choice[sport][user] && choice[sport][user].includes(courseID))
+    if(choice[course] && choice[course][user] && choice[course][user].includes(courseID))
         removeCourse(user, courseID);
      else 
         addCourse(user, courseID);
 }
 
 async function addCourse(user, courseID) {
-    let sport = currentSport;
-    if (!choice[sport])
-        choice[sport] = {};
-   if (!choice[sport][user])
-       choice[sport][user] = [];
-    if (!choice[sport][user].includes(courseID)) {
-        choice[sport][user].push(courseID);
+    let course = currentCourse;
+    if (!choice[course])
+        choice[course] = {};
+   if (!choice[course][user])
+       choice[course][user] = [];
+    if (!choice[course][user].includes(courseID)) {
+        choice[course][user].push(courseID);
         await upload(CHOICE_FILE, choice)
         .then(() => setStatusTemp("Marked course " + courseID.split("_")[0] + " for booking", "green"))
         .catch((err) => {
@@ -174,7 +174,7 @@ async function addCourse(user, courseID) {
 
 async function removeCourse(user, courseID) {
     // remove from choice
- 	if (removeIdFromChoice(choice, currentSport, user, courseID)) {
+ 	if (removeIdFromChoice(choice, currentCourse, user, courseID)) {
         await upload(CHOICE_FILE, choice)
         .then(() => removeBookingState(courseID))
         .then(() => setStatusTemp("Unmarked course " + courseID.split("_")[0], "green"))
@@ -241,8 +241,8 @@ async function arm(storedAsArmed=false) {
 
     // mark website as armed in storage
     if (!storedAsArmed)
-        storeAsArmed(currentSport);
-    let sport = currentSport;
+        storeAsArmed(currentCourse);
+    let course = currentCourse;
 
     let numCoursesDone = 0;
     let numCoursesFull = 0;
@@ -328,7 +328,7 @@ async function arm(storedAsArmed=false) {
             if (armed && remainingTime <= 0) {
                 refreshTriggered = true;
                 // update arm timeout and then reload the window
-                storeAsArmed(sport)
+                storeAsArmed(course)
                 .then(() => {
                     window.open(window.location.href, "_self");
                     location.reload(true);
@@ -380,7 +380,7 @@ function unarm() {
     armButton.setAttribute("style", style); 
     refreshSelectElem.parentElement.setAttribute("hidden", "");
     // remove website from armed list in options
-    storeAsUnarmed(currentSport);
+    storeAsUnarmed(currentCourse);
     setStatusTemp("Unarmed.");
     armed = false;
 }
@@ -455,9 +455,9 @@ function modifyBookButtons() {
 async function updateChoice(c, checkAllCourses=false) {
     choice = c ?? {};
     let user = getSelected(userSelectElem);
-    let sport = currentSport;
-    choiceIDs = (user && sport && choice[sport] && choice[sport][user]) ?
-         choice[sport][user] : [];
+    let course = currentCourse;
+    choiceIDs = (user && course && choice[course] && choice[course][user]) ?
+         choice[course][user] : [];
 
     // check for each course if bookstate_file exists and add the state in case it does
     // either check only choiceIDs or all IDs
@@ -503,7 +503,7 @@ async function updateUserdata(d) {
 let isCourseSite = false;
 // check if URL is a course and update visible elements accordingly
 if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
-    let course = currentSport; 
+    let course = currentCourse; 
     setStatus("Click ARM to book the marked courses ASAP", "white");
     armButton.parentElement.removeAttribute("hidden");
     hintElem.innerText = "Mark the " + course + " courses that you want to be booked automatically";
@@ -525,7 +525,7 @@ function courseSiteOnChoice(choice) {
             let spanElem = document.createElement("SPAN");
             spanElem.setAttribute("style", "color: green;float:left");
             spanElem.innerText = "✔";
-            let sport = elem.innerText;
+            let course = elem.innerText;
             elem.parentElement.insertBefore(spanElem, elem);
         } else if (!chosen && isElemProcessed) {
             elem.parentElement.className = "";
@@ -563,11 +563,11 @@ async function loadInitialData() {
         await download(CHOICE_FILE).then((data) => updateChoice(data, true));    
 
         // check if website should be armed
-        let armTimestamp = await download(ARMED_FILE+currentSport);
+        let armTimestamp = await download(ARMED_FILE+currentCourse);
         if (!hasArmedExpired(armTimestamp)) {
             await arm(true);
             if (Date.now() - armTimestamp > 10000)
-                storeAsArmed(currentSport);
+                storeAsArmed(currentCourse);
         }
 
         // add storage listener for all kinds of changes
@@ -579,7 +579,7 @@ async function loadInitialData() {
                     updateUserdata(changes[item].newValue); 
                 } else if (item == REFRESH_FILE) {
                     updateRefresh(changes[item].newValue ?? refreshSelectElem.options[0].value);
-                } else if (item == ARMED_FILE+getCurrentSport()) {
+                } else if (item == ARMED_FILE+getCurrentCourse()) {
                     // check if item was removed
                     let storedAsArmed = changes[item].newValue != undefined;  
                     // do not need to check the timestamp here; just was updated, so timestamp must be fine
@@ -631,7 +631,7 @@ unloadEventListener = function (e) {
     if (armed && !refreshTriggered){
         // set arm timestamp so it times out in 5 seconds
         let timeStamp = Date.now() - armed_expiry_msec + 5000;
-        let file = ARMED_FILE + currentSport;
+        let file = ARMED_FILE + currentCourse;
         upload(file, timeStamp);  
         // dont prevent closing, just unarm silently
         //e.preventDefault();

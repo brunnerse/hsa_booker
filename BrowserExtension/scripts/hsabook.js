@@ -19,11 +19,11 @@ let bookingState = {};
 let courselinks = {};
 
 
-function getHref(sport) {
-	let link = courselinks[sport];
+function getHref(course) {
+	let link = courselinks[course];
 	// if link not registered, create it according to heuristic 
 	if (!link)
-		link = "_"+sport.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss") +
+		link = "_"+course.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss") +
 		 ".html";
 	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
 }
@@ -47,17 +47,17 @@ function getErrorTable(id, details, errorStr) {
 // remove expired courses from choice and upload it 
 async function cleanupChoice(expiry_msec) {
 	let changed = false;
-	for (let sport of Object.keys(choice)) {
-		for (let user of Object.keys(choice[sport])) {
-			for (let idx = choice[sport][user].length-1; idx >= 0; idx--) {
-				let id = choice[sport][user][idx];
+	for (let course of Object.keys(choice)) {
+		for (let user of Object.keys(choice[course])) {
+			for (let idx = choice[course][user].length-1; idx >= 0; idx--) {
+				let id = choice[course][user][idx];
 				let [nr, dateStr] = id.split("_");
 				let date = dateFromDDMMYY(dateStr); 
 				// if start date is too long ago, remove the course from choice 
 				if (Date.now() - date > expiry_msec) {
-					console.log(`Removing course Nr. ${nr} (${sport}, started at ${dateStr}) as it is in the past.`)
+					console.log(`Removing course Nr. ${nr} (${course}, started at ${dateStr}) as it is in the past.`)
 					changed = true;
-					removeIdFromChoice(choice, sport, user, id)
+					removeIdFromChoice(choice, course, user, id)
 					remove(BOOKSTATE_FILE+id);
 				} 
 			}
@@ -70,12 +70,12 @@ async function cleanupChoice(expiry_msec) {
 function removeObsoleteEntries() {
 	for (let i = choiceElem.children.length - 1; i>= 0; i--) {
 		let title = choiceElem.children[i].title;
-    	let [sport, nr, date, user] = title.split("_");
+    	let [course, nr, date, user] = title.split("_");
 		let entryId = nr+"_"+date;
 
 		found = false;
-		if (choice[sport] && choice[sport][user]) {
-			for (let id of choice[sport][user])
+		if (choice[course] && choice[course][user]) {
+			for (let id of choice[course][user])
 				if (id == entryId) {
 					found = true;
 					break;
@@ -86,8 +86,8 @@ function removeObsoleteEntries() {
 	}
 }
 
-async function updateEntryInTable(entryElem, sport, id, user) {
-	const title = `${sport}_${id}_${user}`;
+async function updateEntryInTable(entryElem, course, id, user) {
+	const title = `${course}_${id}_${user}`;
 	let nr = id.split("_")[0];
 
 	// check if entry is already in table
@@ -99,18 +99,18 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 		}
 	}
 	if (!replaceEntry) {
-		// Find correct position: Sort by sport and nr, booked courses first 
+		// Find correct position: Sort by course and nr, booked courses first 
 		let isEntryBooked = (bookingState[id] ?? [null])[0] == "booked";
 		let i;
 		for (i = 0; i < choiceElem.children.length; i++) {
-			let [compSport, compNr, compDate, __] = 
+			let [compCourse, compNr, compDate, __] = 
 				choiceElem.children[i].getAttribute("title").split("_");
 			let compIsBooked = (bookingState[compNr+"_"+compDate] ?? [null])[0] == "booked";
 			if (isEntryBooked && !compIsBooked)
 				break;
 			else if (!isEntryBooked && compIsBooked)
 				continue; 
-			else if (compSport > sport || (compSport == sport && parseInt(compNr) > parseInt(nr)))
+			else if (compCourse > course || (compCourse == course && parseInt(compNr) > parseInt(nr)))
 				break; 
 		}
 		choiceElem.insertBefore(entryElem.cloneNode(true), choiceElem.children[i]);
@@ -128,10 +128,14 @@ async function updateEntryInTable(entryElem, sport, id, user) {
 	if (!newRowElem.className.match("link|err")) {
 		newRowElem.className = "link " + newRowElem.className;
 		newRowElem.addEventListener("click", 
-			() => createTabIfNotExists(getHref(sport)+"#K"+nr, true)
+			() => createTabIfNotExists(getHref(course)+"#K"+nr, true)
 			.then(window.close)
 		);
 	}
+	// Set course active_tag 
+	if (course == active_course)
+		Array.from(replaceEntry.getElementsByClassName("active_tag")).forEach((e) => e.removeAttribute("hidden"));
+
 
 	// Set bookingState to full if course if full and bookingState is error or none
 	let bookButtonElems = newRowElem.getElementsByTagName("INPUT");
@@ -175,24 +179,24 @@ async function updateChoice(c, initElems=false) {
 	// remove table entries not in choice anymore
 	removeObsoleteEntries();
 	// add/update table entires in choice
-	for (let sport of Object.keys(choice)) {
+	for (let course of Object.keys(choice)) {
 		if (initElems) {
-			for (let user of Object.keys(choice[sport])) {
-				for (let id of choice[sport][user]) {
-					let title = `${sport}`;
+			for (let user of Object.keys(choice[course])) {
+				for (let id of choice[course][user]) {
+					let title = `${course}`;
 					let entryElem = getErrorTable(id, title, "Loading...");
-					updateEntryInTable(entryElem, sport, id, user);
+					updateEntryInTable(entryElem, course, id, user);
 				}
 			}
 		}
-		requestHTML("GET", getHref(sport))
-		.then((sportDoc) => {
-			for (let user of Object.keys(choice[sport])) {
-				for (let id of choice[sport][user]) {
+		requestHTML("GET", getHref(course))
+		.then((courseDoc) => {
+			for (let user of Object.keys(choice[course])) {
+				for (let id of choice[course][user]) {
 					let [nr, date] = id.split("_");
 					// find corresponding row element matching nr
 					let tRowElem = null; 
-					for (let nrElem of sportDoc.getElementsByClassName("bs_sknr")) {
+					for (let nrElem of courseDoc.getElementsByClassName("bs_sknr")) {
 						if (nrElem.innerText == nr) {
 							tRowElem = nrElem.parentElement;
 							console.assert(tRowElem.tagName == "TR");
@@ -200,27 +204,27 @@ async function updateChoice(c, initElems=false) {
 						}
 					}
 					if (!tRowElem) {
-						//console.warn(`Found no course nr matching course ${sport}_${id}`)
-						let entryElem = getErrorTable(id, `${sport}`, "Nr not found");
-						updateEntryInTable(entryElem, sport, id, user); 
+						//console.warn(`Found no course nr matching course ${course}_${id}`)
+						let entryElem = getErrorTable(id, `${course}`, "Nr not found");
+						updateEntryInTable(entryElem, course, id, user); 
 						continue;
 					} else if (getCourseDateStr(tRowElem) != date) {
-						//console.warn(`Date for course ${sport}_${id} does not match: ${date} != ${getCourseDateStr(tRowElem)}`)
+						//console.warn(`Date for course ${course}_${id} does not match: ${date} != ${getCourseDateStr(tRowElem)}`)
 						// If course with same number lies in the future, remove that course as it expired
 						if (getCourseDate(tRowElem) > dateFromDDMMYY(date)) {
-							console.log(`Course ${id} (${sport}) expired as a course with the same nr`+
+							console.log(`Course ${id} (${course}) expired as a course with the same nr`+
 								` and a higher date exists, removing the course...`);
-							if (removeIdFromChoice(choice, sport, user, id)) {
+							if (removeIdFromChoice(choice, course, user, id)) {
 								upload(CHOICE_FILE, choice)
 								.then (() => removeBookingState(id));
 							}
 						} else { 
-							let entryElem = getErrorTable(id, `${sport}`, "Wrong date");
-							updateEntryInTable(entryElem, sport, id, user); 
+							let entryElem = getErrorTable(id, `${course}`, "Wrong date");
+							updateEntryInTable(entryElem, course, id, user); 
 						}
 						continue;
 					}	
-//					console.log(`Found date matching course ${sport}_${id}: date ${date} == ${getCourseDateStr(tRowElem)}`)
+//					console.log(`Found date matching course ${course}_${id}: date ${date} == ${getCourseDateStr(tRowElem)}`)
 
 					// create empty entry of table and insert course data
 					let entryElem = createEmptyCourseTable(); 
@@ -237,21 +241,21 @@ async function updateChoice(c, initElems=false) {
 								anchor.removeAttribute("href");
 
 					}
-					// append sport to details (bs_sdet)
+					// append course to details (bs_sdet)
 					let detElem = newRowElem.getElementsByClassName("bs_sdet")[0];
 					if (detElem)
-						detElem.innerText = sport + " - " + detElem.innerText; // + " (" + user + ")";
+						detElem.innerText = course + " - " + detElem.innerText; // + " (" + user + ")";
 
-					updateEntryInTable(entryElem, sport, id, user); 
+					updateEntryInTable(entryElem, course, id, user); 
 				}
 			}
 		})
 		.catch((err) => {
-			if (choice[sport]) {
-				for (let user of Object.keys(choice[sport])) {
-					for (let id of choice[sport][user]) {
-						let entryElem = getErrorTable(id, `${sport}`, "Site load error");
-						updateEntryInTable(entryElem, sport, id, user); 
+			if (choice[course]) {
+				for (let user of Object.keys(choice[course])) {
+					for (let id of choice[course][user]) {
+						let entryElem = getErrorTable(id, `${course}`, "Site load error");
+						updateEntryInTable(entryElem, course, id, user); 
 					}
 				}
 			}	
@@ -276,12 +280,12 @@ function updateBooked(courseID, statestampArr) {
 
 	// find element in table and change it
 	for (let tableEntry of choiceElem.children) {
-		let [sport, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
+		let [course, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
 		let id = nr+"_"+date;
 
 		if (id == courseID) {
 			if (state) {  // if state is not undefined, update it
-				updateEntryInTable(tableEntry, sport, id, user);
+				updateEntryInTable(tableEntry, course, id, user);
 			} else if (oldState) { // entry's booking state was removed
 				if (oldState == "booked") {
 					// This path is never taken,
@@ -376,11 +380,11 @@ function onCloseButton(button) {
         parent = parent.parentElement;
     }
     let title = parent.title;
-    let [sport, nr, date, user] = title.split("_");
+    let [course, nr, date, user] = title.split("_");
 	let id = nr+"_"+date;
 
 	// update choice file if removed successfully
- 	if (removeIdFromChoice(choice, sport, user, id)) {
+ 	if (removeIdFromChoice(choice, course, user, id)) {
 		upload(CHOICE_FILE, choice)
 		.then (() => removeBookingState(id));
     } else {
@@ -442,9 +446,9 @@ function armAll() {
 	armed_one = true;
 	let user = Object.keys(userdata)[0];
 	let courselist = [];
-	for (let sport of Object.keys(choice)) {
-		if (choice[sport][user])
-			courselist.push(sport);
+	for (let course of Object.keys(choice)) {
+		if (choice[course][user])
+			courselist.push(course);
 	}
 	return storeAsArmedCourses(courselist)
 	.then(() => onOpenAll(false));
@@ -455,9 +459,9 @@ function unarmAll() {
 	armed_one = false;
 	let user = Object.keys(userdata)[0];
 	let courselist = [];
-	for (let sport of Object.keys(choice)) {
-		if (choice[sport][user])
-			courselist.push(sport);
+	for (let course of Object.keys(choice)) {
+		if (choice[course][user])
+			courselist.push(course);
 	}
     return storeAsUnarmedCourses(courselist); 
 }
@@ -473,13 +477,13 @@ async function onOpenAll(closeAfter=false) {
 	let user = Object.keys(userdata)[0];
 	let urls = [];
 
-	for (let sport of Object.keys(choice)) {
+	for (let course of Object.keys(choice)) {
 		// get all tabs and do not reopen the ones already open
-		if (choice[sport][user]) {
-			let href = getHref(sport);
+		if (choice[course][user]) {
+			let href = getHref(course);
 			// create url with anchor to first course nr appended
 			let nrs = [];
-			choice[sport][user].forEach((id) => nrs.push(id.split("_")[0]));
+			choice[course][user].forEach((id) => nrs.push(id.split("_")[0]));
 			urls.push(href + "#K" + Math.min(...nrs));
 		}
 	}
@@ -621,11 +625,11 @@ setInterval(() => {
 }, 500);
 
 toggleAdviceButton.addEventListener("click", () => {
-	if (adviceElem.getAttribute("hidden") != null) {
-		adviceElem.removeAttribute("hidden");
+	if (adviceElem.hidden) {
+		adviceElem.hidden = false;
 		toggleAdviceButton.innerText = "Hide advice";
 	} else {
-		adviceElem.setAttribute("hidden", "");
+		adviceElem.hidden = true;
 		toggleAdviceButton.innerText = "Show advice";
 	}
 })

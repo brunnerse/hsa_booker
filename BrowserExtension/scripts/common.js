@@ -391,48 +391,48 @@ function getCourseDate(tRowElem) {
 }
 
 
-function storeAsArmed(sport) {
-    return storeAsArmedCourses([sport]);
+function storeAsArmed(course) {
+    return storeAsArmedCourses([course]);
 }
 
-async function storeAsArmedCourses(sports) {
+async function storeAsArmedCourses(courses) {
     let timeStamp = Date.now();
-    for (let sport of sports) {
-        let file = ARMED_FILE + sport;
+    for (let course of courses) {
+        let file = ARMED_FILE + course;
         await upload(file, timeStamp);  
     }
 }
 
-function storeAsUnarmed(sport) {
-    return storeAsUnarmedCourses([sport]);
+function storeAsUnarmed(course) {
+    return storeAsUnarmedCourses([course]);
 }
 
-async function storeAsUnarmedCourses(sports) {
-    for (let sport of sports) {
-        let file = ARMED_FILE + sport;
+async function storeAsUnarmedCourses(courses) {
+    for (let course of courses) {
+        let file = ARMED_FILE + course;
         await remove(file);  
     }
 }
 
-async function isArmed(sport) {
-    let stamp = await download(ARMED_FILE+sport);
+async function isArmed(course) {
+    let stamp = await download(ARMED_FILE+course);
     return !hasArmedExpired(stamp);
 }
 
-function removeIdFromChoice(choice, sport, user, id) {
+function removeIdFromChoice(choice, course, user, id) {
     let success = false;
-    if (choice[sport] && choice[sport][user]) {
-        for (let i = choice[sport][user].length-1; i >= 0; i--) {
-            if (choice[sport][user][i] == id) {
-                choice[sport][user].splice(i, 1);
+    if (choice[course] && choice[course][user]) {
+        for (let i = choice[course][user].length-1; i >= 0; i--) {
+            if (choice[course][user][i] == id) {
+                choice[course][user].splice(i, 1);
                 success = true;
             }
         }
         // clean up choice obj
-        if (choice[sport][user].length == 0) {
-            delete choice[sport][user];
-            if (Object.keys(choice[sport]).length == 0)
-                delete choice[sport];
+        if (choice[course][user].length == 0) {
+            delete choice[course][user];
+            if (Object.keys(choice[course]).length == 0)
+                delete choice[course];
         }
     }
     return success;

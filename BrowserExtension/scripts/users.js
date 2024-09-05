@@ -146,10 +146,10 @@ async function addUser(user) {
     // if prename changed, transfer choice data
     if (selectedUser && selectedUser != user ) {
         let choice = await download(CHOICE_FILE) ?? {};
-        for (let sport of Object.keys(choice)) {
-           if (choice[sport][selectedUser]) {
-                choice[sport][user] = choice[sport][selectedUser];
-                delete choice[sport][selectedUser];
+        for (let course of Object.keys(choice)) {
+           if (choice[course][selectedUser]) {
+                choice[course][user] = choice[course][selectedUser];
+                delete choice[course][selectedUser];
            } 
         }
         upload(CHOICE_FILE, choice);
