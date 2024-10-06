@@ -201,6 +201,7 @@ async function arm(storedAsArmed=false) {
 
     // Check if popups are allowed
     let popupsAllowedTimestamp = (await download(POPUP_FILE)) ?? 0; 
+
     // if timestamp is more than one hour old, test again if popups are possible 
     if (popupsAllowedTimestamp < Date.now() - 60*60*1000) {
         let popupTestUrl;
@@ -374,22 +375,31 @@ async function arm(storedAsArmed=false) {
 }
 
 
-function unarm() {
+async function unarm() {
     armText.innerText = "ARM";
     let style = armButton.getAttribute("style").replace("blue", "green");
     armButton.setAttribute("style", style); 
     refreshSelectElem.parentElement.setAttribute("hidden", "");
     // remove website from armed list in options
-    storeAsUnarmed(currentCourse);
+    await storeAsUnarmed(currentCourse);
     setStatusTemp("Unarmed.");
     armed = false;
 }
 
-async function onArm() {
+function onArm() {
     if (!armed)
-        return arm(); 
+        return arm()
+        .catch((err) => {
+            setStatusTemp(err.toString(), "red");
+            unarm();
+            throw err;
+        }); 
     else
-        return unarm();
+        return unarm()
+        .catch((err) => {
+            setStatusTemp(err.toString(), "red");
+            throw err;
+        }); 
 }
 
 function modifyBookButtons() {
@@ -412,8 +422,8 @@ function modifyBookButtons() {
         aktionElem.replaceChildren();
         // create button and add to bookElem
         let button = document.createElement("BUTTON");
-        button.style = "width:95%; border-radius:5px;text-align:center;" 
-            + (choiceIDs.includes(id) ? "background-color: green;color:white" : "");
+        button.style = "width:95%; border-radius:5px; text-align:center;" 
+            + (choiceIDs.includes(id) ? "background-color:green; color:white" : "");
         button.type = "button";
         aktionElem.appendChild(button);
         button.onclick = () => onAdd(button) 
@@ -518,17 +528,16 @@ if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktuell
 function courseSiteOnChoice(choice) {
     choice = choice ?? {};
     for (let elem of document.querySelectorAll("dd a")) {
-        let isElemProcessed = elem.parentElement.className.includes("trstate");
-        let chosen = choice[elem.innerText];
-        if (chosen && !isElemProcessed) {
-            elem.parentElement.className = " trstate-marked";
+        let isElemMarked = elem.parentElement.className.includes("trstate-marked");
+        let chosen = choice[elem.innerText] ? true : false;
+        if (chosen && !isElemMarked) {
+            elem.parentElement.className += " trstate-marked";
             let spanElem = document.createElement("SPAN");
-            spanElem.setAttribute("style", "color: green;float:left");
+            spanElem.setAttribute("style", "color:green; float:left");
             spanElem.innerText = "✔";
-            let course = elem.innerText;
             elem.parentElement.insertBefore(spanElem, elem);
-        } else if (!chosen && isElemProcessed) {
-            elem.parentElement.className = "";
+        } else if (!chosen && isElemMarked) {
+            removeClass(elem.parentElement, "trstate-marked");
             let spanChildren = elem.parentElement.getElementsByTagName("SPAN");
             spanChildren.length > 0 && elem.parentElement.removeChild(spanChildren[0]);
         }

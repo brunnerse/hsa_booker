@@ -60,13 +60,13 @@ function objectsEqualFlat(o1, o2) {
         entries.every((keyval) => keyval[1] == o2[keyval[0]]);
 }
 
-function removeClass(a, b) { 
-    let classes = a.className.split(" ");
+function removeClass(elem, className) { 
+    let classes = elem.className.split(" ");
     let newClasses = []
     for (let c of classes)
-        if (!["", b].includes(c))
+        if (!["", className].includes(c))
             newClasses.push(c);
-    a.className = newClasses.join(" ");
+    elem.className = newClasses.join(" ");
 }
 
 function colorRow(tRowElem, state) {
@@ -259,13 +259,13 @@ async function downloadAll() {
 }
 
 function download(filename) {
-    return new Promise(async function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         getStorage(filename).get(filename)
         .then((result) => {
             //console.log(`Downloaded data ${filename}:`)
             //console.log(result[filename]);
             resolve(result[filename]);
-        })
+        }) 
         .catch((err) => {
             console.error("[ERROR] : failed reading data " + filename + " from storage");
             reject(err);
