@@ -375,7 +375,37 @@ async function updateArm() {
 	}
 }
 
-function onCloseButton(button) {
+
+function armAll() {
+	armed_all = true;
+	armed_one = true;
+	let user = Object.keys(userdata)[0];
+	let courselist = [];
+	for (let course of Object.keys(choice)) {
+		if (choice[course][user])
+			courselist.push(course);
+	}
+	return storeAsArmedCourses(courselist)
+	.then(() => onOpenAll(false));
+}
+
+
+function unarmAll() {
+	armed_all = false;
+	armed_one = false;
+	let user = Object.keys(userdata)[0];
+	let courselist = [];
+	for (let course of Object.keys(choice)) {
+		if (choice[course][user])
+			courselist.push(course);
+	}
+    return storeAsUnarmedCourses(courselist); 
+}
+
+
+
+function onCloseButton(event) {
+	let button = event.target;
     let parent = button.parentElement;
     while (parent.className != "item-page") {
         parent = parent.parentElement;
@@ -422,50 +452,6 @@ function onOptionChange(change) {
 	setAllOptions(optionObj);
 }
 
-async function loadOptions(allowCache=true) {
-	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
-		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null)
-			continue;
-		if (inputElem.type == "radio") {
-			inputElem.checked = await getOption(inputElem.name, allowCache) == inputElem.value;
-		} else if (inputElem.type == "checkbox") {
-			inputElem.checked = await getOption(inputElem.name, allowCache);
-		} else {
-			inputElem.value = await getOption(inputElem.name, allowCache);
-		}
-	}
-	// Enforce constraints
-	if (inputFill.checked == false && inputSubImm.checked) {
-		console.error("INCONSISTENT OPTIONS: fillform unchecked but submitimmediately checked");
-		inputSubImm.checked = false;
-		onOptionChange({});
-	}
-}
-
-function armAll() {
-	armed_all = true;
-	armed_one = true;
-	let user = Object.keys(userdata)[0];
-	let courselist = [];
-	for (let course of Object.keys(choice)) {
-		if (choice[course][user])
-			courselist.push(course);
-	}
-	return storeAsArmedCourses(courselist)
-	.then(() => onOpenAll(false));
-}
-
-function unarmAll() {
-	armed_all = false;
-	armed_one = false;
-	let user = Object.keys(userdata)[0];
-	let courselist = [];
-	for (let course of Object.keys(choice)) {
-		if (choice[course][user])
-			courselist.push(course);
-	}
-    return storeAsUnarmedCourses(courselist); 
-}
 
 function onArmAll() {
     if (!armed_all) 
@@ -494,36 +480,34 @@ async function onOpenAll(closeAfter=false) {
 }
 
 
-// Add listeners
-for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
-	inputElem.addEventListener("change", onOptionChange);
-}
 
-document.getElementById("resetdata").addEventListener("click", () => {
-	if (confirm("Reset HSA Booker extension?")) {
-			base.storage.local.clear();
-			base.storage.sync.clear();
-			loadOptions(false);
+/*
+* Initial functions
+*/
+async function loadOptions(allowCache=true) {
+	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null) // Skip hidden option elements
+			continue;
+		if (inputElem.type == "radio") {
+			inputElem.checked = await getOption(inputElem.name, allowCache) == inputElem.value;
+		} else if (inputElem.type == "checkbox") {
+			inputElem.checked = await getOption(inputElem.name, allowCache);
+		} else {
+			inputElem.value = await getOption(inputElem.name, allowCache);
+		}
 	}
-})
-document.getElementById("go-to-options").addEventListener("click", () => {
-    window.open("hsabook_options.html");
-})
-document.getElementById("go-to-options").onClick = () => {
-  window.open("hsabook_options.html");
-};
-
-document.getElementById("armall").addEventListener("click", onArmAll);
-document.getElementById("openall").addEventListener("click", onOpenAll);
-
-loadOptions();
+	// Enforce constraints
+	if (inputFill.checked == false && inputSubImm.checked) {
+		console.error("INCONSISTENT OPTIONS: fillform unchecked but submitimmediately checked");
+		inputSubImm.checked = false;
+		onOptionChange({});
+	}
+}
 
 // Load local storage and clean it up
 async function loadInitialData() {
 	let storageContent = await downloadAll();
 	console.log(storageContent);
-
-
 
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
 	await updateUserdata(storageContent[USERS_FILE]);
@@ -621,7 +605,28 @@ async function loadInitialData() {
 
 }
 
+// Add listeners
+for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+	inputElem.addEventListener("change", onOptionChange);
+}
 
+document.getElementById("resetdata").addEventListener("click", () => {
+	if (confirm("Reset HSA Booker extension?")) {
+			base.storage.local.clear();
+			base.storage.sync.clear();
+			loadOptions(false);
+	}
+})
+
+document.getElementById("armall").addEventListener("click", onArmAll);
+document.getElementById("openall").addEventListener("click", onOpenAll);
+document.getElementById("titlelink").addEventListener("click",
+	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
+document.getElementById("openchoicesite").addEventListener("click",
+	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
+
+
+loadOptions();
 loadInitialData();
 
 // Create function that periodically checks whether a booking state or armed course has expired
@@ -650,7 +655,3 @@ toggleAdviceButton.addEventListener("click", () => {
 	}
 })
 
-document.getElementById("titlelink").addEventListener("click",
-	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
-document.getElementById("openchoicesite").addEventListener("click",
-	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
