@@ -97,7 +97,6 @@
 }
 
 
-
 .link {
     color: blue;
 }
@@ -106,6 +105,9 @@
     cursor: pointer;
 }
 
+.sortby:hover {
+  cursor: vertical-text /*s-resize;*/
+}
 
 
 /* Tooltip text */

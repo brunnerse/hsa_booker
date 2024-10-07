@@ -20,6 +20,10 @@ let bookingState = {};
 let courselinks = {};
 
 
+const SORT_KEYS = {date: 'd', name: 'n', id: 'i'};
+let sortkey = SORT_KEYS.name; 
+
+
 function getHref(course) {
 	let link = courselinks[course];
 	// if link not registered, create it according to heuristic 
@@ -87,9 +91,57 @@ function removeObsoleteEntries() {
 	}
 }
 
+
+function findIndexInChoice(course, nr, date, isBooked, maxIdx=null) {
+	// Find correct position: Sort by course and nr, booked courses first 
+	let nr_int = parseInt(nr);
+	let date_int = dateFromDDMMYY(date).getTime();
+	let i;
+	maxIdx = maxIdx ?? choiceElem.children.length-1;
+	for (i = 0; i <= maxIdx; i++) {
+		let [compCourse, compNr, compDate, __] = 
+			choiceElem.children[i].getAttribute("title").split("_");
+		let compIsBooked = (bookingState[compNr+"_"+compDate] ?? [null])[0] == "booked";
+		if (isBooked && !compIsBooked)
+			break;
+		else if (!isBooked && compIsBooked)
+			continue; 
+		else {
+			if (sortkey == SORT_KEYS.id) {
+				if (parseInt(compNr) > parseInt(nr)) // Nr is assumed unique, so no second check required
+					break; 
+			} else if (sortkey == SORT_KEYS.date) {
+				let compDate_int = dateFromDDMMYY(compDate).getTime();
+				if (compDate_int > date_int || (compDate_int == date_int && compCourse > course)
+					|| (compDate_int == date_int && compCourse == course && parseInt(compNr) > nr_int))
+					break; 
+			} else { // SORT_KEYS.name
+				if (compCourse > course || (compCourse == course && parseInt(compNr) > nr_int))
+					break; 
+			}
+		}
+	}
+	return i;
+}
+
+function sortEntriesInTable() {
+	// Takes i-th element and sort into the first 0:i elements 
+	// Start with second element
+	for (let i = 1; i < choiceElem.children.length; i++) {
+		let [course, nr, date, __] = choiceElem.children[i].getAttribute("title").split("_");
+		let id = [nr, date].join("_");
+		let isEntryBooked = bookingState[id] ? true : false; 
+		let idx = findIndexInChoice(course, nr, date, isEntryBooked, i);
+
+		// Move child from i to idx via insertBefore()
+		if (idx != i)
+			choiceElem.insertBefore(choiceElem.children[i], choiceElem.children[idx]);
+	}
+}
+
 async function updateEntryInTable(entryElem, course, id, user) {
 	const title = `${course}_${id}_${user}`;
-	let nr = id.split("_")[0];
+	const [nr, date] = id.split("_");
 
 	// check if entry is already in table
 	let replaceEntry;
@@ -100,29 +152,22 @@ async function updateEntryInTable(entryElem, course, id, user) {
 		}
 	}
 	if (!replaceEntry) {
-		// Find correct position: Sort by course and nr, booked courses first 
 		let isEntryBooked = (bookingState[id] ?? [null])[0] == "booked";
-		let i;
-		for (i = 0; i < choiceElem.children.length; i++) {
-			let [compCourse, compNr, compDate, __] = 
-				choiceElem.children[i].getAttribute("title").split("_");
-			let compIsBooked = (bookingState[compNr+"_"+compDate] ?? [null])[0] == "booked";
-			if (isEntryBooked && !compIsBooked)
-				break;
-			else if (!isEntryBooked && compIsBooked)
-				continue; 
-			else if (compCourse > course || (compCourse == course && parseInt(compNr) > parseInt(nr)))
-				break; 
-		}
-		choiceElem.insertBefore(entryElem.cloneNode(true), choiceElem.children[i]);
-		replaceEntry = choiceElem.children[i]; 
+		let idx = findIndexInChoice(course, nr, date, isEntryBooked);
+		choiceElem.insertBefore(entryElem.cloneNode(true), choiceElem.children[idx]);
+		replaceEntry = choiceElem.children[idx]; 
 		replaceEntry.setAttribute("title", title);
 	}
 	// replace the replaceEntry tableRow with entryElem
 	replaceEntry.replaceChildren(...entryElem.children);
 	// set close button listener
 	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
-	closeButton.addEventListener("click", () => onCloseButton(closeButton));
+	closeButton.addEventListener("click", onCloseButton);
+
+	// set sort listeners
+	for (let sortHeaderElem of replaceEntry.getElementsByClassName("sortby"))
+		sortHeaderElem.addEventListener("click", onSortBy);
+
 
 	// Create href to course in the row if entry is not already a link or in error state
 	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
@@ -362,12 +407,12 @@ async function updateArm() {
 	// set arm Button and text according to whether all are armed or not
 	armed_all = (numArmedTitles == Object.keys(choice).length) ? true : false;
 	armed_one = (numArmedTitles > 0) ? true : false;
-	if (armed_all) {
+	if (armed_one) {
 		armText.innerText = "Unarm all";
 		let style = armButton.getAttribute("style").replace("green", "blue");
 		armButton.setAttribute("style", style); 
 	}
-	else //if (armed_one)
+	else
 	{
 		armText.innerText = "Arm all";
 		let style = armButton.getAttribute("style").replace("blue", "green");
@@ -405,7 +450,7 @@ function unarmAll() {
 
 
 function onCloseButton(event) {
-	let button = event.target;
+	let button = event.currentTarget;
     let parent = button.parentElement;
     while (parent.className != "item-page") {
         parent = parent.parentElement;
@@ -425,8 +470,24 @@ function onCloseButton(event) {
 }
 
 
+function onSortBy(event) {
+	let elem = event.currentTarget;
+
+	let prevSortkey = sortkey;
+	if (elem.className.includes("bs_sknr"))
+		sortkey = SORT_KEYS.id; 
+	else if (elem.className.includes("bs_sdet")) 
+		sortkey = SORT_KEYS.name; 
+	else
+		sortkey = SORT_KEYS.date; 
+	
+	if (sortkey != prevSortkey)
+		sortEntriesInTable();
+}
+
+
 function onOptionChange(change) {
-	let triggerElem = change["target"];
+	let triggerElem = change.currentTarget;
 	// enforce constraints
 	if (triggerElem === inputFill && triggerElem.checked == false)
 		inputSubImm.checked = false;
@@ -454,7 +515,7 @@ function onOptionChange(change) {
 
 
 function onArmAll() {
-    if (!armed_all) 
+    if (!armed_one) 
 		return confirm("Arm all courses?") && armAll();  
     else 
 		return unarmAll();
