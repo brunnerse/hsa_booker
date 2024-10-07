@@ -119,22 +119,20 @@
             <tr>
                 <td><label style="font-size:85%" for="vornameinput">Vorname:</label>
                 </td>
-                <td> <input style="font-size:85%" inert class="" type="text" name="vorname" maxlength="50"
-                        id="vornameinput">
+                <td> <input style="font-size:85%" inert type="text" name="vorname" autocomplete="off" id="vornameinput">
                 </td>
             </tr>
             <tr>
                 <td> <label style="font-size:85%;margin-top:5px;margin-bottom:5px;margin-right:20px"
                         for="nameinput">Familienname:</label></td>
-                <td> <input style="font-size:85%" inert class="" type="text" name="name" maxlength="60"
-                        autocomplete="off" id="nameinput">
+                <td> <input style="font-size:85%" inert type="text" name="name" autocomplete="off" id="nameinput">
                 </td>
             </tr>
             <tr>
                 <td><label style="font-size:85%" for="usershowelem">Status:</label></td>
                 <td>
                     <select class="bs_form_field bs_fval_req" inert name="statusorig" size="1" id="usershowelem"
-                        style="font-size:85%">
+                        style="font-size:85%; max-width:180px;">
                         <option style="font-size:85%" value="" selected="selected"></option>
                         <option style="font-size:85%" value="S-UNIA">StudentIn der UNI Augsburg</option>
                         <option style="font-size:85%" value="S-HS">StudentIn der HS Augsburg</option>
