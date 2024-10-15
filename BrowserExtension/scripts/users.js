@@ -11,10 +11,8 @@ const formdata = JSON.parse(formDataElem.textContent||formDataElem.innerText);
 function removeWarnMarks() {
     let inputElems = formElem.getElementsByTagName("INPUT");
     for (let e of inputElems) {
-        let g = e.parentElement;
-        while (!g.className.match(/\bbs_form_row\b/))
-            g = g.parentElement;
-        removeClass(g, "warn");
+        let g = e.closest(".bs_form_row");
+        g.classList.remove("warn");
     }
 
 }
@@ -23,17 +21,17 @@ function checkForm() {
     let inputElems = formElem.getElementsByTagName("INPUT");
 
     for (let e of inputElems) {
-        let g = e.parentElement;
-        while (!g.className.match(/\bbs_form_row\b/))
-            g = g.parentElement;
-        removeClass(g, "warn");
+        // Find top parent with name bs_form_row
+        let g = e.closest(".bs_form_row");
+        g.classList.remove("warn");
 
-        if (e.getAttribute("disabled") == "disabled" || g.className.split(" ").includes("hide"))
+        if (e.getAttribute("disabled") == "disabled" || g.classList.contains("hide"))
             continue;
         var f = e.className.match(/\bbs_fval_(.+?)\b/);
         if (!chk_input(e, f ? f[1] : "")) {
             // g is row
-            g.className += " warn"; e.focus(); 
+            g.classList.add("warn");
+            e.focus(); 
             return g.children[0].children[0].innerText.replace(/[:*]/g, "");
         }
     }
@@ -370,7 +368,7 @@ getOption("multipleusers")
 .then((multiusr) => {
     if (!multiusr) {
         document.getElementById("deletebutton").setAttribute("hidden", "");
-        removeClass(document.getElementById("savebutton"), "bs_right");
+        document.getElementById("savebutton").classList.remove("bs_right");
         document.getElementById("savebutton").setAttribute("style", "margin: 0 auto");
         document.getElementById("savebutton").children[0].innerText = "Save changes";
         userSelectElem.parentElement.parentElement.setAttribute("hidden", "");
@@ -389,5 +387,4 @@ document.getElementById("backbutton").addEventListener("click", () => {
         window.close();
     else
         window.history.back();
-        //window.location.replace("hsabook.html");
 }); 

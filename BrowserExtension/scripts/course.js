@@ -140,7 +140,7 @@ async function onAdd(button) {
         return;
     }
 
-    let trElem = button.parentElement.parentElement;
+    let trElem = button.closest("tr");
     let nr = getCourseNr(trElem);
     let date = getCourseDateStr(trElem); 
     let courseID = nr + "_" + date;
@@ -215,20 +215,22 @@ async function arm(storedAsArmed=false) {
                 popupTestUrl = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
             }
         } 
-        // Test with setTimeout
+        // Test opening popup with setTimeout
         let popup_window_t;
-        let popup_t_test = new Promise((resolve) => setTimeout(() => {
+        let popup_t_test = new Promise(
+            (resolve) => setTimeout(() => {
                 popup_window_t = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
                 if (popup_window_t)
                     try { popup_window_t.close(); } catch {}
                 resolve();
-            }, 0));
-        // Test-open popup directly
+            }, 0)
+        );
+        // Test opening popup directly
         let popup_window = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
         if (popup_window)
             try { popup_window.close(); } catch {}
         await popup_t_test;
-        // If both tests were successful, store it as successful to not test again
+        // If both tests were successful, store popup test as successful 
         if (popup_window && popup_window_t) {
             //await setStatusTemp("Popup check successful", "yellow", 500);
             upload(POPUP_FILE, Date.now()); 
@@ -248,8 +250,6 @@ async function arm(storedAsArmed=false) {
     let numCoursesDone = 0;
     let numCoursesFull = 0;
     let unavailableCourses = [];
-    // get all course number elements in the document
-    let nrElems = document.getElementsByClassName("bs_sknr");
 
     for (let id of choiceIDs) {
         let state = bookingState[id] ? bookingState[id][0] : "unavailable";
@@ -267,11 +267,11 @@ async function arm(storedAsArmed=false) {
             case "error":
                 // book course: get form and bookbutton, then submit
                 let [nr, date] = id.split("_");
-                // first find row element for id
+                // first find row element which has the wanted course number
                 let rowElem;
-                for (let nElem of nrElems) {
-                    if (nElem.tagName == "TD" && nElem.innerText == nr) {
-                        rowElem = nElem.parentElement;
+                for (let nrElem of document.querySelectorAll("td.bs_sknr")) {
+                    if (nrElem.innerText == nr) {
+                        rowElem = nrElem.parentElement;
                         break;
                     }
                 } 
@@ -283,11 +283,9 @@ async function arm(storedAsArmed=false) {
                 } else {
                     // next find book button to check whether course is bookable
                     let bookButton = rowElem.getElementsByTagName("INPUT")[0];
-                    if (bookButton && bookButton.className.includes("bs_btn_buchen")) {
+                    if (bookButton && bookButton.classList.contains("bs_btn_buchen")) {
                         // book course and set as done
-                        let formElem = bookButton.parentElement;
-                        while (formElem.tagName != "FORM")
-                            formElem = formElem.parentElement;
+                        let formElem = bookButton.closest("form");
                         formElem.requestSubmit(bookButton);
                         numCoursesDone++;
                     }
@@ -404,17 +402,12 @@ function onArm() {
 
 function modifyBookButtons() {
     // insert buttons into book table cell
-    for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
-        if (bookElem.tagName != "TD")
-            continue;
+    for (let bookElem of document.querySelectorAll("td.bs_sbuch")) {
         // check book button and save its color (by classname)
-        let className = "";
-        let childElem = bookElem.lastChild;
-        if (["BUTTON", "INPUT"].includes(childElem.tagName)) {
-            className = childElem.className;
-        }
+        let childElem = bookElem.querySelector("input,button");
+        let className = childElem ? childElem.className : "";
 
-        let trElem = bookElem.parentElement;
+        let trElem = bookElem.closest("tr");
         let id = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
 
         let aktionElem = bookElem.parentElement.lastChild;
@@ -430,9 +423,9 @@ function modifyBookButtons() {
 
        // set booking state according to stored state and the booking button class
        let bookStateSite = "none" ;
-        if ("bs_btn_buchen" == className)
+        if (className.match(/\bbs_btn_buchen\b/))
            bookStateSite = "ready";
-        else if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(className))
+        else if (className.match(/\bbs_btn_(ausgebucht|warteliste)\b/))
            bookStateSite = "full";
 
        let bookState = bookingState[id] ? bookingState[id][0] : null;
@@ -474,10 +467,8 @@ async function updateChoice(c, checkAllCourses=false) {
     let IDsToCheck = choiceIDs;
     if (checkAllCourses) {
         IDsToCheck = [];
-        for (let bookElem of document.getElementsByClassName("bs_sbuch")) {
-            if (bookElem.tagName != "TD")
-                continue;
-            let trElem = bookElem.parentElement;
+        for (let bookElem of document.querySelectorAll("td.bs_sbuch")) {
+            let trElem = bookElem.closest("tr");
             let id = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
             IDsToCheck.push(id);
         }
@@ -512,13 +503,13 @@ async function updateUserdata(d) {
 // check the current site if it is a course site
 let isCourseSite = false;
 // check if URL is a course and update visible elements accordingly
-if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
+if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
     let course = currentCourse; 
-    setStatus("Click ARM to book the marked courses ASAP", "white");
+    setStatus("Click ARM to book the marked courses", "white");
     armButton.parentElement.removeAttribute("hidden");
     hintElem.innerText = "Mark the " + course + " courses that you want to be booked automatically";
     isCourseSite = true;
-} else if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
+} else if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
     setStatus("Course overview");
     hintElem.innerText = "Go to a course website to add the course";
 } else {
@@ -528,16 +519,16 @@ if (currentUrl.match(/\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktuell
 function courseSiteOnChoice(choice) {
     choice = choice ?? {};
     for (let elem of document.querySelectorAll("dd a")) {
-        let isElemMarked = elem.parentElement.className.includes("trstate-marked");
+        let isElemMarked = elem.parentElement.classList.contains("trstate-marked");
         let chosen = choice[elem.innerText] ? true : false;
         if (chosen && !isElemMarked) {
-            elem.parentElement.className += " trstate-marked";
+            elem.parentElement.classList.add("trstate-marked");
             let spanElem = document.createElement("SPAN");
             spanElem.setAttribute("style", "color:green; float:left");
             spanElem.innerText = "✔";
             elem.parentElement.insertBefore(spanElem, elem);
         } else if (!chosen && isElemMarked) {
-            removeClass(elem.parentElement, "trstate-marked");
+            elem.parentElement.classList.remove("trstate-marked");
             let spanChildren = elem.parentElement.getElementsByTagName("SPAN");
             spanChildren.length > 0 && elem.parentElement.removeChild(spanChildren[0]);
         }

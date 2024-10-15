@@ -60,25 +60,17 @@ function objectsEqualFlat(o1, o2) {
         entries.every((keyval) => keyval[1] == o2[keyval[0]]);
 }
 
-function removeClass(elem, className) { 
-    let classes = elem.className.split(" ");
-    let newClasses = []
-    for (let c of classes)
-        if (!["", className].includes(c))
-            newClasses.push(c);
-    elem.className = newClasses.join(" ");
-}
 
 function colorRow(tRowElem, state) {
-    let classes = tRowElem.className.split(" ");
     // Remove all old trstate classes
-    for (let i = classes.length-1; i >= 0; i--) {
-        if (classes[i].startsWith("trstate-"))
-            classes.splice(i, 1);
+    let classesToRemove = [];
+    for (let c of tRowElem.classList) {
+        if (c.startsWith("trstate-"))
+            classesToRemove.push(c);
     }
+    classesToRemove.forEach((c) => tRowElem.classList.remove(c));
     // Add fitting trstate class
-    classes.splice(0, 0, "trstate-"+state);
-    tRowElem.className = classes.join(" ");
+    tRowElem.classList.add(`trstate-${state}`)
 }
 
 

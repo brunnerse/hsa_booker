@@ -98,24 +98,16 @@ async function onSelectChange() {
 
 function fillForm(form, data) {
     // Set status select option
-    let selectElems = form.getElementsByTagName("SELECT");
-    let selectElem;
-    for (let e of selectElems)
-        if (e.name == "statusorig")
-            selectElem = e;
+    let selectElem = form.querySelector("select[name='statusorig']");
     console.assert(selectElem);
-    let ok = false;
+
     for (let i = 0; i < selectElem.options.length; i++) {
-        if (selectElem.options[i].value == data.statusorig) {
+        if (selectElem.options[i].value == data["statusorig"]) {
             selectElem.selectedIndex = i;
             selectElem.dispatchEvent(new Event("change"));
-            ok = true;
             break;
         }
     }
-    if (!ok) {
-        throw new Error("Did not find status element for " + data.statusorig);
-    } 
 
     removeWarnMarks();
     // Set form input elements
@@ -138,11 +130,8 @@ function fillForm(form, data) {
 function removeWarnMarks() {
     let inputElems = form.getElementsByTagName("INPUT");
     for (let e of inputElems) {
-        let g = e.parentElement;
-        while (g && !g.className.match(/\bbs_form_row\b/))
-            g = g.parentElement;
-        if (g)
-            removeClass(g, "warn");
+        let g = e.closest(".bs_form_row");
+        g && g.classList.remove("warn");
     }
 }
 
@@ -227,7 +216,7 @@ async function processDocument() {
 
     userdata = await download(USERS_FILE) ?? {};
     const courseID = getCourseID(STATE);
-    let user = Object.keys(userdata).length > 0 ? Object.keys(userdata)[0] : null;
+    const user = Object.keys(userdata).length > 0 ? Object.keys(userdata)[0] : null;
 
     if (STATE == "fill") {
         console.assert(submitElem);
@@ -418,11 +407,15 @@ async function processDocument() {
 
         let isUserActionRequired = false; 
         for (let enElem of document.getElementsByClassName("bs_form_entext")) {
-        if (enElem.innerText.match(/[eE]nter\s/) && !enElem.innerText.match(/e[-\s]*mail/)) {
-                console.log("User action required for: ", enElem.innerText);
-                enElem.parentElement.className += " warn";
-                setTimeout(() => enElem.parentElement.focus(), 100);
+            // User action required if having to enter something (other than the email, which is entered automatically)
+            if (enElem.innerText.match(/[eE]nter\s/) && !enElem.innerText.match(/e[-\s]*mail/)) {
                 isUserActionRequired = true;
+                console.log("User action required for: ", enElem.innerText);
+                let rowElem = enElem.closest(".bs_form_row");
+                if (rowElem) {
+                    rowElem.classList.add("warn");
+                    setTimeout(() => rowElem.focus(), 100);
+                }
             }
         }
         if (isUserActionRequired) {

@@ -171,8 +171,8 @@ async function updateEntryInTable(entryElem, course, id, user) {
 
 	// Create href to course in the row if entry is not already a link or in error state
 	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
-	if (!newRowElem.className.match("link|err")) {
-		newRowElem.className = "link " + newRowElem.className;
+	if (!newRowElem.className.match("\b(link|err)\b")) {
+		newRowElem.classList.add("link");
 		newRowElem.addEventListener("click", 
 			() => createTabIfNotExists(getHref(course)+"#K"+nr, true)
 			.then(window.close)
@@ -244,8 +244,8 @@ async function updateChoice(c, initElems=false) {
 					let tRowElem = null; 
 					for (let nrElem of courseDoc.getElementsByClassName("bs_sknr")) {
 						if (nrElem.innerText == nr) {
-							tRowElem = nrElem.parentElement;
-							console.assert(tRowElem.tagName == "TR");
+							tRowElem = nrElem.closest("tr");
+							console.assert(tRowElem);
 							break;
 						}
 					}
@@ -280,16 +280,14 @@ async function updateChoice(c, initElems=false) {
 					// Remove some table cells from the row
 					for (let i = newRowElem.children.length-1; i >= 0; i--) {
 						let cellElem = newRowElem.children[i];
-						if (!cellElem.className.match("bs_sknr|bs_sbuch|bs_sdet|bs_stag|bs_szeit|bs_szr"))
+						if (!cellElem.className.match(/\b(bs_sknr|bs_sbuch|bs_sdet|bs_stag|bs_szeit|bs_szr)\b/))
 							newRowElem.removeChild(cellElem);
-						if (cellElem.className.match("bs_szr"))
-							for (let anchor of cellElem.getElementsByTagName("A"))
-								anchor.removeAttribute("href");
-
 					}
-					// append course to details (bs_sdet)
-					let detElem = newRowElem.getElementsByClassName("bs_sdet")[0];
-					if (detElem)
+					// Remove time links
+					for (let timeAnchorElem of newRowElem.querySelectorAll(".bs_szr a"))
+							timeAnchorElem.removeAttribute("href");
+					// Append course to details cell (i.e. bs_sdet)
+					for (let detElem of newRowElem.getElementsByClassName("bs_sdet"))
 						detElem.innerText = course + " - " + detElem.innerText; // + " (" + user + ")";
 
 					updateEntryInTable(entryElem, course, id, user); 
@@ -338,7 +336,7 @@ function updateBooked(courseID, statestampArr) {
 					// as a "booked" bookingState is only removed when the course is removed
 					// In this path, the changes to the book button should be reverted.
 				} 
-				let tRow = tableEntry.getElementsByTagName("TD")[0].parentElement;
+				let tRow = tableEntry.querySelector("td").parentElement;
 				colorRow(tRow, "none");
 			}
 			return;
@@ -451,10 +449,7 @@ function unarmAll() {
 
 function onCloseButton(event) {
 	let button = event.currentTarget;
-    let parent = button.parentElement;
-    while (parent.className != "item-page") {
-        parent = parent.parentElement;
-    }
+    let parent = button.closest(".item-page");
     let title = parent.title;
     let [course, nr, date, user] = title.split("_");
 	let id = nr+"_"+date;
@@ -474,9 +469,9 @@ function onSortBy(event) {
 	let elem = event.currentTarget;
 
 	let prevSortkey = sortkey;
-	if (elem.className.includes("bs_sknr"))
+	if (elem.classList.contains("bs_sknr"))
 		sortkey = SORT_KEYS.id; 
-	else if (elem.className.includes("bs_sdet")) 
+	else if (elem.classList.contains("bs_sdet")) 
 		sortkey = SORT_KEYS.name; 
 	else
 		sortkey = SORT_KEYS.date; 
