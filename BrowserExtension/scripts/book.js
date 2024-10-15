@@ -220,76 +220,60 @@ async function processDocument() {
 
     if (STATE == "fill") {
         console.assert(submitElem);
+        // If did not find user or courseID, we cannot do anything
+        if (!user || !courseID)
+            return;
 
-        /*
-        if (await getOption("multipleusers")) {
-            // Insert user select elem
-            document.getElementById("body").children[0].outerHTML += '\
-                        <div id="bs_ag">\
-                            <div class="bs_form_row">\
-                                <div class="bs_form_sp1">User-ID:<div class="bs_form_entext">HSA Booker</div>\
-                                </div>\
-                                <div class="bs_form_sp2">\
-                                    <select class="bs_form_field bs_fval_req" name="users" size="1" id="userselect">\
-                                        <option value="" selected="selected">Neuer User</option>\
-                                    </select>\
-                                </div>\
-                            </div>\
-                        </div>\
-                        <div class="bs_space"></div>\
-            ';
 
-            userSelectElem = document.getElementById("userselect");
-            userSelectElem.addEventListener("change", onSelectChange); 
-            updateUserSelect(userSelectElem, userdata)
-            setSelectedIdx(userSelectElem, await getOption("defaultuseridx"));
-            onSelectChange();
-        } 
-        */
-    
-        if (user && courseID) {
-            // set booking state
-            let prevBookingState = await getBookingState(courseID); 
-            if (prevBookingState == "booked") {
-                console.warn("COURSE IS ALREADY MARKED AS BOOKED")
-                setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
-                document.title = document.title + " - ALREADY BOOKED";
-                // Fill out form anyway, but return immediately afterwards 
-                if (userdata[user] && await getOption("fillform"))
-                    fillForm(form, userdata[user]);
-                return;
-            } else if (prevBookingState == "booking") {
-                setBookingMessage("COURSE IS ALREADY BEING BOOKED, CLOSING...", "red");
-                await sleep(1000);
-                window.close();
-                return;
-            } else if (prevBookingState) {
-                // if state was e.g. error, remove the state
-                await removeBookingState(courseID, /*local=*/false);
-            }
-            
-            lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
-
+        // If form has a marked error, give message and do nothing (use query selector as it stops once it finds the first element)
+        if (form.querySelector(".warn")) {
+            setBookingMessage("Submit failed due to form error. Check the form and submit again manually.", "red");
+            // Set booking state perodically, then return
+            setInterval(() => setBookingState(courseID, "booking", /*local=*/true), booking_expiry_msec * 0.4);
             removeBookingStateOnClose(courseID);
-            setInterval(async () => {
-                // check if the last timestamp is the own one;
-                // if not, another tab is writing and we should abort booking
-                let bookState = await getBookingState(courseID, /*includeTimestamp=*/true, /*localOnly=*/true); 
-                if (!bookState)
-                    console.error("Booking state somehow did not get stored; maybe it expired before reading?");
-                else {
-                    let [state, stamp] = bookState;
-                    if (state == "booking" && stamp != lastTimestamp) {
-                        setBookingMessage("COURSE IS BEING BOOKED BY ANOTHER TAB, CLOSING...", "red");
-                        await sleep(1000);
-                        window.close();
-                        return;
-                    }
-                }
-                // update booking state timestamp constantly to show the site did not timeout
-                lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
-            }, booking_expiry_msec * 0.4);
+            return;
         }
+
+        // set booking state
+        let prevBookingState = await getBookingState(courseID); 
+        if (prevBookingState == "booked") {
+            console.warn("COURSE IS ALREADY MARKED AS BOOKED")
+            setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
+            document.title = document.title + " - ALREADY BOOKED";
+            // Fill out form anyway, but return immediately afterwards 
+            if (userdata[user] && await getOption("fillform"))
+                fillForm(form, userdata[user]);
+            return;
+        } else if (prevBookingState == "booking") {
+            setBookingMessage("COURSE IS ALREADY BEING BOOKED, CLOSING...", "red");
+            sleep(1000).then(window.close);
+            return;
+        } else if (prevBookingState) {
+            // if state was e.g. error, remove the state
+            await removeBookingState(courseID, /*local=*/false);
+        }
+        
+        lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
+
+        removeBookingStateOnClose(courseID);
+        setInterval(async () => {
+            // check if the last timestamp is the own one;
+            // if not, another tab is writing and we should abort booking
+            let bookState = await getBookingState(courseID, /*includeTimestamp=*/true, /*localOnly=*/true); 
+            if (!bookState)
+                console.error("Booking state somehow did not get stored; maybe it expired before reading?");
+            else {
+                let [state, stamp] = bookState;
+                if (state == "booking" && stamp != lastTimestamp) {
+                    setBookingMessage("COURSE IS BEING BOOKED BY ANOTHER TAB, CLOSING...", "red");
+                    await sleep(1000);
+                    window.close();
+                    return;
+                }
+            }
+            // update booking state timestamp constantly to show the site did not timeout
+            lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
+        }, booking_expiry_msec * 0.4);
 
         if (await getOption("bypasscountdown")) {
             bypassCountdown();
@@ -349,8 +333,8 @@ async function processDocument() {
                     form.requestSubmit(submitElem);
                     setBookingMessage("Submitting...", "green");
                     // Inform error if submit did not work after two seconds
-                    sleep(2000)
-                    .then(() => setBookingMessage("Automatic submit failed. Check the form and submit manually.", "red"))
+                    sleep(1500)
+                    .then(() => setBookingMessage("Automatic submit failed. Check the form and submit again manually.", "red"))
                     .then(() => submitElem.focus())
                     .then(stopCountdownMsg);
                 }
@@ -373,6 +357,7 @@ async function processDocument() {
             addStorageListener(listener);
         }
     } else if (STATE == "check") {
+
         if (user && courseID) {
             // Do not check if state is booked; if this page (check) is reached, user already decided to ignore it
             setBookingState(courseID, "booking", /*local=*/true);
@@ -406,9 +391,15 @@ async function processDocument() {
         submitButton && setTimeout(() => submitButton.focus(), 100);
 
         let isUserActionRequired = false; 
+
+        // Check if form has a marked error (use query selector as it stops once it finds the first element)
+        if (form.querySelector(".warn"))
+            isUserActionRequired = true;
+
+        // Check if user still has to enter something
         for (let enElem of document.getElementsByClassName("bs_form_entext")) {
-            // User action required if having to enter something (other than the email, which is entered automatically)
-            if (enElem.innerText.match(/[eE]nter\s/) && !enElem.innerText.match(/e[-\s]*mail/)) {
+            // Check if text says to enter something (other than the email, which is entered automatically)
+            if (enElem.innerText.match(/[Ee]nter\s/) && !enElem.innerText.match(/\b[Ee][-\s]*mail/)) {
                 isUserActionRequired = true;
                 console.log("User action required for: ", enElem.innerText);
                 let rowElem = enElem.closest(".bs_form_row");
@@ -419,6 +410,7 @@ async function processDocument() {
             }
         }
         if (isUserActionRequired) {
+            // Change the tab title continuously to draw user attention to the tab
             titleChangeFun = async () => {
                 const appstr = "[USER ACTION REQUIRED] ";
                 if (document.title.startsWith(appstr))
@@ -438,7 +430,6 @@ async function processDocument() {
         } else {
             // Do nothing
             // submitButton.setAttribute("inert", "");
-
         }
     } else if (STATE == "confirmed") {
         // signalize success by setting the global booking state
