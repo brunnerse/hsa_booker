@@ -121,9 +121,10 @@ function fillForm(form, data) {
         // set accept conditions button
         else if (inputElem.name == "tnbed")
             inputElem.checked = true;
-        else if (data[inputElem.name]){
+        else if (inputElem.name.startsWith("pw_")) // Clear password fields
+            inputElem.value = "";
+        else if (data[inputElem.name])
             inputElem.value = data[inputElem.name];
-        } 
    }
 }
 
@@ -281,12 +282,14 @@ async function processDocument() {
 
 
         if (userdata[user] && await getOption("fillform")) {
+
             fillForm(form, userdata[user]);
-            // sometimes password fields are automatically set by browser autofill;
-            // wait a few seconds for autofill, then reset their value
+
+            // Sometimes password fields are automatically set by browser autofill;
+            // Wait a few seconds for autofill, then reset their value
             sleep(4000).then(() => {
                 for (let inputElem of form.getElementsByTagName("INPUT")) {
-                        if (inputElem.name.startsWith("pw")) {
+                    if (inputElem.name.startsWith("pw_")) {
                         inputElem.value = "";
                     }
                 }
@@ -332,7 +335,7 @@ async function processDocument() {
                 if (submitImm) {
                     form.requestSubmit(submitElem);
                     setBookingMessage("Submitting...", "green");
-                    // Inform error if submit did not work after two seconds
+                    // Display error if submit did not work after some time 
                     sleep(1500)
                     .then(() => setBookingMessage("Automatic submit failed. Check the form and submit again manually.", "red"))
                     .then(() => submitElem.focus())
@@ -345,12 +348,6 @@ async function processDocument() {
                     if (item == OPTIONS_FILE && changes[item].newValue["fillform"] && userdata[user]) {
                         fillForm(form, userdata[user]);
                         removeStorageListener(listener);
-                        // Clear autofill elements
-                        for (let inputElem of form.getElementsByTagName("INPUT")) {
-                            if (inputElem.name.startsWith("pw")) {
-                                inputElem.value = "";
-                            }
-                        }
                     } 
                 }
             };
@@ -385,6 +382,8 @@ async function processDocument() {
                 submitButton = inputElem;
             } else if (inputElem.name.startsWith("email_check") && emailVal) {
                 inputElem.value = emailVal;  
+            } else if (inputElem.name.startsWith("pw") && userdata[user] && userdata[user]["pw"]) {
+                inputElem.value = userdata[user]["pw"];
             }
         }
 
@@ -402,7 +401,7 @@ async function processDocument() {
             if (enElem.innerText.match(/[Ee]nter\s/) && !enElem.innerText.match(/\b[Ee][-\s]*mail/)) {
                 isUserActionRequired = true;
                 console.log("User action required for: ", enElem.innerText);
-                let rowElem = enElem.closest(".bs_form_row");
+                let rowElem = enElem.closest(".bs_form_row,.bs_form_infotext");
                 if (rowElem) {
                     rowElem.classList.add("warn");
                     setTimeout(() => rowElem.focus(), 100);
