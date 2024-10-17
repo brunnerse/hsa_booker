@@ -162,27 +162,31 @@ function getCourseID(docState) {
     let nr, date;
 
     if (docState == "fill" || docState == "check" || docState == "error") {
-        let spElems = document.getElementsByClassName("bs_form_sp2");
-        for (let sp of spElems) {
-            for (let child of sp.children) {
-                if (!nr && child.innerText.match(/^\d+$/))
-                    nr = child.innerText;
-                else if (!date && child.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/))
-                    date = getFullDateStr(child.innerText.split("-")[0]);
-            }
+        for (let elem of document.querySelectorAll(".bs_form_sp2 *")) {
+            let nrMatch = elem.innerText.match(/^\d+$/); 
+            let dateMatch = elem.innerText.match(/^(\d+\.){2}\d*/);
+            if (!nr && nrMatch)
+                nr = nrMatch[0];
+            if (!date && dateMatch)
+                date = getFullDateStr(dateMatch[0]);
+            if (nr && date)
+                break;
         }
     } else if (docState == "confirmed") {
-        let tdTags = document.getElementsByTagName("TD");
-        for (let td of tdTags) {
-            if (!nr && td.innerText.match(/^\d+-\d+$/))
-                nr = td.innerText.split("-")[0];
-            else if (!date && td.innerText.match(/^(\d+\.)+\d*-(\d+\.)+\d*$/))
-                date = getFullDateStr(td.innerText.split("-")[0]);
+        for (let elem of document.querySelectorAll("td")) {
+            let nrMatch = elem.innerText.match(/^\d+-\d+$/); 
+            let dateMatch = elem.innerText.match(/^(\d+\.){2}\d*/);
+            if (!nr && nrMatch)
+                nr = nrMatch[0].match(/^\d+/)[0];
+            if (!date && dateMatch)
+                date = getFullDateStr(dateMatch[0]);
+            if (nr && date)
+                break;
         }
     }
     if (nr && date) 
-        return nr + "_"+date;
-    console.error("Could not find number or date of course: " + nr + ", " + date);
+        return nr+"_"+date;
+    console.error("Could not find number or date for course.\tNr:" + nr + ", Date:" + date);
     return null;
 }
 
@@ -213,17 +217,25 @@ async function processDocument() {
     } else if (nameInput.type == "text") {
         STATE = "fill";
     }
-    console.log("Booking site is in state \"" + STATE + "\"");
 
     userdata = await download(USERS_FILE) ?? {};
     const courseID = getCourseID(STATE);
     const user = Object.keys(userdata).length > 0 ? Object.keys(userdata)[0] : null;
 
+    console.log(`Booking site is in state "${STATE}", course is ${courseID}, user is "${user}"` );
+
     if (STATE == "fill") {
         console.assert(submitElem);
         // If did not find user or courseID, we cannot do anything
-        if (!user || !courseID)
+        if (!user)
             return;
+        if (!courseID) {
+            if (userdata[user] && await getOption("fillform")) {
+                fillForm(form, userdata[user]);
+                setBookingMessage("HSA Booker: Something went wrong, please submit manually", "darkorange");
+            } 
+            return;
+        }
 
 
         // If form has a marked error, give message and do nothing (use query selector as it stops once it finds the first element)
