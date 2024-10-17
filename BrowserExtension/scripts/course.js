@@ -366,7 +366,9 @@ async function arm(storedAsArmed=false) {
         refreshChangeFun(); 
     } else {
         setStatusTemp("Unarming: " + (numCoursesDone == 0 ? "No courses are marked." :  
-            (numCoursesFull == numCoursesDone ? "All marked courses are full." : "All marked courses were processed.")),
+            (numCoursesFull == numCoursesDone ? "All marked courses are full." : 
+                (numCoursesFull > 0 ? "Remaining marked courses are full." : "All marked courses were processed.")
+            )),
             "yellow", 1000, true)
         .then(unarm);
     }

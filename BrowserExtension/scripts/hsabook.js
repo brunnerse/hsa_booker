@@ -421,30 +421,31 @@ async function updateArm() {
 }
 
 
-function armAll() {
+async function armAll() {
 	armed_all = true;
 	armed_one = true;
 	let user = Object.keys(userdata)[0];
 	let courselist = [];
+	// Find all courses where at least one courseID is not booked
+	outer:
 	for (let course of Object.keys(choice)) {
-		if (choice[course][user])
-			courselist.push(course);
+		if (!choice[course][user])
+			continue;
+		for (let courseID of choice[course][user])
+			if ((await getBookingState(courseID)) != "booked") {
+				courselist.push(course);
+				continue outer;
+			}
 	}
 	return storeAsArmedCourses(courselist)
-	.then(() => onOpenAll(false));
+	.then(() => openAll(courselist, false));
 }
 
 
 function unarmAll() {
 	armed_all = false;
 	armed_one = false;
-	let user = Object.keys(userdata)[0];
-	let courselist = [];
-	for (let course of Object.keys(choice)) {
-		if (choice[course][user])
-			courselist.push(course);
-	}
-    return storeAsUnarmedCourses(courselist); 
+    return storeAsUnarmedCourses(Object.keys(choice)); 
 }
 
 
@@ -513,16 +514,19 @@ function onOptionChange(change) {
 
 function onArmAll() {
     if (!armed_one) 
-		return confirm("Arm all courses?") && armAll();  
+		confirm("Arm all courses?") && armAll();  
     else 
-		return unarmAll();
+		unarmAll();
 }
 
-async function onOpenAll(closeAfter=false) {
+function onOpenAll () {
+	return openAll(Object.keys(choice), false);
+}
+async function openAll(courses, closeAfter=false) {
 	let user = Object.keys(userdata)[0];
 	let urls = [];
 
-	for (let course of Object.keys(choice)) {
+	for (let course of courses) {
 		// get all tabs and do not reopen the ones already open
 		if (choice[course][user]) {
 			let href = getHref(course);

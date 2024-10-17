@@ -301,7 +301,8 @@ async function processDocument() {
             // Wait a few seconds for autofill, then reset their value
             sleep(4000).then(() => {
                 for (let inputElem of form.getElementsByTagName("INPUT")) {
-                    if (inputElem.name.startsWith("pw_")) {
+                    // Only clear if not visible (i.e. parent is hidden), otherwise user might have input something
+                    if (inputElem.name.startsWith("pw_") && inputElem.closest(".hidden")) {
                         inputElem.value = "";
                     }
                 }
