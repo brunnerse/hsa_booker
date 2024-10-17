@@ -28,7 +28,9 @@ function getHref(course) {
 	let link = courselinks[course];
 	// if link not registered, create it according to heuristic 
 	if (!link)
-		link = "_"+course.replace(" ", "_").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss") +
+		link = "_" +
+			course.replaceAll(/[\s\.\/`,]/g, "_").replaceAll("&", "_und_")
+			.replaceAll("ä", "ae").replaceAll("ö", "oe").replaceAll("ü", "ue").replaceAll("ß", "ss") +
 		 ".html";
 	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
 }
@@ -592,16 +594,20 @@ async function loadInitialData() {
 	await cleanupChoice(default_expiry_msec);
 
 	// Find and set active_course
-    base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*", active: true},
-		(tabs) => tabs.forEach((tab) => {
-			for (let course of Object.keys(choice)) {
-				if (getHref(course) == tab.url.split("#")[0]) {
-					active_course = course;
-					break;
-				}
+	await new Promise( (resolve) => { 
+		base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*", active: true},
+			(tabs) => {
+				for (let tab of tabs)
+					for (let course of Object.keys(choice)) {
+						if (getHref(course) == tab.url.split("#")[0]) {
+							active_course = course;
+							break;
+						}
+					}
+				resolve();
 			}
-		})
-	);
+		);
+	});
 
 	await updateChoice(choice, true);
 
