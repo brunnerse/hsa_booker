@@ -1,30 +1,28 @@
 let form = document.forms[0];
-let submitElem = document.getElementById("bs_submit");
+let submitButton;
 
 const loadTime = Date.now();
-
 let lastTimestamp;
 
 let userdata = {};
 
 const STATES = ["fill", "check", "confirmed", "error"];
-
 let STATE;
 
 async function setBookingMessage(message, color="black") {
-    console.assert(submitElem);
+    console.assert(submitButton); 
     // get message element or create it if it doesnt exist yet
     let messageElem = document.getElementById("bookingmessage");
     if (message == "") {
         if (messageElem)
-            submitElem.parentElement.removeChild(messageElem);
+            submitButton.parentElement.removeChild(messageElem);
         return;
     }
     if (!messageElem) {
         messageElem = document.createElement("DIV");
         messageElem.className = "bs_form_row";
         messageElem.id = "bookingmessage";
-        submitElem.parentElement.insertBefore(messageElem, submitElem);
+        submitButton.parentElement.insertBefore(messageElem, submitButton);
     }
     messageElem.setAttribute("style", `text-align:center;font-weight:bold;color:${color};background-color:none;`);
     messageElem.innerText =  message;
@@ -78,12 +76,12 @@ async function bypassCountdown() {
     // Slight problem:  Listener also performs form checking, so this is disabled too
     let newForm = form.cloneNode(true);
     newForm.removeAttribute("data-onsubmit");
-    // Replace whole form
+    // Replace whole form and update global variables form and submitButton
     form.replaceWith(newForm);
     form = document.forms[0]; 
-    submitElem = document.getElementById("bs_submit");
-    console.assert(submitElem);
-    submitElem.className = "sub";
+    submitButton = document.getElementById("bs_submit");
+    console.assert(submitButton);
+    submitButton.className = "sub";
 }
 
 async function onSelectChange() {
@@ -235,7 +233,9 @@ async function processDocument() {
     console.log(`Booking site is in state "${STATE}", course is ${courseID}, user is "${user}"` );
 
     if (STATE == "fill") {
-        console.assert(submitElem);
+        submitButton = document.getElementById("bs_submit");
+        console.assert(submitButton);
+
         // If did not find user or courseID, we cannot do anything
         if (!user)
             return;
@@ -246,7 +246,6 @@ async function processDocument() {
             } 
             return;
         }
-
 
         // If form has a marked error, give message and do nothing (use query selector as it stops once it finds the first element)
         if (form.querySelector(".warn")) {
@@ -310,7 +309,7 @@ async function processDocument() {
                 else if (inputElem.name.match(/^pw_pw/))
                     inputElem.value = userdata[user]["pw"]; 
             }
-            form.requestSubmit(submitElem);
+            form.requestSubmit(submitButton);
             return;
         }
 
@@ -333,8 +332,8 @@ async function processDocument() {
                 // Check if course is armed first
                 let course = await getCourseFromID(courseID);
                 if (!course || !await isArmed(course)) {
-                    // TODO give booking message or leave blank?
-                    console.log("Supressing immediate submit as course is not armed");
+                    setBookingMessage("Please submit manually (automatic submit disabled as course is not armed)", "darkorange");
+                    setTimeout(submitButton.focus, 100);
                     return;
                 }
 
@@ -358,11 +357,11 @@ async function processDocument() {
                 addStorageListener(listener);
 
                 // wait until countdown passed
-                while(submitElem.className != "sub") {
+                while(submitButton.className != "sub") {
                     // check if aborted
                     if (!submitImm)
                         break;
-                    // if 8 seconds have passed but submitElem is still not enabled, bypass the countdown 
+                    // if 8 seconds have passed but submitButton is still not enabled, bypass the countdown 
                     // This happens when javascript slows down because the tab is in the background
                     if (Date.now() - loadTime >= 8000) {
                         setBookingMessage("Activating bypass...", "darkorange");
@@ -375,12 +374,12 @@ async function processDocument() {
                 }
                 // check again if submitimmediately option is set, then submit
                 if (submitImm) {
-                    form.requestSubmit(submitElem);
+                    form.requestSubmit(submitButton);
                     setBookingMessage("Submitting...", "green");
                     // Display error if submit did not work after some time 
                     sleep(1500)
                     .then(() => setBookingMessage("Automatic submit failed. Check the form and submit again manually.", "red"))
-                    .then(() => submitElem.focus())
+                    .then(submitButton.focus)
                     .then(stopCountdownMsg);
                 }
             } 
@@ -396,6 +395,8 @@ async function processDocument() {
             addStorageListener(listener);
         }
     } else if (STATE == "check") {
+        submitButton = form.querySelector("input[type='submit']");  
+        console.assert(submitButton);
 
         if (user && courseID) {
             // Do not check if state is booked; if this page (check) is reached, user already decided to ignore it
@@ -417,19 +418,16 @@ async function processDocument() {
                 break;
             }
         }
-        // find submit button and enter email again in check field
-        let submitButton; 
+        // Enter email and pw in check field
         for (let inputElem of inputElems) {
-            if (inputElem.title == "fee-based order") {
-                submitButton = inputElem;
-            } else if (inputElem.name.startsWith("email_check") && emailVal) {
+            if (inputElem.name.startsWith("email_check") && emailVal) {
                 inputElem.value = emailVal;  
             } else if (inputElem.name.startsWith("pw") && userdata[user] && userdata[user]["pw"]) {
                 inputElem.value = userdata[user]["pw"];
             }
         }
 
-        submitButton && setTimeout(() => submitButton.focus(), 100);
+        submitButton && setTimeout(submitButton.focus, 100);
 
         let isUserActionRequired = false; 
 
