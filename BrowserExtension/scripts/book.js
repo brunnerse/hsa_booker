@@ -111,8 +111,7 @@ function fillForm(form, data) {
 
     removeWarnMarks();
     // Set form input elements
-    let inputElems = form.getElementsByTagName("INPUT");
-    for (let inputElem of inputElems) {
+    for (let inputElem of form.querySelectorAll("input")) {
         if (inputElem.getAttribute("disabled") == "disabled")
             continue;
         // set radio button checked
@@ -288,10 +287,21 @@ async function processDocument() {
             lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
         }, booking_expiry_msec * 0.4);
 
-        if (await getOption("bypasscountdown")) {
-            bypassCountdown();
-        }
 
+        let anm_button = document.getElementById("bs_pw_anmlink");
+
+        // Try login if option is activated, it is the first try (i.e. no window history) and button for login is available
+        if (anm_button && await getOption("pwlogin") && userdata[user] && userdata[user]["pw"] && window.history.length < 2) {
+            anm_button.click();
+            for (let inputElem of form.querySelectorAll("input")) {
+                if (inputElem.name.match(/^pw_email/))
+                    inputElem.value = userdata[user]["email"];
+                else if (inputElem.name.match(/^pw_pw/))
+                    inputElem.value = userdata[user]["pw"]; 
+            }
+            form.requestSubmit(submitElem);
+            return;
+        }
 
         if (userdata[user] && await getOption("fillform")) {
 

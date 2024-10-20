@@ -301,7 +301,7 @@ function removeStorageListener(fun) {
 var option_var;
 
 async function getOption(val, allowcache=true) {
-    // Override default values for some options
+    // Override default values for some unused options
    if (val == "multipleusers")
         return 0;
     if (val == "defaultuseridx")
@@ -325,6 +325,8 @@ async function getOption(val, allowcache=true) {
         if (val == "defaultuseridx")
             return 0;
         if (val == "bypasscountdown")
+            return 0;
+        if (val == "pwlogin")
             return 0;
         return null;
     }

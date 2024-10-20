@@ -55,17 +55,17 @@
             <div class="tooltip" style="float:inline-start">
                 <label><input type="checkbox" name="submitimmediately" id="submitimmediately"/>
                     Submit immediately</label>
-                <div class="tooltiptext">Submit the booking form automatically as soon as possible</div>
+                <div class="tooltiptext">Submits the booking form automatically as soon as possible if the course was armed</div>
             </div>
             <div style="float:inline-end;margin-right:10px;">
                 <button class="link" style="font-weight:bold;" id="toggleadvice">Show advice</button>
             </div>
         </div>
-        <div hidden class="bs_form_row" style="margin-left:10px">
+        <div class="bs_form_row" style="margin-left:10px">
             <div class="tooltip">
-                <label inert style="color:gray"><input inert type="checkbox" name="bypasscountdown" id="bypasscountdown" checked="false" />
-                    Bypass client-sided countdown restriction</label>
-                <div class="tooltiptext">This must always be unchecked as the countdown is also checked server-sided
+                <label><input type="checkbox" name="pwlogin" id="pwlogin" checked="false" />
+                    Login with password</label>
+                <div class="tooltiptext">During booking, try to log-in via the given user password and email. This allows a faster submit than filling the form.
                 </div>
             </div>
         </div>
