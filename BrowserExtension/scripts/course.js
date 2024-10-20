@@ -247,8 +247,9 @@ async function arm(storedAsArmed=false) {
         storeAsArmed(currentCourse);
     let course = currentCourse;
 
-    let numCoursesDone = 0;
+    let numCoursesDone = 0;  // Total number of courses that are booked, full or submitted
     let numCoursesFull = 0;
+    let numCoursesSubmitted = 0;
     let unavailableCourses = [];
 
     for (let id of choiceIDs) {
@@ -287,6 +288,7 @@ async function arm(storedAsArmed=false) {
                         // book course and set as done
                         let formElem = bookButton.closest("form");
                         formElem.requestSubmit(bookButton);
+                        numCoursesSubmitted++;
                         numCoursesDone++;
                     }
                 }
@@ -365,11 +367,14 @@ async function arm(storedAsArmed=false) {
         // Execute refreshListenerFun once to calculate refreshTime and set up the interval for refreshIntervalFun 
         refreshChangeFun(); 
     } else {
+        // TODO only unarm once there are no more courses in state "booking" 
         setStatusTemp("Unarming: " + (numCoursesDone == 0 ? "No courses are marked." :  
             (numCoursesFull == numCoursesDone ? "All marked courses are full." : 
                 (numCoursesFull > 0 ? "Remaining marked courses are full." : "All marked courses were processed.")
             )),
-            "yellow", 1000, true)
+            "yellow", 
+            (numCoursesSubmitted > 0 ? 3000 : 1000), // Wait longer for unarming if submitted any courses
+            true)
         .then(unarm);
     }
 }

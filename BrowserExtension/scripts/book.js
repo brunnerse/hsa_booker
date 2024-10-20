@@ -189,6 +189,17 @@ function getCourseID(docState) {
     return null;
 }
 
+async function getCourseFromID(courseID) {
+    let choice = await download(CHOICE_FILE);
+    for (let course of Object.keys(choice)) {
+        for (let user of Object.keys(choice[course])) {
+            if (choice[course][user].includes(courseID))
+                return course; 
+        }
+    }
+    return null;
+}
+
 // resets the booking state if window is refreshed/closed 
 function removeBookingStateOnClose(courseID) {
     window.addEventListener("beforeunload", function (e) {
@@ -319,6 +330,14 @@ async function processDocument() {
             });
 
             if (await getOption("submitimmediately")) {
+                // Check if course is armed first
+                let course = await getCourseFromID(courseID);
+                if (!course || !await isArmed(course)) {
+                    // TODO give booking message or leave blank?
+                    console.log("Supressing immediate submit as course is not armed");
+                    return;
+                }
+
                 // insert message that form will be submitted
                 startCountdownMsg();
                 setBookingMessage("Submitting once the countdown is done...", "green");
