@@ -82,6 +82,7 @@ function chk_input(a, b) {
                                 || 2 == formdata.ep 
                                 || document.getElementById("bs_lastschrift") && 1 == formdata.ep && endpreis)
             || "tel" == b && "" != c && !c.match(/^[0-9 -\\/()]+$/)
+            || "pw" == b && !("" == c || (c.length >= 8 && c.match(/\d/) && c.match(/[+-;:!@#\$%\&*]/)))
         )
            return !1
     } 
