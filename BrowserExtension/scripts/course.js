@@ -59,7 +59,7 @@ function setStatus(status, color="white") {
     statusId += 1;
     statusElem.setAttribute("style", `font-weight:bold;background-color:${color};`);
     statusElem.replaceChildren();
-    if (!status) {
+    if (!status) { // If status is empty, use a space as placeholder
         statusElem.innerHTML = "&nbsp;";
     } else {
         // split status into lines or use placeholder if no status
@@ -247,9 +247,9 @@ async function arm(storedAsArmed=false) {
         storeAsArmed(currentCourse);
     let course = currentCourse;
 
-    let numCoursesDone = 0;  // Total number of courses that are booked, full or submitted
+    let numCoursesBooked = 0;
     let numCoursesFull = 0;
-    let numCoursesSubmitted = 0;
+    let numCoursesBooking = 0;
     let unavailableCourses = [];
 
     for (let id of choiceIDs) {
@@ -257,12 +257,15 @@ async function arm(storedAsArmed=false) {
         switch (state) {
             case "full":
                 numCoursesFull++;
+                break;
             case "booking":
+                numCoursesBooking++;
+                break;
             case "booked":
-                numCoursesDone++;
+                numCoursesBooked++;
                 break;
             case "unavailable":
-                unavailableCourses.push(id); 
+                unavailableCourses.push(id); // Remove id from choiceIDs later 
                 break;
             case "ready":
             case "error":
@@ -278,7 +281,7 @@ async function arm(storedAsArmed=false) {
                 } 
                 // if course has no nr or the date does not match, remove it
                 if (!rowElem || (date != getCourseDateStr(rowElem))) { 
-                    unavailableCourses.push(id);
+                    unavailableCourses.push(id); // Remove id from choiceIDs later
                     delete bookingState[id];
                     removeBookingState(id);
                 } else {
@@ -288,8 +291,7 @@ async function arm(storedAsArmed=false) {
                         // book course and set as done
                         let formElem = bookButton.closest("form");
                         formElem.requestSubmit(bookButton);
-                        numCoursesSubmitted++;
-                        numCoursesDone++;
+                        numCoursesBooking++;
                     }
                 }
                 break;
@@ -299,7 +301,8 @@ async function arm(storedAsArmed=false) {
 
     unavailableCourses.forEach((id) => choiceIDs.splice(choiceIDs.indexOf(id), 1));
 
-    if (numCoursesDone < choiceIDs.length) {
+
+    if (numCoursesFull + numCoursesBooked + numCoursesBooking < choiceIDs.length) {
         // Try to get Date when booking is available
         let bookingDate = null;
         let bookTimeElems = document.getElementsByClassName("bs_btn_autostart");
@@ -367,15 +370,37 @@ async function arm(storedAsArmed=false) {
         // Execute refreshListenerFun once to calculate refreshTime and set up the interval for refreshIntervalFun 
         refreshChangeFun(); 
     } else {
-        // TODO only unarm once there are no more courses in state "booking" 
-        setStatusTemp("Unarming: " + (numCoursesDone == 0 ? "No courses are marked." :  
-            (numCoursesFull == numCoursesDone ? "All marked courses are full." : 
-                (numCoursesFull > 0 ? "Remaining marked courses are full." : "All marked courses were processed.")
-            )),
-            "yellow", 
-            (numCoursesSubmitted > 0 ? 3000 : 1000), // Wait longer for unarming if submitted any courses
-            true)
-        .then(unarm);
+        if (numCoursesBooking > 0) {
+            // TODO only unarm once there are no more courses in state "booking" 
+            setStatus("Booking courses...", "lightblue");
+            let checkUnarmIntervalID;
+            let checkUnarmFun = async function () {
+                let allProcessed = true;
+                for (let courseID of choiceIDs) {
+                    if (await getBookingState(courseID, /*includeTimestamp=*/false, /*localOnly=*/true)  == "booking") {
+                        allProcessed = false;
+                        break;
+                    }
+                }
+                if (!armed) {
+                    clearInterval(checkUnarmIntervalID);
+                } else if (allProcessed) {
+                    clearInterval(checkUnarmIntervalID);
+                    setStatusTemp("Unarming: Finished booking.", "yellow", 1000, true)
+                   .then(unarm);
+                }
+            }
+            checkUnarmIntervalID = setInterval(checkUnarmFun, 500);
+
+        } else {
+            setStatusTemp("Unarming: " + (choiceIDs.length == 0 ? "No courses are marked." :  
+                (numCoursesFull == choiceIDs.length ?       "All marked courses are full." : 
+                (numCoursesFull > 0 ?                 "Remaining marked courses are full." :
+                                                      "All marked courses were processed.")
+                )),
+                "yellow", 1000, true)
+            .then(unarm);
+        }
     }
 }
 

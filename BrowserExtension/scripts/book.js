@@ -363,6 +363,7 @@ async function processDocument() {
                         break;
                     // if 8 seconds have passed but submitButton is still not enabled, bypass the countdown 
                     // This happens when javascript slows down because the tab is in the background
+                    //if (await getOption("bypasscountdown"))
                     if (Date.now() - loadTime >= 8000) {
                         setBookingMessage("Activating bypass...", "darkorange");
                         bypassCountdown();
