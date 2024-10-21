@@ -32,12 +32,18 @@
 
 <body>
     <h1>Configuration</h1>
-    <div id="configuration">
-        <div class="bs_form_row" style="margin-left:10px;position:relative;">
+    <div id="configuration" style="min-width:500px">
+        <div class="bs_form_row" style="margin-left:10px;">
             <div class="tooltip" style="float:inline-start;">
                 <label><input type="checkbox" name="fillform" id="fillform"/>
                     Fill form</label>
-                <div class="tooltiptext" style="top:0; left:0" >Fill out the booking form automatically</div>
+                <div class="tooltiptext">Fill out the booking form automatically</div>
+            </div>
+            <div class="tooltip" style="margin-left:100px;float:left">
+                <label><input type="checkbox" name="pwlogin" id="pwlogin" checked="false" />
+                    Login with password</label>
+                <div class="tooltiptext">During booking, try to log in with the given user email and password. This allows a faster booking than filling the form.
+                </div>
             </div>
             <div style="float:inline-end;margin-right:10px;">
                 <button id="resetdata">Reset data</button>
@@ -47,18 +53,15 @@
             <div class="tooltip" style="float:inline-start">
                 <label><input type="checkbox" name="submitimmediately" id="submitimmediately"/>
                     Submit immediately</label>
-                <div class="tooltiptext">Submit the booking form automatically as soon as possible</div>
+                <div class="tooltiptext">Submit the booking form automatically as soon as possible if the course was armed</div>
+            </div>
+            <div hidden class="tooltip" style="margin-left:24px;float:left">
+                <label><input type="checkbox" name="bypasscountdown" id="bypasscountdown"/>
+                    Bypass countdown</label>
+                <div class="tooltiptext">Do not wait for the countdown in the booking form but use a workaround</div>
             </div>
             <div style="float:inline-end;margin-right:10px;">
                 <button class="link" style="font-weight:bold;" id="toggleadvice">Show advice</button>
-            </div>
-        </div>
-        <div hidden class="bs_form_row" style="margin-left:10px">
-            <div class="tooltip">
-                <label inert style="color:gray"><input inert type="checkbox" name="bypasscountdown" id="bypasscountdown" checked="false" />
-                    Bypass client-sided countdown restriction</label>
-                <div class="tooltiptext">This must always be unchecked as the countdown is also checked server-sided
-                </div>
             </div>
         </div>
         <ol hidden id="advice">
@@ -108,8 +111,8 @@
     </div>
 
     <h1>User data</h1>
-    <div id="storeduserdata" style="margin: 0 20px;width:500px;" class="bs_form_content anmeldung">
-        <table>
+    <div id="storeduserdata" style="margin: 0 auto;" class="bs_form_content anmeldung">
+        <table align="center">
             <tr>
                 <td><label for="vornameinput">Vorname:</label>
                 </td>
