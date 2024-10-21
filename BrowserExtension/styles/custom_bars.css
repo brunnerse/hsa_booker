@@ -114,8 +114,8 @@
 .tooltip .tooltiptext {
   float: right;
   visibility: hidden;
-  max-width: 250px;
-  margin-left: 120px;
+  max-width: 280px;
+  margin-left: 30px;
   background-color: black;
   color: #fff;
   text-align: center;
