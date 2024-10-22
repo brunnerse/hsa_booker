@@ -371,7 +371,7 @@ async function arm(storedAsArmed=false) {
         refreshChangeFun(); 
     } else {
         if (numCoursesBooking > 0) {
-            // TODO only unarm once there are no more courses in state "booking" 
+            // Wait until there are no more courses in state "booking", then unarm
             setStatus("Booking courses...", "lightblue");
             let checkUnarmIntervalID;
             let checkUnarmFun = async function () {
@@ -390,8 +390,9 @@ async function arm(storedAsArmed=false) {
                    .then(unarm);
                 }
             }
+            // Wait before starting to check the booking states to give the new tabs enough time to set the states
+            await sleep(1000);
             checkUnarmIntervalID = setInterval(checkUnarmFun, 500);
-
         } else {
             setStatusTemp("Unarming: " + (choiceIDs.length == 0 ? "No courses are marked." :  
                 (numCoursesFull == choiceIDs.length ?       "All marked courses are full." : 
