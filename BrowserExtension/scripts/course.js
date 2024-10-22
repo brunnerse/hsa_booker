@@ -1,13 +1,3 @@
-
-const statusElem = document.getElementById("statustext");
-const userSelectElem = document.getElementById("userselect"); 
-const armButton = document.getElementById("armbutton"); 
-const armText =  document.getElementById("armbuttontext");
-let refreshSelectElem = document.getElementById("refreshselect");
-const hintElem = document.getElementById("hint");
-
-// store current url without anchor 
-const currentUrl = window.location.href.split('#')[0];
 const currentCourse = getCurrentCourse();
 
 let userdata = {};
@@ -53,46 +43,6 @@ function getDurationAsString(durationMS) {
     s += mins + "m " + secs + "s";
     return s;
 }
-
-let statusId = 0;
-function setStatus(status, color="white") {
-    statusId += 1;
-    statusElem.setAttribute("style", `font-weight:bold;background-color:${color};`);
-    statusElem.replaceChildren();
-    if (!status) { // If status is empty, use a space as placeholder
-        statusElem.innerHTML = "&nbsp;";
-    } else {
-        // split status into lines or use placeholder if no status
-        let lines = status.split("\n");
-        for (let i = 0; i < lines.length; i++) {
-            let span = document.createElement("SPAN");
-            span.innerText = lines[i];
-            statusElem.appendChild(span);
-            if (i < lines.length-1) 
-                statusElem.appendChild(document.createElement("BR"));
-        }
-    }
-}
-
-function setStatusTemp(status, color, timeMS=1500, setInert=false) {
-    setStatus(status, color);
-    if (setInert) {
-        armButton.setAttribute("inert", "");
-    }
-    const currentId = statusId;
-    return new Promise((resolve) => setTimeout(() => {
-        if (setInert) {
-            armButton.removeAttribute("inert");
-        }
-        // set status to empty if it was not changed in between
-        if (statusId == currentId) {
-            setStatus("");
-        }
-        resolve();
-    }, timeMS));
-
-}
-
 
 async function onSelectChange(updateButtons=true) {
     let optionElem = getSelectedOption(userSelectElem);
@@ -533,127 +483,86 @@ async function updateUserdata(d) {
         updateChoice(choice, false);
 }
 
-// check the current site if it is a course site
-let isCourseSite = false;
-// check if URL is a course and update visible elements accordingly
+// Confirm that the current site is a course site
 if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
-    let course = currentCourse; 
     setStatus("Click ARM to book the marked courses", "white");
     armButton.parentElement.removeAttribute("hidden");
-    hintElem.innerText = "Mark the " + course + " courses that you want to be booked automatically";
-    isCourseSite = true;
-} else if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\//)) {
-    setStatus("Course overview");
-    hintElem.innerText = "Go to a course website to add the course";
+    hintElem.innerText = "Mark the " + currentCourse + " courses that you want to be booked automatically";
 } else {
-    setStatus("Not a course website", "white");
-}
-
-function courseSiteOnChoice(choice) {
-    choice = choice ?? {};
-    for (let elem of document.querySelectorAll("dd a")) {
-        let isElemMarked = elem.parentElement.classList.contains("trstate-marked");
-        let chosen = choice[elem.innerText] ? true : false;
-        if (chosen && !isElemMarked) {
-            elem.parentElement.classList.add("trstate-marked");
-            let spanElem = document.createElement("SPAN");
-            spanElem.setAttribute("style", "color:green; float:left");
-            spanElem.innerText = "✔";
-            elem.parentElement.insertBefore(spanElem, elem);
-        } else if (!chosen && isElemMarked) {
-            elem.parentElement.classList.remove("trstate-marked");
-            let spanChildren = elem.parentElement.getElementsByTagName("SPAN");
-            spanChildren.length > 0 && elem.parentElement.removeChild(spanChildren[0]);
-        }
-    }
+    hintElem.innerText = "HSA Booker alert: Not a course website";
+    document.getElementById("topbar").setAttribute("hidden", "");
+    throw new Error("HSA Booker called on a website that is not a course website");
 }
 
 async function loadInitialData() {
     await download(USERS_FILE).then(updateUserdata);
 
-    if (!isCourseSite) {
-        // add listeners
-        userSelectElem.addEventListener("change", (event) => event.isTrusted && onSelectChange(false));
+    // add listeners
+    userSelectElem.addEventListener("change", (event) => event.isTrusted && onSelectChange(true));
+    armButton.addEventListener("click", onArm);
+    refreshSelectElem.addEventListener("change", onRefreshChange);
 
-        // only simple storage listener listening for user data
-        addStorageListener((changes) => {
-            for (let item of Object.keys(changes)) {
-                if (item == USERS_FILE) {
-                    updateUserdata(changes[item].newValue); 
-                } else if (item == CHOICE_FILE) {
-                    courseSiteOnChoice(changes[item].newValue); 
-                } 
-            }
-        });
-        download(CHOICE_FILE).then(courseSiteOnChoice); 
-    } else {
-        // add listeners
-        userSelectElem.addEventListener("change", (event) => event.isTrusted && onSelectChange(true));
-        armButton.addEventListener("click", onArm);
-        refreshSelectElem.addEventListener("change", onRefreshChange);
+    download(REFRESH_FILE).then((data) => updateRefresh(data ?? refreshSelectElem.options[0].value))
+    await download(CHOICE_FILE).then((data) => updateChoice(data, true));    
 
-        download(REFRESH_FILE).then((data) => updateRefresh(data ?? refreshSelectElem.options[0].value))
-        await download(CHOICE_FILE).then((data) => updateChoice(data, true));    
-
-        // check if website should be armed
-        let armTimestamp = await download(ARMED_FILE+currentCourse);
-        if (!hasArmedExpired(armTimestamp)) {
-            await arm(true);
-            if (Date.now() - armTimestamp > 10000)
-                storeAsArmed(currentCourse);
-        }
-
-        // add storage listener for all kinds of changes
-        addStorageListener((changes) => {
-            //console.log("Storage change:")
-            //console.log(changes);
-            for (let item of Object.keys(changes)) {
-                if (item == USERS_FILE) {
-                    updateUserdata(changes[item].newValue); 
-                } else if (item == REFRESH_FILE) {
-                    updateRefresh(changes[item].newValue ?? refreshSelectElem.options[0].value);
-                } else if (item == ARMED_FILE+getCurrentCourse()) {
-                    // check if item was removed
-                    let storedAsArmed = changes[item].newValue != undefined;  
-                    // do not need to check the timestamp here; just was updated, so timestamp must be fine
-                    if (!storedAsArmed && armed)
-                        unarm();
-                    else if (storedAsArmed && !armed)
-                        arm(true);
-                } else if (item == CHOICE_FILE) {
-                    updateChoice(changes[item].newValue);
-                } else if (item.startsWith(BOOKSTATE_FILE)) {
-                    let id = item.split("-").pop();
-                    let statestampArr = changes[item].newValue;
-                    let prevStateArr = bookingState[id] ?? [undefined, 0];
-                    if (!statestampArr) {
-                        delete bookingState[id];
-                    // Do not update if course state is "booked"; Should never happen anyway, just a safety check 
-                    } else if (!(bookingState[id] && bookingState[id] == "booked")) {
-                        // This currently also integrates states from other courses for simplicity
-                        bookingState[id] = statestampArr;
-                    }
-                    // modify book buttons if state changed
-                    if (prevStateArr[0] != (statestampArr ? statestampArr[0] : undefined))
-                        modifyBookButtons();
-                }
-            }
-        });
-
-        // Create function that periodically checks whether a booking state has expired
-        setInterval(() => {
-            let changed = false;
-            for (let id of Object.keys(bookingState)) {
-                let [state, stamp] = bookingState[id];
-                if (hasBookingStateExpired(state, stamp, true)) { 
-                    delete bookingState[id];
-                    changed = true;
-                }
-            }
-            if (changed)
-                modifyBookButtons();
-        }, 500);
+    // check if website should be armed
+    let armTimestamp = await download(ARMED_FILE+currentCourse);
+    if (!hasArmedExpired(armTimestamp)) {
+        await arm(true);
+        if (Date.now() - armTimestamp > 10000)
+            storeAsArmed(currentCourse);
     }
+
+    // add storage listener for all kinds of changes
+    addStorageListener((changes) => {
+        //console.log("Storage change:")
+        //console.log(changes);
+        for (let item of Object.keys(changes)) {
+            if (item == USERS_FILE) {
+                updateUserdata(changes[item].newValue); 
+            } else if (item == REFRESH_FILE) {
+                updateRefresh(changes[item].newValue ?? refreshSelectElem.options[0].value);
+            } else if (item == ARMED_FILE+getCurrentCourse()) {
+                // check if item was removed
+                let storedAsArmed = changes[item].newValue != undefined;  
+                // do not need to check the timestamp here; just was updated, so timestamp must be fine
+                if (!storedAsArmed && armed)
+                    unarm();
+                else if (storedAsArmed && !armed)
+                    arm(true);
+            } else if (item == CHOICE_FILE) {
+                updateChoice(changes[item].newValue);
+            } else if (item.startsWith(BOOKSTATE_FILE)) {
+                let id = item.split("-").pop();
+                let statestampArr = changes[item].newValue;
+                let prevStateArr = bookingState[id] ?? [undefined, 0];
+                if (!statestampArr) {
+                    delete bookingState[id];
+                // Do not update if course state is "booked"; Should never happen anyway, just a safety check 
+                } else if (!(bookingState[id] && bookingState[id] == "booked")) {
+                    // This currently also integrates states from other courses for simplicity
+                    bookingState[id] = statestampArr;
+                }
+                // modify book buttons if state changed
+                if (prevStateArr[0] != (statestampArr ? statestampArr[0] : undefined))
+                    modifyBookButtons();
+            }
+        }
+    });
+
+    // Create function that periodically checks whether a booking state has expired
+    setInterval(() => {
+        let changed = false;
+        for (let id of Object.keys(bookingState)) {
+            let [state, stamp] = bookingState[id];
+            if (hasBookingStateExpired(state, stamp, true)) { 
+                delete bookingState[id];
+                changed = true;
+            }
+        }
+        if (changed)
+            modifyBookButtons();
+    }, 500);
 }
 
 loadInitialData();
