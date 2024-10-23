@@ -19,7 +19,7 @@ async function setBookingMessage(message, color="black") {
         return;
     }
     if (!messageElem) {
-        messageElem = document.createElement("DIV");
+        messageElem = document.createElement("div");
         messageElem.className = "bs_form_row";
         messageElem.id = "bookingmessage";
         submitButton.parentElement.insertBefore(messageElem, submitButton);
@@ -34,7 +34,7 @@ function startCountdownMsg() {
         clearInterval(countdownId);
     let msgElem = document.getElementById("countdownmessage");
     if (!msgElem)  {
-        msgElem = document.createElement("DIV");
+        msgElem = document.createElement("div");
         msgElem.id = "countdownmessage";
         msgElem.setAttribute("style", 
             "background-color:#F1F1E3;color:green;font-size: 12pt; font-weight:bold;text-align:center;padding:8px;")
@@ -126,7 +126,7 @@ function fillForm(form, data) {
 }
 
 function removeWarnMarks() {
-    let inputElems = form.getElementsByTagName("INPUT");
+    let inputElems = form.getElementsByTagName("input");
     for (let e of inputElems) {
         let g = e.closest(".bs_form_row");
         g && g.classList.remove("warn");
@@ -136,9 +136,7 @@ function removeWarnMarks() {
 
 async function clearForm() {
     removeWarnMarks();
-    let form = document.getElementById("bs_form_main");
-    let inputElems = form ? form.getElementsByTagName("INPUT") : [];
-    for (let inputElem of inputElems) {
+    for (let inputElem of form.getElementsByTagName("input")) {
         // uncheck sex radio buttons
         if (inputElem.type == "radio")
             inputElem.checked = false; 
@@ -147,7 +145,7 @@ async function clearForm() {
             inputElem.value = ""; 
         }
     }
-    let selectElem = form.getElementsByTagName("SELECT")[0];
+    let selectElem = form.querySelector("select");
     if (selectElem) {
         selectElem.selectedIndex = 0;
         selectElem.dispatchEvent(new Event("change"));
@@ -209,7 +207,7 @@ async function processDocument() {
     // Check which state the site is in by checking the form in the document
     let nameInput;
     if (form) {
-        for (let input of form.getElementsByTagName("INPUT")) {
+        for (let input of form.getElementsByTagName("input")) {
             if (input["name"] == "vorname") {
                 nameInput = input;
                 break;
@@ -320,7 +318,7 @@ async function processDocument() {
             // Sometimes password fields are automatically set by browser autofill;
             // Wait a few seconds for autofill, then reset their value
             sleep(4000).then(() => {
-                for (let inputElem of form.getElementsByTagName("INPUT")) {
+                for (let inputElem of form.getElementsByTagName("input")) {
                     // Only clear if not visible (i.e. parent is hidden), otherwise user might have input something
                     if (inputElem.name.startsWith("pw_") && inputElem.closest(".hidden")) {
                         inputElem.value = "";
@@ -410,7 +408,7 @@ async function processDocument() {
                 }, booking_expiry_msec * 0.4);
         }
 
-        let inputElems = form.getElementsByTagName("INPUT");
+        let inputElems = form.getElementsByTagName("input");
         // Get email from form
         let emailVal = "";
         for (let inputElem of inputElems) {

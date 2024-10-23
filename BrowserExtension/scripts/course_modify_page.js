@@ -1,19 +1,18 @@
 // insert custom css
-var cssId = 'custom_bars'; 
-if (!document.getElementById(cssId))
+if (!document.getElementById("custom_bars"))
 {
     let link  = document.createElement('link');
-    link.id   = cssId;
+    link.id   = 'custom_bars';
     link.rel  = 'stylesheet';
     link.type = 'text/css';
     link.href = chrome.runtime.getURL('styles/custom_bars.css');
     link.media = 'all';
-    let head  = document.getElementsByTagName('head')[0];
+    let head = document.querySelector('head');
     head.appendChild(link);
 }
 
 // insert top bar
-let topBar = document.createElement("DIV");
+let topBar = document.createElement("div");
 topBar.id = "topbar";
 topBar.innerHTML = '\
 		<div class="darkred" align="center" style="margin-top:0px;height:max-content">\
@@ -50,39 +49,39 @@ topBar.innerHTML = '\
 		</div>\
 ';
 
-let bottomBar = document.createElement("DIV");
+let bottomBar = document.createElement("div");
 bottomBar.id = "bottombar";
 bottomBar.innerHTML = '\
 		<div id="hint"></div>\
 ';
 
-let b = document.createElement("DIV");
+let b = document.createElement("div");
 b.setAttribute("style", "height:65px;background-color:black");
 
 // insert topbar and bottombar at the start and end of body
-let body = document.getElementsByTagName("BODY")[0];
+let body = document.querySelector("body");
 body.insertBefore(topBar, body.children[0]);
 body.insertBefore(b, body.children[0]);
 body.appendChild(bottomBar);
 
 
 
-let thElem = document.createElement("TH");
+let thElem = document.createElement("th");
 thElem.style = "text-align:center;";
 thElem.innerText = "Aktion";
-let tHeadElems = document.getElementsByTagName("THEAD");
+let tHeadElems = document.getElementsByTagName("thead");
 for (let tHead of tHeadElems) {
-	let tRows = tHead.getElementsByTagName("TR");
+	let tRows = tHead.getElementsByTagName("tr");
 	for (let tRow of tRows)
 		tRow.appendChild(thElem.cloneNode(true));
 }
 
 
-let tBodyElems = document.getElementsByTagName("TBODY");
-let tdElem = document.createElement("TD");
+let tBodyElems = document.getElementsByTagName("tbody");
+let tdElem = document.createElement("td");
 tdElem.className = "aktion";
 for (let tBody of tBodyElems) {
-	let tRows = tBody.getElementsByTagName("TR");
+	let tRows = tBody.getElementsByTagName("tr");
 	for (let tRow of tRows)
 		tRow.appendChild(tdElem.cloneNode(true));
 }

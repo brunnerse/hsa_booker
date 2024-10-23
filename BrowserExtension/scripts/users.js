@@ -9,18 +9,15 @@ const formdata = JSON.parse(formDataElem.textContent||formDataElem.innerText);
 
 
 function removeWarnMarks() {
-    let inputElems = formElem.getElementsByTagName("INPUT");
-    for (let e of inputElems) {
+    for (let e of formElem.querySelectorAll("input")) {
         let g = e.closest(".bs_form_row");
         g.classList.remove("warn");
     }
-
 }
+
 // returns name of element with wrong data
 function checkForm() {
-    let inputElems = formElem.getElementsByTagName("INPUT");
-
-    for (let e of inputElems) {
+    for (let e of formElem.querySelectorAll("input")) {
         // Find top parent with name bs_form_row
         let g = e.closest(".bs_form_row");
         g.classList.remove("warn");
@@ -119,11 +116,10 @@ async function addUser(user) {
     let data = {};
 
     // Get status select option
-    let selectElem = formElem.getElementsByTagName("SELECT")[0];
-    console.assert(formElem.getElementsByTagName("SELECT").length == 1);
+    let selectElem = formElem.querySelector("select");
     data.statusorig = selectElem.options[selectElem.selectedIndex].value;
 
-    let inputElems = formElem.getElementsByTagName("INPUT");
+    let inputElems = formElem.getElementsByTagName("input");
     for (let inputElem of inputElems) {
         // Get sex radio button
         if (inputElem["name"] == "sex") {
@@ -190,8 +186,7 @@ async function onSelectChange() {
     } else {
         let data = userdata[selectedUser];
         // Set status select option
-        let selectElem = formElem.getElementsByTagName("SELECT")[0];
-        console.assert(formElem.getElementsByTagName("SELECT").length == 1);
+        let selectElem = formElem.querySelector("select");
         let ok = false;
         for (let i = 0; i < selectElem.options.length; i++) {
             if (selectElem.options[i].value == data.statusorig) {
@@ -206,7 +201,7 @@ async function onSelectChange() {
         } 
 
         removeWarnMarks();
-        let inputElems = formElem.getElementsByTagName("INPUT");
+        let inputElems = formElem.getElementsByTagName("input");
         for (let inputElem of inputElems) {
             // set sex radio button
             if (inputElem["name"] == "sex") {
@@ -228,7 +223,7 @@ async function onSelectChange() {
 async function clearForm() {
     removeWarnMarks();
     let form = document.getElementById("bs_form_main");
-    let inputElems = form.getElementsByTagName("INPUT");
+    let inputElems = form.getElementsByTagName("input");
     for (let inputElem of inputElems) {
         // uncheck sex radio buttons
         if (inputElem.type == "radio")
@@ -238,7 +233,7 @@ async function clearForm() {
             inputElem.value = ""; 
         }
     }
-    let selectElem = formElem.getElementsByTagName("SELECT")[0];
+    let selectElem = formElem.querySelector("select");
     selectElem.selectedIndex = 0;
     selectElem.dispatchEvent(new Event("change"));
 }
@@ -258,7 +253,7 @@ function toggleInert() {
     document.getElementById("bs_submit").toggleAttribute("inert");
     document.getElementById("userselect").toggleAttribute("inert");
 
-    for (let inputElem of formElem.getElementsByTagName("INPUT")) {
+    for (let inputElem of formElem.getElementsByTagName("input")) {
         inputElem.toggleAttribute("inert");
     }
 }
@@ -273,7 +268,7 @@ document.getElementById("bs_submit").onclick = () => {
         return;
     }
     let selectedUser = ""; 
-    for (let inputElem of document.getElementsByTagName("INPUT")) {
+    for (let inputElem of document.getElementsByTagName("input")) {
         // uncheck sex radio buttons
         if (inputElem.name == "vorname") {
             selectedUser = inputElem.value; 
@@ -306,10 +301,10 @@ document.getElementById("btn_cancel").onclick = () => {
 
 
 // enable/disable certain input elements when statusorig changes
-const statusorig = formElem.getElementsByTagName("SELECT")[0];
+const statusorig = formElem.querySelector("select");
 statusorig.addEventListener("change", () => {
     let regex = /\bbs_fval_status(\d)(\d)\b/;
-    let inputElems = formElem.getElementsByTagName("INPUT");
+    let inputElems = formElem.getElementsByTagName("input");
     const zsf = [0,0,0];
     for (var c = 1; 3 > c; c++) {
         // d: Indizes in stdata für Förderverein, Student etc

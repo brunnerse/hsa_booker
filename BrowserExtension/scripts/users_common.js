@@ -11,7 +11,7 @@ async function updateUserSelect(userSelectElem, userdata) {
     childrenToRemove.forEach((child) => userSelectElem.removeChild(child));
     // Then add all current users again
     for (let user of Object.keys(userdata)) {
-        let elem = document.createElement("OPTION");
+        let elem = document.createElement("option");
         elem.value = user;
         elem.innerText = user; 
         userSelectElem.insertBefore(elem, emptyElem);

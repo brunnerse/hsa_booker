@@ -45,12 +45,11 @@ function createEmptyCourseTable() {
 
 function getErrorTable(id, details, errorStr) {
 	let templateElem = createEmptyCourseTable(); 
-	let bodyElem = templateElem.querySelector("tbody");
 	let [nr, date] = id.split("_");
-	bodyElem.querySelector(".bs_sknr").innerText = nr;
-	bodyElem.querySelector(".bs_sdet").innerText = details;
-	bodyElem.querySelector(".bs_szr").innerText = date; 
-	bodyElem.querySelector(".bs_sbuch").children[0].value = errorStr;
+	templateElem.querySelector("tbody .bs_sknr").innerText = nr;
+	templateElem.querySelector("tbody .bs_sdet").innerText = details;
+	templateElem.querySelector("tbody .bs_szr").innerText = date; 
+	templateElem.querySelector("tbody .bs_sbuch input").value = errorStr;
 	return templateElem;
 }
 
@@ -175,7 +174,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 
 
 	// Create href to course in the row if entry is not already a link or in error state
-	let newRowElem = replaceEntry.getElementsByTagName("tr")[1];
+	let newRowElem = replaceEntry.querySelector("tbody tr");
 	if (!newRowElem.className.match("\b(link|err)\b")) {
 		newRowElem.classList.add("link");
 		newRowElem.addEventListener("click", 
@@ -193,7 +192,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 	}
 
 	// Set bookingState to full if course if full and bookingState is error or none
-	let bookButtonElems = newRowElem.getElementsByTagName("INPUT");
+	let bookButtonElems = newRowElem.getElementsByTagName("input");
 	let bookButton = (bookButtonElems.length > 0) ? bookButtonElems[0] : null; 
 	let bookButtonClass = (bookButtonElems.length > 0) ? bookButtonElems[0].className : ""; 
     if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(bookButtonClass)) {
@@ -283,7 +282,7 @@ async function updateChoice(c, initElems=false) {
 
 					// create empty entry of table and insert course data
 					let entryElem = createEmptyCourseTable(); 
-					let bodyElem = entryElem.getElementsByTagName("TBODY")[0];
+					let bodyElem = entryElem.querySelector("tbody");
 					bodyElem.replaceChildren(tRowElem);
 					let newRowElem = bodyElem.lastChild;
 					// Remove some table cells from the row
@@ -376,7 +375,7 @@ async function updateUserdata(d) {
 			}
 		}
 		// fill other data
-		let inputElems = storedDataElem.getElementsByTagName("INPUT");
+		let inputElems = storedDataElem.getElementsByTagName("input");
 		for (let inputElem of inputElems) {
 			// fill form data
 			if (data[inputElem["name"]] != undefined)
@@ -502,7 +501,7 @@ function onOptionChange(change) {
 	// For simplicity, simply upload all options if one changes
 	// As all options are uploaded as one single object, this does not affect performance too much 
 	let optionObj = {};
-	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+	for (let inputElem of optionElem.getElementsByTagName("input")) {
 		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null)
 			continue;
 		if (inputElem.type == "radio") {
@@ -554,7 +553,7 @@ async function openAll(courses, closeAfter=false) {
 * Initial functions
 */
 async function loadOptions(allowCache=true) {
-	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+	for (let inputElem of optionElem.getElementsByTagName("input")) {
 		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null) // Skip hidden option elements
 			continue;
 		if (inputElem.type == "radio") {
@@ -655,7 +654,7 @@ async function loadInitialData() {
 			let newCourselinks = {}
 			let rootElems = doc.getElementsByClassName("bs_menu");
 			for (let rootElem of rootElems) {
-				for (let elem of rootElem.getElementsByTagName("A"))
+				for (let elem of rootElem.getElementsByTagName("a"))
 					newCourselinks[elem.innerText] = elem.href.split('/').pop(); 
 			}
 			// Update course links if they differ from the stored course links 
@@ -681,7 +680,7 @@ async function loadInitialData() {
 }
 
 // Add listeners
-for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+for (let inputElem of optionElem.getElementsByTagName("input")) {
 	inputElem.addEventListener("change", onOptionChange);
 }
 

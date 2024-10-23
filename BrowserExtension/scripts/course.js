@@ -236,7 +236,7 @@ async function arm(storedAsArmed=false) {
                     removeBookingState(id);
                 } else {
                     // next find book button to check whether course is bookable
-                    let bookButton = rowElem.getElementsByTagName("INPUT")[0];
+                    let bookButton = rowElem.querySelector("input");
                     if (bookButton && bookButton.classList.contains("bs_btn_buchen")) {
                         // book course and set as done
                         let formElem = bookButton.closest("form");
@@ -397,7 +397,7 @@ function modifyBookButtons() {
         // remove content of aktionElem
         aktionElem.replaceChildren();
         // create button and add to bookElem
-        let button = document.createElement("BUTTON");
+        let button = document.createElement("button");
         button.style = "width:95%; border-radius:5px; text-align:center;" 
             + (choiceIDs.includes(id) ? "background-color:green; color:white" : "");
         button.type = "button";

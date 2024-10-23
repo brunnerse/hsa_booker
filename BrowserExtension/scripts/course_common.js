@@ -21,11 +21,11 @@ function setStatus(status, color="white") {
         // split status into lines or use placeholder if no status
         let lines = status.split("\n");
         for (let i = 0; i < lines.length; i++) {
-            let span = document.createElement("SPAN");
+            let span = document.createElement("span");
             span.innerText = lines[i];
             statusElem.appendChild(span);
             if (i < lines.length-1) 
-                statusElem.appendChild(document.createElement("BR"));
+                statusElem.appendChild(document.createElement("br"));
         }
     }
 }

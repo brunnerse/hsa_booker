@@ -61,13 +61,13 @@ function modifyTableRows() {
         let chosen = choice[elem.innerText] ? true : false;
         if (chosen && !isElemMarked) {
             elem.parentElement.classList.add("trstate-marked");
-            let spanElem = document.createElement("SPAN");
+            let spanElem = document.createElement("span");
             spanElem.setAttribute("style", "color:green; float:left");
             spanElem.innerText = "✔";
             elem.parentElement.insertBefore(spanElem, elem);
         } else if (!chosen && isElemMarked) {
             elem.parentElement.classList.remove("trstate-marked");
-            let spanChildren = elem.parentElement.getElementsByTagName("SPAN");
+            let spanChildren = elem.parentElement.getElementsByTagName("span");
             spanChildren.length > 0 && elem.parentElement.removeChild(spanChildren[0]);
         }
     }

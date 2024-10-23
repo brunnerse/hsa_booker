@@ -30,7 +30,7 @@ async function updateUserdata(d) {
 			}
 		}
 		// fill other data
-		let inputElems = storedDataElem.getElementsByTagName("INPUT");
+		let inputElems = storedDataElem.getElementsByTagName("input");
 		for (let inputElem of inputElems) {
 			// fill form data
 			if (data[inputElem["name"]] != undefined)
@@ -50,7 +50,7 @@ function onOptionChange(change) {
 	// For simplicity, simply upload all options if one changes
 	// As all options are uploaded as one single object, this does not affect performance too much 
 	let optionObj = {};
-	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+	for (let inputElem of optionElem.getElementsByTagName("input")) {
 		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null)
 			continue;
 		if (inputElem.type == "radio") {
@@ -67,7 +67,7 @@ function onOptionChange(change) {
 }
 
 async function loadOptions(allowCache=true) {
-	for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+	for (let inputElem of optionElem.getElementsByTagName("input")) {
 		if (inputElem.closest(".bs_form_row").getAttribute("hidden") != null)
 			continue;
 		if (inputElem.type == "radio") {
@@ -88,7 +88,7 @@ async function loadOptions(allowCache=true) {
 
 
 // Add listeners
-for (let inputElem of optionElem.getElementsByTagName("INPUT")) {
+for (let inputElem of optionElem.getElementsByTagName("input")) {
 	inputElem.addEventListener("change", onOptionChange);
 }
 
