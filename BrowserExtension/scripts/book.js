@@ -254,16 +254,12 @@ async function processDocument() {
             return;
         }
 
-        // set booking state
+        // check previous booking state
         let prevBookingState = await getBookingState(courseID); 
         if (prevBookingState == "booked") {
             console.warn("COURSE IS ALREADY MARKED AS BOOKED")
             setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
             document.title = document.title + " - ALREADY BOOKED";
-            // Fill out form anyway, but return immediately afterwards 
-            if (userdata[user] && await getOption("fillform"))
-                fillForm(form, userdata[user]);
-            return;
         } else if (prevBookingState == "booking") {
             setBookingMessage("COURSE IS ALREADY BEING BOOKED, CLOSING...", "red");
             sleep(1000).then(window.close);
@@ -326,7 +322,7 @@ async function processDocument() {
                 }
             });
 
-            if (await getOption("submitimmediately")) {
+            if (await getOption("submitimmediately") && prevBookingState != "booked") {
                 // Check if course is armed first
                 let course = await getCourseFromID(courseID);
                 if (!course || !await isArmed(course)) {
