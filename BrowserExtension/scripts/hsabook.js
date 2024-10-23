@@ -7,7 +7,8 @@ const choiceElem = document.getElementById("choice");
 const toggleAdviceButton = document.getElementById("toggleadvice");
 const adviceElem = document.getElementById("advice");
 const optionElem = document.getElementById("configuration");
-const emptyTableElem = document.getElementById("notavail");
+const emptyTableElem = document.getElementById("template_table_entry");
+const activeTagElem = document.getElementById("template_active_tag");
 
 let userdata = {};
 let choice = {};
@@ -43,12 +44,14 @@ function createEmptyCourseTable() {
 }
 
 function getErrorTable(id, details, errorStr) {
-	const notAvailElem = createEmptyCourseTable(); 
-	notAvailElem.getElementsByClassName("bs_sknr")[1].innerText = id.split("_")[0];
-	notAvailElem.getElementsByClassName("bs_sdet")[1].innerText = details;
-	notAvailElem.getElementsByClassName("bs_szr")[1].innerText = id.split("_")[1];
-	notAvailElem.getElementsByClassName("bs_sbuch")[1].children[0].value = errorStr;
-	return notAvailElem;
+	let templateElem = createEmptyCourseTable(); 
+	let bodyElem = templateElem.querySelector("tbody");
+	let [nr, date] = id.split("_");
+	bodyElem.querySelector(".bs_sknr").innerText = nr;
+	bodyElem.querySelector(".bs_sdet").innerText = details;
+	bodyElem.querySelector(".bs_szr").innerText = date; 
+	bodyElem.querySelector(".bs_sbuch").children[0].value = errorStr;
+	return templateElem;
 }
 
 // remove expired courses from choice and upload it 
@@ -172,7 +175,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 
 
 	// Create href to course in the row if entry is not already a link or in error state
-	let newRowElem = replaceEntry.getElementsByTagName("TR")[1];
+	let newRowElem = replaceEntry.getElementsByTagName("tr")[1];
 	if (!newRowElem.className.match("\b(link|err)\b")) {
 		newRowElem.classList.add("link");
 		newRowElem.addEventListener("click", 
@@ -180,12 +183,14 @@ async function updateEntryInTable(entryElem, course, id, user) {
 			.then(window.close)
 		);
 	}
-	// Set course active_tag 
-	if (active_courses.includes(course)) {
-		for (let tagElem of replaceEntry.getElementsByClassName("active_tag"))
-			tagElem.removeAttribute("hidden");
-	}
 
+	// If course is among active tabs, append active_tag  
+	if (active_courses.includes(course)) {
+		let child = activeTagElem.cloneNode(true);
+		child.removeAttribute("id");
+		child.removeAttribute("hidden");
+		newRowElem.querySelector(".bs_sknr").appendChild(child);
+	}
 
 	// Set bookingState to full if course if full and bookingState is error or none
 	let bookButtonElems = newRowElem.getElementsByTagName("INPUT");

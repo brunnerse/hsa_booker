@@ -110,6 +110,42 @@
 }
 
 
+.bs_sknr, .bs_stag {
+  position: relative;
+}
+
+.bs_sknr .active_tag {
+  position: absolute;
+  top: 0px;
+  right: 100%; 
+  height: 100%;
+  margin-right: 2px;
+  padding-inline: 1px;
+  color: black;
+  background-color: rgb(228, 228, 228);
+  font-weight: bold;
+  border: 2px solid gray;
+  border-radius: 20px;
+}
+
+.active_tag span {
+  height: inherit;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.armed_tag {
+  position: absolute;
+  left: -35px;
+  top: 20px;
+  transform: rotate(-45deg);
+  font-size: 12px;
+  font-weight: bold;
+  color: darkred;
+}
+
+
 /* Tooltip text */
 .tooltip .tooltiptext {
   float: right;
