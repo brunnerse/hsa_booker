@@ -393,16 +393,13 @@ function modifyBookButtons() {
         let trElem = bookElem.closest("tr");
         let id = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
 
-        let aktionElem = bookElem.parentElement.lastChild;
-        // remove content of aktionElem
-        aktionElem.replaceChildren();
-        // create button and add to bookElem
-        let button = document.createElement("button");
-        button.style = "width:95%; border-radius:5px; text-align:center;" 
-            + (choiceIDs.includes(id) ? "background-color:green; color:white" : "");
-        button.type = "button";
-        aktionElem.appendChild(button);
-        button.onclick = () => onAdd(button) 
+        let button = trElem.querySelector(".aktion button");
+        if (choiceIDs.includes(id))
+            button.classList.add("green_whitefont");
+        else 
+            button.classList.remove("green_whitefont");
+
+        button.onclick = () => onAdd(button); 
 
        // set booking state according to stored state and the booking button class
        let bookStateSite = "none" ;
@@ -429,8 +426,8 @@ function modifyBookButtons() {
             button.innerText = text;
             colorRow(trElem, bookState);
        } else if (isMarked) { // Not in any booking state but marked
-                button.innerText = "MARKED";
-                colorRow(trElem, "marked");
+            button.innerText = "MARKED";
+            colorRow(trElem, "marked");
        } else { // Not marked, not in any booking state (except maybe full)
             button.innerText = "MARK FOR BOOKING"; 
             colorRow(trElem, (bookState == "full") ? "fullunmarked" : "none");

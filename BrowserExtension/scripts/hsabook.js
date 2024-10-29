@@ -49,7 +49,7 @@ function getErrorTable(id, details, errorStr) {
 	templateElem.querySelector("tbody .bs_sknr").innerText = nr;
 	templateElem.querySelector("tbody .bs_sdet").innerText = details;
 	templateElem.querySelector("tbody .bs_szr").innerText = date; 
-	templateElem.querySelector("tbody .bs_sbuch input").value = errorStr;
+	templateElem.querySelector("tbody .bs_sbuch *").value = errorStr;
 	return templateElem;
 }
 

@@ -17,6 +17,20 @@
      width: 105px;
 }
 
+.aktionbutton {
+  width:95%;
+  border-radius:5px;
+  text-align:center;
+  display: block;
+  margin: 0 auto;
+}
+
+.green_whitefont {
+  background-color: green;
+  color: white;
+}
+
+
 #topbar {
     display: block;
     position: fixed;

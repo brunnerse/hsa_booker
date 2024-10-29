@@ -65,23 +65,20 @@ body.insertBefore(b, body.children[0]);
 body.appendChild(bottomBar);
 
 
-
+// Create table header and cell element for aktion button
 let thElem = document.createElement("th");
 thElem.style = "text-align:center;";
 thElem.innerText = "Aktion";
-let tHeadElems = document.getElementsByTagName("thead");
-for (let tHead of tHeadElems) {
-	let tRows = tHead.getElementsByTagName("tr");
-	for (let tRow of tRows)
-		tRow.appendChild(thElem.cloneNode(true));
-}
 
-
-let tBodyElems = document.getElementsByTagName("tbody");
 let tdElem = document.createElement("td");
-tdElem.className = "aktion";
-for (let tBody of tBodyElems) {
-	let tRows = tBody.getElementsByTagName("tr");
-	for (let tRow of tRows)
-		tRow.appendChild(tdElem.cloneNode(true));
-}
+tdElem.classList.add("aktion");
+
+let button = document.createElement("button");
+button.classList.add("aktionbutton");
+button.type = "button";
+tdElem.appendChild(button);
+
+// Append new column to all table headers and table rows 
+document.querySelectorAll("thead tr").forEach((tRow) => tRow.appendChild(thElem.cloneNode(true)));
+document.querySelectorAll("tbody tr").forEach((tRow) => tRow.appendChild(tdElem.cloneNode(true)));
+
