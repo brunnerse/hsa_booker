@@ -401,15 +401,15 @@ function modifyBookButtons() {
 
         button.onclick = () => onAdd(button); 
 
-       // set booking state according to stored state and the booking button class
-       let bookStateSite = "none" ;
+        // set booking state according to stored state and the booking button class
+        let bookStateSite = "none" ;
         if (className.match(/\bbs_btn_buchen\b/))
            bookStateSite = "ready";
         else if (className.match(/\bbs_btn_(ausgebucht|warteliste)\b/))
            bookStateSite = "full";
 
        let bookState = bookingState[id] ? bookingState[id][0] : null;
-       if (!bookState || (bookState == "error" && bookStateSite == "full")) {
+       if (!bookState /*|| (bookState == "error" && bookStateSite == "full")*/) { // Previous: Do not show error if course is full
             bookState = bookStateSite;
             bookingState[id] = [bookState, Date.now()];
        }
@@ -511,7 +511,7 @@ async function loadInitialData() {
     }
 
     // add storage listener for all kinds of changes
-    addStorageListener((changes) => {
+    addStorageListener(async (changes) => {
         //console.log("Storage change:")
         //console.log(changes);
         for (let item of Object.keys(changes)) {
@@ -533,12 +533,21 @@ async function loadInitialData() {
                 let id = item.split("-").pop();
                 let statestampArr = changes[item].newValue;
                 let prevStateArr = bookingState[id] ?? [undefined, 0];
+
                 if (!statestampArr) {
-                    delete bookingState[id];
-                // Do not update if course state is "booked"; Should never happen anyway, just a safety check 
-                } else if (!(bookingState[id] && bookingState[id] == "booked")) {
-                    // This currently also integrates states from other courses for simplicity
-                    bookingState[id] = statestampArr;
+                    // State was deleted; Recheck as there might still be a local/sync state 
+                    statestampArr = await getBookingState(id, /*includeTimestamp=*/true);
+                    if (statestampArr && !hasBookingStateExpired(...statestampArr))
+                        bookingState[id] = statestampArr;
+                    else 
+                        delete bookingState[id];
+                } else {
+                    if (bookingState[id] && bookingState[id] == "booked") {
+                        // Do not update state if course state is already "booked";
+                    } else { 
+                        // This currently also integrates states from other courses for simplicity
+                        bookingState[id] = statestampArr;
+                    }
                 }
                 // modify book buttons if state changed
                 if (prevStateArr[0] != (statestampArr ? statestampArr[0] : undefined))

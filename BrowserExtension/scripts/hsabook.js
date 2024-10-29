@@ -196,7 +196,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 	let bookButton = (bookButtonElems.length > 0) ? bookButtonElems[0] : null; 
 	let bookButtonClass = (bookButtonElems.length > 0) ? bookButtonElems[0].className : ""; 
     if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(bookButtonClass)) {
-		if (!bookingState[id] || bookingState[id][0] == "error") {
+		if (!bookingState[id] /*|| bookingState[id][0] == "error"*/) {
 			bookingState[id] = ["full", Infinity];
 		}	
 	}
@@ -315,13 +315,22 @@ async function updateChoice(c, initElems=false) {
 	}
 }
 
-function updateBooked(courseID, statestampArr) {
+async function updateBooked(courseID, statestampArr) {
+
+	if (!statestampArr) {
+		// State was deleted; Recheck as there might still be a local/sync state 
+		statestampArr = await getBookingState(courseID, /*includeTimestamp=*/true);
+		if (statestampArr && hasBookingStateExpired(...statestampArr))
+			statestampArr = null;
+	}
+
 	let [oldState, oldStamp] = bookingState[courseID] ?? [undefined, 0];
 	let [state, newStamp] = statestampArr ?? [undefined, 0]
+
 	if (!statestampArr)
 		delete bookingState[courseID];
-    // do not update if course state is already "booked"; Should never happen anyway, just extra safety check 
-	else if (oldState == "booked" && state == "booking")
+    // do not update if course state is already "booked";
+	else if (oldState == "booked")
 		return;
 	else
 		bookingState[courseID] = statestampArr; 
@@ -339,10 +348,16 @@ function updateBooked(courseID, statestampArr) {
 			if (state) {  // if state is not undefined, update it
 				updateEntryInTable(tableEntry, course, id, user);
 			} else if (oldState) { // entry's booking state was removed
-				if (oldState == "booked") {
-					// This path is never taken,
-					// as a "booked" bookingState is only removed when the course is removed
-					// In this path, the changes to the book button should be reverted.
+				if (oldState.match(/booked|booking|error/)) {
+					// Revert the changes to the book button
+					let bookButton = tableEntry.querySelector("td input");
+					if (bookButton) {
+						let bs_btn_class = bookButton.className.match(/\bbs_btn_\w+\b/);
+						if (bs_btn_class) {
+							let s = bs_btn_class[0].split("_").pop();
+							bookButton.value = s[0].toUpperCase() + s.slice(1);
+						}
+					}
 				} 
 				let tRow = tableEntry.querySelector("td").parentElement;
 				colorRow(tRow, "none");
@@ -626,8 +641,7 @@ async function loadInitialData() {
 	await updateArm();
 
 	addStorageListener((changes) => {
-		//console.log("[Storage Listener] Change:")
-		//console.log(changes);
+		//console.log("[Storage Listener] Changes:", changes)
 		for (let item of Object.keys(changes)) {
 			if (item == USERS_FILE) {
 				updateUserdata(changes[USERS_FILE].newValue);
