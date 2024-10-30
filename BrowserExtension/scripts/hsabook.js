@@ -201,8 +201,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 		}	
 	}
 	// Color entry depending on the course's booking state
-	if (bookingState[id])
-	{
+	if (bookingState[id]) {
 		colorRow(newRowElem, bookingState[id][0]);
 		// change book button text for some states
 		if (bookButton) {

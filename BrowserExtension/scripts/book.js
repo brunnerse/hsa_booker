@@ -9,6 +9,25 @@ let userdata = {};
 const STATES = ["fill", "check", "confirmed", "error"];
 let STATE;
 
+let requestedSubmit = false;
+form.addEventListener("submit", onFormSubmit);
+
+function onFormSubmit() {
+    requestedSubmit = true;
+    setTimeout(() => {
+        requestedSubmit = false;
+    }, 1000);
+}
+
+// Reset the booking state if window is refreshed/closed 
+function removeBookingStateOnClose(courseID) {
+    window.addEventListener("beforeunload", function (event) {
+        if (!requestedSubmit)  // Do not reset booking state if unload is due to submit
+            removeBookingState(courseID, /*local=*/true);
+    }); 
+}
+
+
 async function setBookingMessage(message, color="black") {
     console.assert(submitButton); 
     // get message element or create it if it doesnt exist yet
@@ -79,6 +98,8 @@ async function bypassCountdown() {
     // Replace whole form and update global variables form and submitButton
     form.replaceWith(newForm);
     form = document.forms[0]; 
+    // Re-add event listener and update submitButton 
+    form.addEventListener("submit", onFormSubmit);
     submitButton = document.getElementById("bs_submit");
     console.assert(submitButton);
     submitButton.className = "sub";
@@ -194,13 +215,6 @@ async function getCourseFromID(courseID) {
         }
     }
     return null;
-}
-
-// resets the booking state if window is refreshed/closed 
-function removeBookingStateOnClose(courseID) {
-    window.addEventListener("beforeunload", function (e) {
-        removeBookingState(courseID, /*local=*/true);
-    }); 
 }
 
 async function processDocument() {
@@ -324,8 +338,7 @@ async function processDocument() {
 
             if (await getOption("submitimmediately") && prevBookingState != "booked") {
                 // Check if course is armed first
-                let course = await getCourseFromID(courseID);
-                if (!course || !await isArmed(course)) {
+                if (!await isArmed(await getCourseFromID(courseID)))  {
                     setBookingMessage("Please submit manually (automatic submit disabled as course is not armed)", "darkorange");
                     setTimeout(submitButton.focus, 100);
                     return;
@@ -456,9 +469,8 @@ async function processDocument() {
                 await titleChangeFun().then(() => sleep(333));
         }
 
-        if (!isUserActionRequired && await getOption("submitimmediately"))  {
-            // submit
-            console.assert(submitButton);
+        // Submit automatically if option is set, no user action is required and course is armed
+        if (!isUserActionRequired && await getOption("submitimmediately") && await isArmed(await getCourseFromID(courseID)))  {
             //submitButton.setAttribute("inert", "");
             form.requestSubmit(submitButton); 
         } else {
