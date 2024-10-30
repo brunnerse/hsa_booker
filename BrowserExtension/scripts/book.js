@@ -6,8 +6,8 @@ let lastTimestamp;
 
 let userdata = {};
 
-const STATES = ["fill", "check", "confirmed", "error"];
-let STATE;
+const States = Object.freeze({FILL : "fill", CHECK: "check", CONFIRMED: "confirmed", ERROR: "error"});
+let State;
 
 let requestedSubmit = false;
 form.addEventListener("submit", onFormSubmit);
@@ -219,32 +219,25 @@ async function getCourseFromID(courseID) {
 
 async function processDocument() {
     // Check which state the site is in by checking the form in the document
-    let nameInput;
-    if (form) {
-        for (let input of form.getElementsByTagName("input")) {
-            if (input["name"] == "vorname") {
-                nameInput = input;
-                break;
-            }
-        }
-    }
-    STATE = "error";
-    if (!nameInput) {
+    let nameInputElem = form.querySelector("input[name='name']");
+
+    State = States.ERROR;
+    if (!nameInputElem) {
         if (document.title == "Bestätigung")
-            STATE = "confirmed"
-    } else if (nameInput.type == "hidden") {
-        STATE = "check";
-    } else if (nameInput.type == "text") {
-        STATE = "fill";
+            State = States.CONFIRMED;
+    } else if (nameInputElem.type == "hidden") {
+        State = States.CHECK;
+    } else if (nameInputElem.type == "text") {
+        State = States.FILL;
     }
 
     userdata = await download(USERS_FILE) ?? {};
-    const courseID = getCourseID(STATE);
+    const courseID = getCourseID(State);
     const user = Object.keys(userdata).length > 0 ? Object.keys(userdata)[0] : null;
 
-    console.log(`Booking site is in state "${STATE}", course is ${courseID}, user is "${user}"` );
+    console.log(`Booking site is in state "${State}", course is ${courseID}, user is "${user}"` );
 
-    if (STATE == "fill") {
+    if (State == States.FILL) {
         submitButton = document.getElementById("bs_submit");
         console.assert(submitButton);
 
@@ -317,6 +310,8 @@ async function processDocument() {
                 else if (inputElem.name.match(/^pw_pw/))
                     inputElem.value = userdata[user]["pw"]; 
             }
+            // Remove booking state so when the site reloads it does not think that the course is already being booked
+            await removeBookingState(courseID, /*local=*/true);
             form.requestSubmit(submitButton);
             return;
         }
@@ -402,7 +397,7 @@ async function processDocument() {
             };
             addStorageListener(listener);
         }
-    } else if (STATE == "check") {
+    } else if (State == States.CHECK) {
         submitButton = form.querySelector("input[type='submit']");  
         console.assert(submitButton);
 
@@ -477,7 +472,7 @@ async function processDocument() {
             // Do nothing
             // submitButton.setAttribute("inert", "");
         }
-    } else if (STATE == "confirmed") {
+    } else if (State == States.CONFIRMED) {
         // signalize success by setting the global booking state
         if (user && courseID) {
             console.log(`Course Nr. ${courseID.split("_").join(" starting on ")} has been successfully booked.`);
