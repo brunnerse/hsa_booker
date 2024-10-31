@@ -388,10 +388,10 @@ function modifyBookButtons() {
         let className = childElem ? childElem.className : "";
 
         let trElem = bookElem.closest("tr");
-        let id = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
+        let courseID = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
 
         let button = trElem.querySelector(".aktion button");
-        if (choiceIDs.includes(id))
+        if (choiceIDs.includes(courseID))
             button.classList.add("green_whitefont");
         else 
             button.classList.remove("green_whitefont");
@@ -405,17 +405,17 @@ function modifyBookButtons() {
         else if (className.match(/\bbs_btn_(ausgebucht|warteliste)\b/))
            bookStateSite = "full";
 
-       let bookState = bookingState[id] ? bookingState[id][0] : null;
+       let bookState = bookingState[courseID] ? bookingState[courseID][0] : null;
        if (!bookState /*|| (bookState == "error" && bookStateSite == "full")*/) { // Previous: Do not show error if course is full
             bookState = bookStateSite;
-            bookingState[id] = [bookState, Date.now()];
+            bookingState[courseID] = [bookState, Date.now()];
        }
 
        // Color line and set button text according to bookingState
        const bookTexts = {
             "booked" : "BOOKED", "booking" : "BOOKING...",
             "error": "BOOKING ERROR", "full": "MARKED BUT FULL"};
-       let isMarked = choiceIDs.includes(id);
+       let isMarked = choiceIDs.includes(courseID);
        let text = bookTexts[bookState];
 
        // If in any booking state (except full when not marked), show that state
@@ -446,19 +446,38 @@ async function updateChoice(c, checkAllCourses=false) {
         IDsToCheck = [];
         for (let bookElem of document.querySelectorAll("td.bs_sbuch")) {
             let trElem = bookElem.closest("tr");
-            let id = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
-            IDsToCheck.push(id);
+            let courseID = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
+            IDsToCheck.push(courseID);
         }
     }
-    for (let id of IDsToCheck) {
-        // Only get states from sync; local states (i.e. "booking") get updated every second anyway 
-        let bookState = await getBookingState(id, true, false, /*syncOnly=*/true);
-        //console.log("Got booking state " + bookState + " for course " + id);
+    for (let courseID of IDsToCheck) {
+        let bookState = await getBookingState(courseID);
+        //console.log("Got booking state " + bookState + " for course " + courseID);
         if (bookState)
-            bookingState[id] = bookState;
+            bookingState[courseID] = bookState;
     } 
 
     modifyBookButtons();
+}
+
+async function updateBooked(courseID, statestampArr) {
+    if (!statestampArr) {
+        // State was deleted; Recheck as there might still be a local/sync state 
+        statestampArr = await getBookingState(courseID, /*includeTimestamp=*/true);
+        if (statestampArr && !hasBookingStateExpired(...statestampArr))
+            statestampArr = null;
+    }
+	let [oldState, oldStamp] = bookingState[courseID] ?? [undefined, 0];
+	let [state, newStamp] = statestampArr ?? [undefined, 0]
+
+	if (!statestampArr)
+		delete bookingState[courseID];
+	else
+		bookingState[courseID] = statestampArr; 
+
+	// modify book buttons if state has changed (i.e. different state or old state expired)
+	if (state != oldState || hasBookingStateExpired(oldState, oldStamp, true)) 
+        modifyBookButtons();
 }
 
 function updateRefresh(interval) {
@@ -474,7 +493,7 @@ async function updateUserdata(d) {
 	userdata = d ?? {};
     await updateUserSelect(userSelectElem, userdata);
     if (choice && Object.keys(choice).length > 0)
-        updateChoice(choice, false);
+        updateChoice(choice);
 }
 
 // Confirm that the current site is a course site
@@ -502,69 +521,45 @@ async function loadInitialData() {
     // check if website should be armed
     let armTimestamp = await download(ARMED_FILE+currentCourse);
     if (!hasArmedExpired(armTimestamp)) {
-        await arm(true);
+        await arm(/*updateStorage=*/false);
         if (Date.now() - armTimestamp > 10000)
             storeAsArmed(currentCourse);
     }
 
     // add storage listener for all kinds of changes
     addStorageListener(async (changes) => {
-        //console.log("Storage change:")
-        //console.log(changes);
+        //console.log("Storage change:", changes, Object.keys(changes)[0], changes[Object.keys(changes)[0]].newValue)
         for (let item of Object.keys(changes)) {
             if (item == USERS_FILE) {
                 updateUserdata(changes[item].newValue); 
             } else if (item == REFRESH_FILE) {
                 updateRefresh(changes[item].newValue ?? refreshSelectElem.options[0].value);
             } else if (item == ARMED_FILE+getCurrentCourse()) {
-                // check if item was removed
-                let storedAsArmed = changes[item].newValue != undefined;  
                 // do not need to check the timestamp here; just was updated, so timestamp must be fine
+                // check if item was removed
+                let storedAsArmed = changes[item].newValue ? true : false;  
+                // Check if stored armed state differs from script armed state
+                // Do not update storage when unarming/arming, as already stored
                 if (!storedAsArmed && armed)
-                    unarm();
+                    unarm(/*updateStorage=*/false);
                 else if (storedAsArmed && !armed)
-                    arm(true);
+                    arm(/*updateStorage=*/false);
             } else if (item == CHOICE_FILE) {
                 updateChoice(changes[item].newValue);
             } else if (item.startsWith(BOOKSTATE_FILE)) {
-                let id = item.split("-").pop();
-                let statestampArr = changes[item].newValue;
-                let prevStateArr = bookingState[id] ?? [undefined, 0];
-
-                if (!statestampArr) {
-                    // State was deleted; Recheck as there might still be a local/sync state 
-                    statestampArr = await getBookingState(id, /*includeTimestamp=*/true);
-                    if (statestampArr && !hasBookingStateExpired(...statestampArr))
-                        bookingState[id] = statestampArr;
-                    else 
-                        delete bookingState[id];
-                } else {
-                    if (bookingState[id] && bookingState[id] == "booked") {
-                        // Do not update state if course state is already "booked";
-                    } else { 
-                        // This currently also integrates states from other courses for simplicity
-                        bookingState[id] = statestampArr;
-                    }
-                }
-                // modify book buttons if state changed
-                if (prevStateArr[0] != (statestampArr ? statestampArr[0] : undefined))
-                    modifyBookButtons();
+				let courseID = item.split("-").pop();
+                updateBooked(courseID, changes[item].newValue);
             }
         }
     });
 
     // Create function that periodically checks whether a booking state has expired
     setInterval(() => {
-        let changed = false;
-        for (let id of Object.keys(bookingState)) {
-            let [state, stamp] = bookingState[id];
-            if (hasBookingStateExpired(state, stamp, true)) { 
-                delete bookingState[id];
-                changed = true;
-            }
+        for (let courseID of Object.keys(bookingState)) {
+            let [state, stamp] = bookingState[courseID];
+            if (hasBookingStateExpired(state, stamp, true)) 
+                updateBooked(courseID, null);
         }
-        if (changed)
-            modifyBookButtons();
     }, 500);
 }
 
@@ -572,8 +567,9 @@ loadInitialData();
 
 
 // unarm when closing the window
-unloadEventListener = function (e) {
-    if (armed && !refreshTriggered){
+window.addEventListener("beforeunload", function (e) {
+    // If armed and unload is not caused by refresh 
+    if (armed && !refreshTriggered) {
         // set arm timestamp so it times out in 5 seconds
         let timeStamp = Date.now() - armed_expiry_msec + 5000;
         let file = ARMED_FILE + currentCourse;
@@ -584,5 +580,4 @@ unloadEventListener = function (e) {
         //setTimeout(() => arm(), 1000);
         //return e.returnValue;
     }
-}
-window.addEventListener("beforeunload", unloadEventListener); 
+});

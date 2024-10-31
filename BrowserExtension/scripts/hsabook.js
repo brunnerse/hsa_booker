@@ -43,9 +43,9 @@ function createEmptyCourseTable() {
 	return elem;
 }
 
-function getErrorTable(id, details, errorStr) {
+function getErrorTable(courseID, details, errorStr) {
 	let templateElem = createEmptyCourseTable(); 
-	let [nr, date] = id.split("_");
+	let [nr, date] = courseID.split("_");
 	templateElem.querySelector("tbody .bs_sknr").innerText = nr;
 	templateElem.querySelector("tbody .bs_sdet").innerText = details;
 	templateElem.querySelector("tbody .bs_szr").innerText = date; 
@@ -55,28 +55,23 @@ function getErrorTable(id, details, errorStr) {
 
 // remove expired courses from choice and upload it 
 async function cleanupChoice(expiry_msec) {
-	let changed = false;
 	for (let course of Object.keys(choice)) {
 		for (let user of Object.keys(choice[course])) {
 			for (let idx = choice[course][user].length-1; idx >= 0; idx--) {
-				let id = choice[course][user][idx];
-				let [nr, dateStr] = id.split("_");
+				let courseID = choice[course][user][idx];
+				let [nr, dateStr] = courseID.split("_");
 				let date = dateFromDDMMYY(dateStr); 
 				// if start date is too long ago, remove the course from choice 
 				if (Date.now() - date > expiry_msec) {
 					console.log(`Removing course Nr. ${nr} (${course}, started at ${dateStr}) as it is in the past.`)
-					changed = true;
-					removeIdFromChoice(choice, course, user, id)
-					remove(BOOKSTATE_FILE+id);
+					removeCourseID(courseID, course, user, choice);
 				} 
 			}
 		}
 	}
-	if (changed)
-		await upload(CHOICE_FILE, choice);
 }
 
-function removeObsoleteEntries() {
+function removeObsoleteChoiceEntries() {
 	for (let i = choiceElem.children.length - 1; i>= 0; i--) {
 		let title = choiceElem.children[i].title;
     	let [course, nr, date, user] = title.split("_");
@@ -231,15 +226,15 @@ async function updateChoice(c, initElems=false) {
 	}
 
 	// remove table entries not in choice anymore
-	removeObsoleteEntries();
+	removeObsoleteChoiceEntries();
 	// add/update table entires in choice
 	for (let course of Object.keys(choice)) {
 		if (initElems) {
 			for (let user of Object.keys(choice[course])) {
-				for (let id of choice[course][user]) {
+				for (let courseID of choice[course][user]) {
 					let title = `${course}`;
-					let entryElem = getErrorTable(id, title, "Loading...");
-					updateEntryInTable(entryElem, course, id, user);
+					let entryElem = getErrorTable(courseID, title, "Loading...");
+					updateEntryInTable(entryElem, course, courseID, user);
 				}
 			}
 		}
@@ -596,10 +591,6 @@ async function loadInitialData() {
 		} 
 	}
 
-	// load and clean up the choice data
-	choice = storageContent[CHOICE_FILE] ?? {}; 
-	await cleanupChoice(default_expiry_msec);
-
 	// Find and set active_course
 	await new Promise( (resolve) => { 
 		base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*", active: true},
@@ -618,6 +609,8 @@ async function loadInitialData() {
 		);
 	});
 
+	// load the choice data
+	choice = storageContent[CHOICE_FILE] ?? {}; 
 	await updateChoice(choice, true);
 
 	addStorageListener((changes) => {
@@ -639,7 +632,7 @@ async function loadInitialData() {
 		}
 	});
 
-	// update course links 
+	// update course links and remove expired choice entries 
 	requestHTML("GET", "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/")
 	.then((doc) => {
 			let newCourselinks = {}
@@ -665,9 +658,9 @@ async function loadInitialData() {
 			cleanupChoice(expiry_ms);
 		})
 	.catch((err) => {
+		cleanupChoice(default_expiry_msec);
 		console.error("Failed to update course links: Loading course site failed");
 	});	
-
 }
 
 // Add listeners
@@ -681,33 +674,7 @@ document.getElementById("resetdata").addEventListener("click", () => {
 			base.storage.sync.clear();
 			loadOptions(false);
 	}
-})
-
-document.getElementById("armall").addEventListener("click", onArmAll);
-document.getElementById("openall").addEventListener("click", onOpenAll);
-document.getElementById("titlelink").addEventListener("click",
-	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
-document.getElementById("openchoicesite").addEventListener("click",
-	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
-
-
-loadOptions();
-loadInitialData();
-
-// Create function that periodically checks whether a booking state or armed course has expired
-setInterval(() => {
-	for (let id of Object.keys(bookingState)) {
-		let [state, stamp] = bookingState[id];
-		if (hasBookingStateExpired(state, stamp, true)) {
-			updateBooked(id, null);
-		}
-	}
-	for (let course of Object.keys(armedCourses)) {
-		if (hasArmedExpired(armedCourses[course])) {
-			updateArm(course, null);
-		}
-	}
-}, 500);
+});
 
 toggleAdviceButton.addEventListener("click", () => {
 	if (adviceElem.hidden) {
@@ -717,5 +684,33 @@ toggleAdviceButton.addEventListener("click", () => {
 		adviceElem.hidden = true;
 		toggleAdviceButton.innerText = "Show advice";
 	}
-})
+});
+
+document.getElementById("armall").addEventListener("click", onArmAll);
+document.getElementById("openall").addEventListener("click", onOpenAll);
+document.getElementById("titlelink").addEventListener("click",
+	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
+document.getElementById("openchoicesite").addEventListener("click",
+	 () => window.open("https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/"));
+
+
+
+// Load and initialize data
+loadOptions();
+loadInitialData();
+
+// Create function that periodically checks whether a booking state or armed course has expired
+setInterval(() => {
+	for (let courseID of Object.keys(bookingState)) {
+		let [state, stamp] = bookingState[courseID];
+		if (hasBookingStateExpired(state, stamp, true)) {
+			updateBooked(courseID, null);
+		}
+	}
+	for (let course of Object.keys(armedCourses)) {
+		if (hasArmedExpired(armedCourses[course])) {
+			updateArm(course, null);
+		}
+	}
+}, 500);
 
