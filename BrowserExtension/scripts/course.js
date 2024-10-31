@@ -451,7 +451,7 @@ async function updateChoice(c, checkAllCourses=false) {
         }
     }
     for (let courseID of IDsToCheck) {
-        let bookState = await getBookingState(courseID);
+        let bookState = await getBookingState(courseID, true);
         //console.log("Got booking state " + bookState + " for course " + courseID);
         if (bookState)
             bookingState[courseID] = bookState;

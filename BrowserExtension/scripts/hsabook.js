@@ -77,7 +77,7 @@ function removeObsoleteChoiceEntries() {
     	let [course, nr, date, user] = title.split("_");
 		let entryId = nr+"_"+date;
 
-		found = false;
+		let found = false;
 		if (choice[course] && choice[course][user]) {
 			for (let id of choice[course][user])
 				if (id == entryId) {
@@ -214,6 +214,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 }
 
 async function updateChoice(c, initElems=false) {
+	let prevChoice = choice;
 	choice = c ?? {};
 
 	if (Object.keys(choice).length == 0) {
@@ -229,6 +230,10 @@ async function updateChoice(c, initElems=false) {
 	removeObsoleteChoiceEntries();
 	// add/update table entires in choice
 	for (let course of Object.keys(choice)) {
+		// Check if course did not change compared to previous course
+		if (prevChoice[course] && JSON.stringify(prevChoice[course]) == JSON.stringify(choice[course])) {
+			continue;
+		}
 		if (initElems) {
 			for (let user of Object.keys(choice[course])) {
 				for (let courseID of choice[course][user]) {
@@ -597,7 +602,8 @@ async function loadInitialData() {
 			(tabs) => {
 				for (let tab of tabs) {
 					let tabUrl = tab.url.split("#")[0];
-					for (let course of Object.keys(choice)) {
+					// Search for url in choices to find the course corresponding to the url
+					for (let course of Object.keys(storageContent[CHOICE_FILE])) {
 						if (getHref(course) == tabUrl) {
 							active_courses.push(course);
 							break;
@@ -609,9 +615,8 @@ async function loadInitialData() {
 		);
 	});
 
-	// load the choice data
-	choice = storageContent[CHOICE_FILE] ?? {}; 
-	await updateChoice(choice, true);
+	// Load the choice data
+	await updateChoice(storageContent[CHOICE_FILE]);
 
 	addStorageListener((changes) => {
 		//console.log("[Storage Listener] Changes:", changes)
