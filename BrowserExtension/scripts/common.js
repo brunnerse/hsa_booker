@@ -415,6 +415,16 @@ async function isArmed(course) {
     return !hasArmedExpired(stamp);
 }
 
+function removeCourseID(courseID, course, user, choice) {
+	// update choice file if removed successfully
+ 	if (removeIdFromChoice(choice, course, user, courseID)) {
+		return  upload(CHOICE_FILE, choice)
+            	.then (() => removeBookingState(courseID));
+    } else {
+        return new Promise((resolve, reject) => reject(`Course ${courseID} is not in choice!`));
+    }
+}
+
 function removeIdFromChoice(choice, course, user, id) {
     let success = false;
     if (choice[course] && choice[course][user]) {
@@ -456,9 +466,8 @@ async function setBookingState(courseID, state, local) {
     return timestamp;
 }
 
-async function removeBookingState(courseID, local=false) {
-    if (local)
-        await remove(BOOKSTATE_FILE_LOCAL+courseID);
-    else
+async function removeBookingState(courseID, localOnly=false) {
+    await remove(BOOKSTATE_FILE_LOCAL+courseID);
+    if (!localOnly)
         await remove(BOOKSTATE_FILE+courseID);
 }

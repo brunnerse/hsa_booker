@@ -124,22 +124,17 @@ async function addCourse(user, courseID) {
 
 async function removeCourse(user, courseID) {
     // remove from choice
- 	if (removeIdFromChoice(choice, currentCourse, user, courseID)) {
-        await upload(CHOICE_FILE, choice)
-        .then(() => removeBookingState(courseID))
-        .then(() => setStatusTemp("Unmarked course " + courseID.split("_")[0], "green"))
-        .catch((err) => {
-            setStatusTemp( err.toString(), "red");
-            throw err;
-        });
-    } else {
-        throw new Error("Cannot remove: course " + nr + " is not marked for user " + user);
-    }
+    removeCourseID(courseID, currentCourse, user, choice)
+    .then(() => setStatusTemp("Unmarked course " + courseID.split("_")[0], "green"))
+    .catch((err) => {
+        setStatusTemp( err.toString(), "red");
+        throw err;
+    });
 }
 
 let armCounter = 0;
 
-async function arm(storedAsArmed=false) {
+async function arm(updateStorage=true) {
     armed = true;
     armCounter += 1;
     armText.innerText = "UNARM";

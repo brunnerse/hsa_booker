@@ -267,10 +267,7 @@ async function updateChoice(c, initElems=false) {
 						if (getCourseDate(tRowElem) > dateFromDDMMYY(date)) {
 							console.log(`Course ${id} (${course}) expired as a course with the same nr`+
 								` and a higher date exists, removing the course...`);
-							if (removeIdFromChoice(choice, course, user, id)) {
-								upload(CHOICE_FILE, choice)
-								.then (() => removeBookingState(id));
-							}
+							removeCourseID(id, course, user, choice);
 						} else { 
 							let entryElem = getErrorTable(id, `${course}`, "Wrong date");
 							updateEntryInTable(entryElem, course, id, user); 
@@ -315,7 +312,6 @@ async function updateChoice(c, initElems=false) {
 }
 
 async function updateBooked(courseID, statestampArr) {
-
 	if (!statestampArr) {
 		// State was deleted; Recheck as there might still be a local/sync state 
 		statestampArr = await getBookingState(courseID, /*includeTimestamp=*/true);
@@ -469,22 +465,15 @@ function unarmAll() {
 }
 
 
-
 function onCloseButton(event) {
 	let button = event.currentTarget;
     let parent = button.closest(".item-page");
     let title = parent.title;
     let [course, nr, date, user] = title.split("_");
-	let id = nr+"_"+date;
+	let courseID = `${nr}_${date}`;
 
-	// update choice file if removed successfully
- 	if (removeIdFromChoice(choice, course, user, id)) {
-		upload(CHOICE_FILE, choice)
-		.then (() => removeBookingState(id));
-    } else {
-		console.error("Could not remove course " + nr + ": Not found in choice!");
-	}
-    return false;
+	removeCourseID(courseID, course, user, choice)
+	.catch(() => console.error("Error when removing course " + nr));
 }
 
 

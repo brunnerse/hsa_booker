@@ -23,7 +23,7 @@ function onFormSubmit() {
 function removeBookingStateOnClose(courseID) {
     window.addEventListener("beforeunload", function (event) {
         if (!requestedSubmit)  // Do not reset booking state if unload is due to submit
-            removeBookingState(courseID, /*local=*/true);
+            removeBookingState(courseID, /*localOnly=*/true);
     }); 
 }
 
@@ -273,7 +273,7 @@ async function processDocument() {
             return;
         } else if (prevBookingState) {
             // if state was e.g. error, remove the state
-            await removeBookingState(courseID, /*local=*/false);
+            await removeBookingState(courseID, /*localOnly=*/false);
         }
         
         lastTimestamp = await setBookingState(courseID, "booking", /*local=*/true);
@@ -311,7 +311,8 @@ async function processDocument() {
                     inputElem.value = userdata[user]["pw"]; 
             }
             // Remove booking state so when the site reloads it does not think that the course is already being booked
-            await removeBookingState(courseID, /*local=*/true);
+            // TODO more elegant way without removing the state?
+            await removeBookingState(courseID, /*localOnly=*/true);
             form.requestSubmit(submitButton);
             return;
         }
@@ -476,7 +477,7 @@ async function processDocument() {
         // signalize success by setting the global booking state
         if (user && courseID) {
             console.log(`Course Nr. ${courseID.split("_").join(" starting on ")} has been successfully booked.`);
-            await removeBookingState(courseID, /*local=*/true);
+            await removeBookingState(courseID, /*localOnly=*/true);
             await setBookingState(courseID, "booked", /*local=*/false);
         }
     } else {
@@ -484,7 +485,7 @@ async function processDocument() {
 
         // Constantly set bookingstate "error" until another tab sets another booking state
         if (user && courseID && (await getBookingState(courseID, false, false, /*syncOnly=*/true) != "booked")) {
-            await removeBookingState(courseID, /*local=*/true);
+            await removeBookingState(courseID, /*localOnly=*/true);
             let lastTimestamp = await setBookingState(courseID, "error", /*local=*/true);
             removeBookingStateOnClose(courseID);
             setInterval(async () => {
@@ -500,7 +501,7 @@ async function processDocument() {
                         return;
                     }
                 }
-                // update booking state timestamp constantly to show the site did not timeout
+                // Update booking state timestamp constantly to show the site did not timeout
                 lastTimestamp = await setBookingState(courseID, "error", /*local=*/true);
             }, booking_expiry_msec * 0.4);
         }
