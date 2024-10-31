@@ -190,6 +190,8 @@ async function updateEntryInTable(entryElem, course, id, user) {
 		child.removeAttribute("hidden");
 		newRowElem.querySelector(".bs_sknr").appendChild(child);
 	}
+	// Set armed tag according to whether the course is armed
+	setArmedTag(replaceEntry, course);
 
 	// Set bookingState to full if course if full and bookingState is error or none
 	let bookButtonElems = newRowElem.getElementsByTagName("input");
@@ -214,7 +216,6 @@ async function updateEntryInTable(entryElem, course, id, user) {
 			}
 		}
 	}
-	setEntryArmStatus(replaceEntry);
 }
 
 async function updateChoice(c, initElems=false) {
@@ -395,29 +396,27 @@ async function updateUserdata(d) {
 }
 
 
-async function setEntryArmStatus(entry) {
-	let title = entry.getAttribute("title");
-	let course = title.split("_")[0]; 
+async function setArmedTag(entry, course) {
 	if (armedCourses[course])
-		Array.from(entry.getElementsByClassName("armed_tag")).forEach((e) => e.removeAttribute("hidden"));
+		entry.querySelector(".armed_tag").removeAttribute("hidden");
 	else
-		Array.from(entry.getElementsByClassName("armed_tag")).forEach((e) => e.setAttribute("hidden", ""));
+		entry.querySelector(".armed_tag").setAttribute("hidden", "");
 
 }
 
-async function updateArm() {
+async function updateArm(course, timestamp) {
 	// check for expiry and remove expired titles 
-	let expiredCourses = [];
-	for (let c of Object.keys(armedCourses)) {
-		if (hasArmedExpired(armedCourses[c]))
-			expiredCourses.push(c)	
-	}
-	expiredCourses.forEach((c) => delete armedCourses[c]);
+	if (!timestamp || hasArmedExpired(timestamp))
+		delete armedCourses[course];
+	else 
+		armedCourses[course] = timestamp;
 
 	// Display/hide the armed tag for each course 
-	for (let child of choiceElem.children)
-		setEntryArmStatus(child);
-
+	for (let entry of choiceElem.children) {
+		let entryCourse = entry.getAttribute("title").split("_")[0]; 
+		if (entryCourse == course) 
+			setArmedTag(entry, course);
+	}
 
 	let numArmedTitles = Object.keys(armedCourses).length;  
 	// set arm Button and text according to whether all are armed or not
@@ -427,9 +426,7 @@ async function updateArm() {
 		armText.innerText = "Unarm all";
 		let style = armButton.getAttribute("style").replace("green", "blue");
 		armButton.setAttribute("style", style); 
-	}
-	else
-	{
+	} else {
 		armText.innerText = "Arm all";
 		let style = armButton.getAttribute("style").replace("blue", "green");
 		armButton.setAttribute("style", style); 
@@ -438,8 +435,6 @@ async function updateArm() {
 
 
 async function armAll() {
-	armed_all = true;
-	armed_one = true;
 	let user = Object.keys(userdata)[0];
 	let courselist = [];
 	// Find all courses where at least one courseID is not booked
@@ -459,8 +454,6 @@ async function armAll() {
 
 
 function unarmAll() {
-	armed_all = false;
-	armed_one = false;
     return storeAsUnarmedCourses(Object.keys(choice)); 
 }
 
@@ -587,10 +580,11 @@ async function loadInitialData() {
 	for (let file of Object.keys(storageContent)) {
 		if (file.startsWith(ARMED_FILE)) {
 			let stamp = storageContent[file];
+			let course = file.substring(ARMED_FILE.length);
 			if (hasArmedExpired(stamp))
 				remove(file);
 			else 
-				armedCourses[file.substring(ARMED_FILE.length)] = stamp;
+				updateArm(course, stamp);
 		} else if (file.startsWith(BOOKSTATE_FILE)) {
 			let statestamp = storageContent[file];
 			let courseID = file.split("-").pop();
@@ -626,19 +620,14 @@ async function loadInitialData() {
 
 	await updateChoice(choice, true);
 
-	await updateArm();
-
 	addStorageListener((changes) => {
 		//console.log("[Storage Listener] Changes:", changes)
 		for (let item of Object.keys(changes)) {
 			if (item == USERS_FILE) {
 				updateUserdata(changes[USERS_FILE].newValue);
 			} else if (item.startsWith(ARMED_FILE)) {
-				if (changes[item].newValue)
-					armedCourses[item.substring(ARMED_FILE.length)] = changes[item].newValue;
-				else
-					delete armedCourses[item.substring(ARMED_FILE.length)];
-				updateArm();
+				let course = item.substring(ARMED_FILE.length);
+				updateArm(course, changes[item].newValue);
 			} else if (item == CHOICE_FILE) {
 				updateChoice(changes[CHOICE_FILE].newValue);
 			} else if (item.startsWith(BOOKSTATE_FILE)) {
@@ -715,8 +704,7 @@ setInterval(() => {
 	}
 	for (let course of Object.keys(armedCourses)) {
 		if (hasArmedExpired(armedCourses[course])) {
-			delete armedCourses[course];	
-			updateArm();
+			updateArm(course, null);
 		}
 	}
 }, 500);

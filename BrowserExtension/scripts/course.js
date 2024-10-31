@@ -188,7 +188,7 @@ async function arm(updateStorage=true) {
     }
 
     // mark website as armed in storage
-    if (!storedAsArmed)
+    if (updateStorage)
         storeAsArmed(currentCourse);
     let course = currentCourse;
 
@@ -351,15 +351,17 @@ async function arm(updateStorage=true) {
 }
 
 
-async function unarm() {
+async function unarm(updateStorage=true) {
     armText.innerText = "ARM";
     let style = armButton.getAttribute("style").replace("blue", "green");
     armButton.setAttribute("style", style); 
     refreshSelectElem.parentElement.setAttribute("hidden", "");
-    // remove website from armed list in options
-    await storeAsUnarmed(currentCourse);
-    setStatusTemp("Unarmed.");
+    // Set armed to false before updating storage to prevent repeated call by storage listener
     armed = false;
+    // remove website from armed list in options
+    if (updateStorage)
+        await storeAsUnarmed(currentCourse);
+    setStatusTemp("Unarmed.");
 }
 
 function onArm() {
