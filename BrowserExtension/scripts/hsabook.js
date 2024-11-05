@@ -12,7 +12,7 @@ const activeTagElem = document.getElementById("template_active_tag");
 
 let userdata = {};
 let choice = {};
-let active_courses = [];
+let active_courses_hrefs = [];
 let armed_all = false;
 let armed_one = false;
 let armedCourses = {};
@@ -25,15 +25,14 @@ const SORT_KEYS = {date: 'd', name: 'n', id: 'i'};
 let sortkey = SORT_KEYS.name; 
 
 
-function getHref(course) {
+function getHref(course, short=false) {
 	let link = courselinks[course];
 	// if link not registered, create it according to heuristic 
 	if (!link)
 		link = "_" +
-			course.replaceAll(/[\s\.\/`,]/g, "_").replaceAll("&", "_und_")
-			.replaceAll("ä", "ae").replaceAll("ö", "oe").replaceAll("ü", "ue").replaceAll("ß", "ss") +
-		 ".html";
-	return "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
+			course.replaceAll(/[\s\.\/`,]/g, "_").replaceAll("&", "_und_").replaceAll("ß", "ss").
+				   replaceAll("ä", "ae").replaceAll("ö", "oe").replaceAll("ü", "ue") + ".html";
+	return short ? link : "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
 }
 
 function createEmptyCourseTable() {
@@ -72,21 +71,21 @@ async function cleanupChoice(expiry_msec) {
 }
 
 function removeObsoleteChoiceEntries() {
+	outer:
 	for (let i = choiceElem.children.length - 1; i>= 0; i--) {
 		let title = choiceElem.children[i].title;
     	let [course, nr, date, user] = title.split("_");
-		let entryId = nr+"_"+date;
+		let entryId = `${nr}_${date}`;
 
-		let found = false;
 		if (choice[course] && choice[course][user]) {
 			for (let id of choice[course][user])
 				if (id == entryId) {
-					found = true;
-					break;
+					// Entry is in choice and therefore not obsolete; continue with next entry
+					continue outer;
 				}
 		}
-		if (!found)
-			choiceElem.removeChild(choiceElem.children[i]);
+		// At this point, the entry has not been found and is therefore not in choice; remove it 
+		choiceElem.children[i].remove();
 	}
 }
 
@@ -179,7 +178,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 	}
 
 	// If course is among active tabs, append active_tag  
-	if (active_courses.includes(course)) {
+	if (active_courses_hrefs.includes(getHref(course, /*short=*/true))) {
 		let child = activeTagElem.cloneNode(true);
 		child.removeAttribute("id");
 		child.removeAttribute("hidden");
@@ -214,7 +213,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 }
 
 async function updateChoice(c, initElems=false) {
-	let prevChoice = choice;
+	let prevChoice = choice ?? {};
 	choice = c ?? {};
 
 	if (Object.keys(choice).length == 0) {
@@ -230,15 +229,14 @@ async function updateChoice(c, initElems=false) {
 	removeObsoleteChoiceEntries();
 	// add/update table entires in choice
 	for (let course of Object.keys(choice)) {
-		// Check if course did not change compared to previous course
+		// Check if course did not change from previous choice to current choice
 		if (prevChoice[course] && JSON.stringify(prevChoice[course]) == JSON.stringify(choice[course])) {
 			continue;
 		}
 		if (initElems) {
 			for (let user of Object.keys(choice[course])) {
 				for (let courseID of choice[course][user]) {
-					let title = `${course}`;
-					let entryElem = getErrorTable(courseID, title, "Loading...");
+					let entryElem = getErrorTable(courseID, `${course}`, "Loading...");
 					updateEntryInTable(entryElem, course, courseID, user);
 				}
 			}
@@ -275,7 +273,7 @@ async function updateChoice(c, initElems=false) {
 						}
 						continue;
 					}	
-//					console.log(`Found date matching course ${course}_${id}: date ${date} == ${getCourseDateStr(tRowElem)}`)
+					// console.log(`Found date matching course ${course}_${id}: date ${date} == ${getCourseDateStr(tRowElem)}`)
 
 					// create empty entry of table and insert course data
 					let entryElem = createEmptyCourseTable(); 
@@ -286,14 +284,12 @@ async function updateChoice(c, initElems=false) {
 					for (let i = newRowElem.children.length-1; i >= 0; i--) {
 						let cellElem = newRowElem.children[i];
 						if (!cellElem.className.match(/\b(bs_sknr|bs_sbuch|bs_sdet|bs_stag|bs_szeit|bs_szr)\b/))
-							newRowElem.removeChild(cellElem);
+							cellElem.remove();
 					}
 					// Remove time links
-					for (let timeAnchorElem of newRowElem.querySelectorAll(".bs_szr a"))
-							timeAnchorElem.removeAttribute("href");
+					newRowElem.querySelectorAll(".bs_szr a").forEach((a) => a.removeAttribute("href"));
 					// Append course to details cell (i.e. bs_sdet)
-					for (let detElem of newRowElem.getElementsByClassName("bs_sdet"))
-						detElem.innerText = course + " - " + detElem.innerText; // + " (" + user + ")";
+					newRowElem.querySelectorAll(".bs_sdet").forEach((d) => d.innerText = `${course} - ${d.innerText}`);
 
 					updateEntryInTable(entryElem, course, id, user); 
 				}
@@ -596,19 +592,12 @@ async function loadInitialData() {
 		} 
 	}
 
-	// Find and set active_course
+	// Find all active tabs that have a course site open and append them to active_courses_hrefs 
 	await new Promise( (resolve) => { 
 		base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*", active: true},
 			(tabs) => {
 				for (let tab of tabs) {
-					let tabUrl = tab.url.split("#")[0];
-					// Search for url in choices to find the course corresponding to the url
-					for (let course of Object.keys(storageContent[CHOICE_FILE])) {
-						if (getHref(course) == tabUrl) {
-							active_courses.push(course);
-							break;
-						}
-					}
+					active_courses_hrefs.push(tab.url.match(/_\w+\.html/)[0]);
 				}
 				resolve();
 			}
@@ -619,7 +608,7 @@ async function loadInitialData() {
 	await updateChoice(storageContent[CHOICE_FILE]);
 
 	addStorageListener((changes) => {
-		//console.log("[Storage Listener] Changes:", changes)
+		//console.log("Storage change:", changes, Object.keys(changes)[0], changes[Object.keys(changes)[0]].newValue)
 		for (let item of Object.keys(changes)) {
 			if (item == USERS_FILE) {
 				updateUserdata(changes[USERS_FILE].newValue);
