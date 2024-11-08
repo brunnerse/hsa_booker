@@ -10,7 +10,7 @@ const States = Object.freeze({FILL : "fill", CHECK: "check", CONFIRMED: "confirm
 let State;
 
 let requestedSubmit = false;
-form.addEventListener("submit", onFormSubmit);
+form && form.addEventListener("submit", onFormSubmit);
 
 function onFormSubmit() {
     requestedSubmit = true;
@@ -219,7 +219,7 @@ async function getCourseFromID(courseID) {
 
 async function processDocument() {
     // Check which state the site is in by checking the form in the document
-    let nameInputElem = form.querySelector("input[name='name']");
+    let nameInputElem = document.querySelector("form input[name='name']");
 
     State = States.ERROR;
     if (!nameInputElem) {

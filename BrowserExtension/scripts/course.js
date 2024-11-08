@@ -464,7 +464,8 @@ async function updateBooked(courseID, statestampArr) {
     if (!statestampArr) {
         // State was deleted; Recheck as there might still be a local/sync state 
         statestampArr = await getBookingState(courseID, /*includeTimestamp=*/true);
-        if (statestampArr && !hasBookingStateExpired(...statestampArr))
+        // If stored state has expired, ignore it
+        if (statestampArr && hasBookingStateExpired(...statestampArr))
             statestampArr = null;
     }
 	let [oldState, oldStamp] = bookingState[courseID] ?? [undefined, 0];
@@ -476,7 +477,7 @@ async function updateBooked(courseID, statestampArr) {
 		bookingState[courseID] = statestampArr; 
 
 	// modify book buttons if state has changed (i.e. different state or old state expired)
-	if (state != oldState || hasBookingStateExpired(oldState, oldStamp, true)) 
+	if (state != oldState || hasBookingStateExpired(oldState, oldStamp)) 
         modifyBookButtons();
 }
 

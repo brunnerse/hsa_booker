@@ -594,7 +594,7 @@ async function loadInitialData() {
 
 	// Find all active tabs that have a course site open and append them to active_courses_hrefs 
 	await new Promise( (resolve) => { 
-		base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*", active: true},
+		base.tabs.query({ url: "*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*", active: true/*, currentWindow: true*/},
 			(tabs) => {
 				for (let tab of tabs) {
 					active_courses_hrefs.push(tab.url.match(/_\w+\.html/)[0]);
