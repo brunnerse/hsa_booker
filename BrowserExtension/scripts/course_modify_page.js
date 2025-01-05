@@ -1,21 +1,17 @@
 // insert custom css
-if (!document.getElementById("custom_bars"))
-{
-    let link  = document.createElement('link');
-    link.id   = 'custom_bars';
-    link.rel  = 'stylesheet';
-    link.type = 'text/css';
-    link.href = chrome.runtime.getURL('styles/custom_bars.css');
-    link.media = 'all';
-    let head = document.querySelector('head');
-    head.appendChild(link);
-}
+let link  = document.createElement('link');
+link.href = chrome.runtime.getURL('styles/custom_bars.css');
+link.rel  = 'stylesheet';
+link.type = 'text/css';
+link.id   = 'custom_bars';
+let head = document.querySelector('head');
+head.appendChild(link);
 
 // insert top bar
 let topBar = document.createElement("div");
 topBar.id = "topbar";
 topBar.innerHTML = '\
-		<div class="darkred" align="center">\
+		<div align="center">\
 			<div align="center" class="bigboldfont" style="margin-left:3%;">User:</div>\
 			<div align="center" style="margin-left:1%; transform:translateY(-3px);">\
 				<select id="userselect" name="users" size="0">\
