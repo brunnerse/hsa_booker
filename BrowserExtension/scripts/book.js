@@ -238,7 +238,9 @@ async function processDocument() {
     console.log(`Booking site is in state "${State}", course is ${courseID}, user is "${user}"` );
 
     if (State == States.FILL) {
-        submitButton = document.getElementById("bs_submit");
+        submitButton = document.getElementById("bs_submit"); // TODO careful: 
+            // there are two submit buttons (one for pw login, one for submit). 
+            // Currently it does not matter which one is used though
         console.assert(submitButton);
 
         // If did not find user or courseID, we cannot do anything

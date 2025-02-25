@@ -10,6 +10,8 @@
     <link href="/styles/attachments_list.css" rel="stylesheet" type="text/css" />
     <meta content="de-DE" itemprop="inLanguage" />
     <meta content="text/css" http-equiv="Content-Style-Type" />
+    <meta content="no-cache, no-store, must-revalidate, max-age=0" http-equiv="cache-control">
+    <meta content="no-cache" http-equiv="Pragma">
     <link href="/styles/flyout_menu1.css" media="all" rel="stylesheet" type="text/css" />
     <link href="/styles/angebote.css" media="all" rel="stylesheet" type="text/css" />
     <link href="/styles/bs_style.css" media="all" rel="stylesheet" type="text/css" />
@@ -64,6 +66,8 @@
                 <button class="link" style="font-weight:bold;" id="toggleadvice">Show advice</button>
             </div>
         </div>
+
+
         <ol hidden id="advice">
             <li>First add a user (below here).</li> 
             <li>To mark a course for booking, go to the 
@@ -74,8 +78,16 @@
             <li>When clicking the <b>ARM</b> button on the top of a course site, the site will refresh continuously until
                 the marked courses are bookable, and then the book buttons will be pressed automatically.</li>
             <li>If <b>Fill form</b> is checked, the booking form will be automatically filled with your user data.</li>
+            <li>If <b>Login with password</b> is checked, the script will try to use the login in the booking form.
+                It will only try once, so there is no error even if the password is wrong. <br>
+                After the login, if <b>Fill form</b> is checked, the form will be filled with the stored user data.
+            </li>
             <li>If <b>Submit immediately</b> is checked, the filled booking form will be automatically submitted,
-                which is a lot faster than clicking the submit button by hand.
+                which is a lot faster than clicking the submit button by hand. <br>
+                <i>Careful:</i> It is recommended to keep this option off until you actually want to use it in order 
+                not to accidentally book something. As the booking is very fast (especially with password login), you 
+                might not be able to stop it once the booking form tab opens.<br>
+                <i>Note:</i> Sometimes there is a captcha on the final booking page, which must be filled out by hand.
             </li>
 <!--        <li>When arming a course, make sure the course site is open only once to prevent a possible double
             booking.</li>

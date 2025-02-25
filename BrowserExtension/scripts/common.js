@@ -318,15 +318,15 @@ async function getOption(val, allowcache=true) {
         // return default values
         if (val == "fillform")
             return 1;
-        if (val == "submitimmediately")
+        if (val == "pwlogin")
             return 1;
+        if (val == "submitimmediately")
+            return 0;
         if (val == "multipleusers")
             return 0;
         if (val == "defaultuseridx")
             return 0;
         if (val == "bypasscountdown")
-            return 0;
-        if (val == "pwlogin")
             return 0;
         return null;
     }

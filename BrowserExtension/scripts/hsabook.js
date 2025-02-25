@@ -62,7 +62,7 @@ async function cleanupChoice(expiry_msec) {
 				let date = dateFromDDMMYY(dateStr); 
 				// if start date is too long ago, remove the course from choice 
 				if (Date.now() - date > expiry_msec) {
-					console.log(`Removing course Nr. ${nr} (${course}, started at ${dateStr}) as it is in the past.`)
+					console.log(`Removing course Nr. ${nr} (${course}, started on ${dateStr}) as it is in the past.`);
 					removeCourseID(courseID, course, user, choice);
 				} 
 			}
@@ -262,8 +262,8 @@ async function updateChoice(c, initElems=false) {
 						continue;
 					} else if (getCourseDateStr(tRowElem) != date) {
 						//console.warn(`Date for course ${course}_${id} does not match: ${date} != ${getCourseDateStr(tRowElem)}`)
-						// If course with same number lies in the future, remove that course as it expired
-						if (getCourseDate(tRowElem) > dateFromDDMMYY(date)) {
+						// If course with same number lies at least one month in the future, remove that course as it expired
+						if (getCourseDate(tRowElem) > dateFromDDMMYY(date) + 1000*60*60*24*30) {
 							console.log(`Course ${id} (${course}) expired as a course with the same nr`+
 								` and a higher date exists, removing the course...`);
 							removeCourseID(id, course, user, choice);
@@ -645,10 +645,11 @@ async function loadInitialData() {
 			// Check start date on top of page and remove old courses
 			let title = doc.getElementById("bs_top").innerText; 
 			let dateStr = title.match(/\d+\.\d+\.\d+/)[0];
-			let date = dateFromDDMMYY(dateStr);
-			// Remove all courses that are older than date; one week as safety margin
-			let expiry_ms = Date.now() - date + 7*24*60*60*1000;
-			//console.log("Removing all courses that started before " + dateStr + "...");
+			let semester_start_date = dateFromDDMMYY(dateStr);
+			// Remove all courses that are older than semester_start_date (+1 week as safety margin)
+			// Expiry_ms is how long ago the semester_start_date was; Courses that started even 
+			// longer ago must have started in the previous semester and are therefore now expired 
+			let expiry_ms = Date.now() - semester_start_date + 7*24*60*60*1000;
 			cleanupChoice(expiry_ms);
 		})
 	.catch((err) => {

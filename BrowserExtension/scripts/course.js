@@ -498,7 +498,7 @@ async function updateUserdata(d) {
 }
 
 // Confirm that the current site is a course site
-if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z]\w+/)) {
+if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z][\w-]+/)) {
     setStatus("Click ARM to book the marked courses", "white");
     armButton.parentElement.removeAttribute("hidden");
     hintElem.innerText = "Mark the " + currentCourse + " courses that you want to be booked automatically";
