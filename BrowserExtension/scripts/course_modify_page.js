@@ -67,5 +67,6 @@ tdElem.appendChild(button);
 
 // Append new column to all table headers and table rows 
 document.querySelectorAll("thead tr").forEach((tRow) => tRow.appendChild(thElem.cloneNode(true)));
-document.querySelectorAll("tbody tr").forEach((tRow) => tRow.appendChild(tdElem.cloneNode(true)));
+//document.querySelectorAll("tbody tr").forEach((tRow) => tRow.appendChild(tdElem.cloneNode(true)));
+document.querySelectorAll("tbody tr").forEach((tRow) => tRow.querySelector("td") && tRow.appendChild(tdElem.cloneNode(true)));
 

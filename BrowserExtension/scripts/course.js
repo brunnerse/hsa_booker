@@ -388,9 +388,16 @@ function modifyBookButtons() {
         let className = childElem ? childElem.className : "";
 
         let trElem = bookElem.closest("tr");
-        let courseID = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
-
         let button = trElem.querySelector(".aktion button");
+        let courseID;
+
+        try {
+            courseID = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
+        } catch {
+            button && button.parentElement.remove();
+            continue;
+        }
+        
         if (choiceIDs.includes(courseID))
             button.classList.add("green_whitefont");
         else 
@@ -446,8 +453,12 @@ async function updateChoice(c, checkAllCourses=false) {
         IDsToCheck = [];
         for (let bookElem of document.querySelectorAll("td.bs_sbuch")) {
             let trElem = bookElem.closest("tr");
-            let courseID = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
-            IDsToCheck.push(courseID);
+            try {
+                let courseID = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
+                IDsToCheck.push(courseID);
+            } catch {
+                continue;
+            }
         }
     }
     for (let courseID of IDsToCheck) {
