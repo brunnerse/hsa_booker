@@ -8,8 +8,14 @@ let bookingState = {};
 
 let refreshTriggered = false;
 
-const intervals_sec = {0: 1, 10: 2, 20: 5, 30: 10, 45: 15, 60: 20, Infinity: 30}
 const statusUpdateInterval = 500;
+const interval_default = 5;
+// Time until refresh depending on time until booking starts (key: time until booking, value: refresh interval)
+const intervals_sec = {"-60": 2, "-15": 1, "0" : 0.5, "2": 1, "10": 2, "20": 5, "30": 10, "45": 15, "60": 20, "Infinity": 30};
+let interval_thresholds = [];
+Object.keys(intervals_sec).forEach((thresh) => interval_thresholds.push(parseFloat(thresh)))
+interval_thresholds.sort((a, b) => (a - b));
+
 
 
 function getBookDateFromTimeStr(timeStr) {
@@ -287,19 +293,19 @@ async function arm(updateStorage=true) {
 
         // Add storage listener that updates refreshTime and calls refreshIntervalFun
         refreshChangeFun = function () {
-            // Recalculate refreshTime
-            let refreshInterval_sec = parseInt(getSelected(refreshSelectElem), 10); 
+            // Parse Refresh Interval time
+            let refreshInterval_sec = parseFloat(getSelected(refreshSelectElem), 10); 
+            // If no number is given: Calculate auto refresh time 
             if (isNaN(refreshInterval_sec)) {
-                // calculate auto refresh
-                refreshInterval_sec = 5;  //default value
+                refreshInterval_sec = interval_default;
                 if (bookingDate) {
                     let remainingTime_sec = (bookingDate - Date.now()) / 1000.0;
-                    // find correct threshold for current remaining time
-                    let thresholds = Object.keys(intervals_sec).sort();
-                    for (let thresh of thresholds) {
+                    // Find correct threshold for current remaining time
+                    for (let thresh of interval_thresholds) {
+                        thresh_key = "" + thresh;
                         // Check if remainingTime falls into threshold + safety margin
-                        if (remainingTime_sec - intervals_sec[thresh] <= thresh) {
-                            refreshInterval_sec = intervals_sec[thresh];
+                        if (remainingTime_sec <= thresh + intervals_sec[thresh_key] ) {
+                            refreshInterval_sec = intervals_sec[thresh_key];
                             break;
                         }
                     }
