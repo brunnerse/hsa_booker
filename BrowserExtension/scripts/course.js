@@ -1,5 +1,7 @@
 const currentCourse = getCurrentCourse();
 
+const REFRESH_SELECT_ALWAYS_VISIBLE = true;
+
 let userdata = {};
 let choice = {};
 let choiceIDs = [];
@@ -15,6 +17,28 @@ const intervals_sec = {"-60": 2, "-15": 1, "0" : 0.5, "2": 1, "10": 2, "20": 5, 
 let interval_thresholds = [];
 Object.keys(intervals_sec).forEach((thresh) => interval_thresholds.push(parseFloat(thresh)))
 interval_thresholds.sort((a, b) => (a - b));
+
+
+function calcTimeOfRefresh(bookingDate) {
+    let refreshInterval_sec = parseFloat(getSelected(refreshSelectElem), 10); 
+    // If no number is given: Calculate auto refresh time 
+    if (isNaN(refreshInterval_sec)) {
+        refreshInterval_sec = interval_default;
+        if (bookingDate) {
+            let remainingTime_sec = (bookingDate - Date.now()) / 1000.0;
+            // Find correct threshold for current remaining time
+            for (let thresh of interval_thresholds) {
+                thresh_key = "" + thresh;
+                // Check if remainingTime falls into threshold + safety margin
+                if (remainingTime_sec <= thresh + intervals_sec[thresh_key] ) {
+                    refreshInterval_sec = intervals_sec[thresh_key];
+                    break;
+                }
+            }
+        }
+    }
+    return Date.now() + refreshInterval_sec * 1000;
+}
 
 
 
@@ -75,6 +99,7 @@ async function onSelectChange(updateButtons=true) {
 }
 
 async function onRefreshChange(event) {
+    // Only update storage if refresh select was changed manually by the user (i.e. event.isTrusted)
     if (event.isTrusted) {
         await upload(REFRESH_FILE, getSelected(refreshSelectElem));
     }
@@ -150,47 +175,12 @@ async function arm(updateStorage=true) {
 
     setStatusTemp("Checking if booking is possible...", "yellow", 1500);
 
-    // Check if popups are allowed
-    let popupsAllowedTimestamp = (await download(POPUP_FILE)) ?? 0; 
-
-    // if timestamp is more than one hour old, test again if popups are possible 
-    if (popupsAllowedTimestamp < Date.now() - 60*60*1000) {
-        let popupTestUrl;
-        try {
-            popupTestUrl = browser.runtime.getURL("popupcheck.html");
-        } catch {
-            // use different url if browser.runtime did not work
-            try {
-                popupTestUrl = `chrome-extension://${chrome.runtime.id}/popupcheck.html`;
-            } catch {
-                popupTestUrl = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
-            }
-        } 
-        // Test opening popup with setTimeout
-        let popup_window_t;
-        let popup_t_test = new Promise(
-            (resolve) => setTimeout(() => {
-                popup_window_t = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
-                if (popup_window_t)
-                    try { popup_window_t.close(); } catch {}
-                resolve();
-            }, 0)
-        );
-        // Test opening popup directly
-        let popup_window = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
-        if (popup_window)
-            try { popup_window.close(); } catch {}
-        await popup_t_test;
-        // If both tests were successful, store popup test as successful 
-        if (popup_window && popup_window_t) {
-            //await setStatusTemp("Popup check successful", "yellow", 500);
-            upload(POPUP_FILE, Date.now()); 
-        } else {
-            alert("Pop-ups must be allowed for the automatic booking to work. "+
-            "Change the pop-up settings for this website.");
-            unarm();
-            return;
-        }
+    // Verify that popups are allowed
+    if (!await checkPopupsEnabled()) {
+        alert("Pop-ups must be allowed for the automatic booking to work. "+
+        "Change the pop-up settings for this website.");
+        unarm();
+        return;
     }
 
     // mark website as armed in storage
@@ -252,7 +242,7 @@ async function arm(updateStorage=true) {
 
     unavailableCourses.forEach((id) => choiceIDs.splice(choiceIDs.indexOf(id), 1));
 
-
+    // If not all courses in choiceIDs-array handled:
     if (numCoursesFull + numCoursesBooked + numCoursesBooking < choiceIDs.length) {
         // Try to get Date when booking is available
         let bookingDate = null;
@@ -260,12 +250,13 @@ async function arm(updateStorage=true) {
         if (bookTimeElems.length > 0) 
             bookingDate = getBookDateFromTimeStr(bookTimeElems[0].innerText);
 
-        // refresh window in refreshInterval seconds
+        // Refresh window in refreshInterval seconds
         let refreshTime = Infinity;
         let prevRemainingTime = Infinity;
         let refreshIntervalID;
         let refreshChangeFun;
         let armCounterVal = armCounter;
+
         let refreshIntervalFun = function () {
             // if course has been unarmed (or re-armed) in the meantime, stop 
             if (!armed || armCounterVal != armCounter) {
@@ -292,26 +283,9 @@ async function arm(updateStorage=true) {
         };
 
         // Add storage listener that updates refreshTime and calls refreshIntervalFun
-        refreshChangeFun = function () {
-            // Parse Refresh Interval time
-            let refreshInterval_sec = parseFloat(getSelected(refreshSelectElem), 10); 
-            // If no number is given: Calculate auto refresh time 
-            if (isNaN(refreshInterval_sec)) {
-                refreshInterval_sec = interval_default;
-                if (bookingDate) {
-                    let remainingTime_sec = (bookingDate - Date.now()) / 1000.0;
-                    // Find correct threshold for current remaining time
-                    for (let thresh of interval_thresholds) {
-                        thresh_key = "" + thresh;
-                        // Check if remainingTime falls into threshold + safety margin
-                        if (remainingTime_sec <= thresh + intervals_sec[thresh_key] ) {
-                            refreshInterval_sec = intervals_sec[thresh_key];
-                            break;
-                        }
-                    }
-                }
-            }
-            refreshTime = Date.now() + refreshInterval_sec * 1000;
+        refreshChangeFun = function () 
+        {
+            refreshTime = calcTimeOfRefresh(bookingDate); 
             // Call refreshIntervalFun() to update visuals and re-init the periodic call
             clearInterval(refreshIntervalID);
             refreshIntervalFun();
@@ -322,7 +296,7 @@ async function arm(updateStorage=true) {
         refreshChangeFun(); 
     } else {
         if (numCoursesBooking > 0) {
-            // Wait until there are no more courses in state "booking", then unarm
+            // Check periodically until there are no more courses in state "booking", then unarm
             setStatus("Booking courses...", "lightblue");
             let checkUnarmIntervalID;
             let checkUnarmFun = async function () {
@@ -333,6 +307,7 @@ async function arm(updateStorage=true) {
                         break;
                     }
                 }
+                // Stop interval if all courses are no longer "booking", or if disarmed manually (i.e. !armed) 
                 if (!armed) {
                     clearInterval(checkUnarmIntervalID);
                 } else if (allProcessed) {
@@ -358,15 +333,28 @@ async function arm(updateStorage=true) {
 
 
 async function unarm(updateStorage=true) {
-    armText.innerText = "ARM";
-    let style = armButton.getAttribute("style").replace("blue", "green");
-    armButton.setAttribute("style", style); 
-    refreshSelectElem.parentElement.setAttribute("hidden", "");
     // Set armed to false before updating storage to prevent repeated call by storage listener
     armed = false;
     // remove website from armed list in options
     if (updateStorage)
         await storeAsUnarmed(currentCourse);
+
+    // In case the refresh is not always visible and the refresh interval is very low, 
+    //  we need to increase it as otherwise the user might not be fast enough to change it 
+    if (!REFRESH_SELECT_ALWAYS_VISIBLE) {
+        // If selected refresh is very low: Increase it to default, but without updating it in storage (to not influence other courses)
+        let selectedRefresh = parseFloat(getSelected(refreshSelectElem), 10); 
+        if (!isNaN(selectedRefresh) && selectedRefresh < interval_default) {
+            setSelected(refreshSelectElem, ""+interval_default)
+        }
+    }
+
+    // Update visuals
+    armText.innerText = "ARM";
+    let style = armButton.getAttribute("style").replace("blue", "green");
+    armButton.setAttribute("style", style); 
+    if (!REFRESH_SELECT_ALWAYS_VISIBLE)
+        refreshSelectElem.parentElement.setAttribute("hidden", "");
     setStatusTemp("Unarmed.");
 }
 
@@ -384,6 +372,57 @@ function onArm() {
             setStatusTemp(err.toString(), "red");
             throw err;
         }); 
+}
+
+async function checkPopupsEnabled() {
+    // Check when the popup check was last executed successfully
+    let popupsAllowedTimestamp = (await download(POPUP_FILE)) ?? 0; 
+    // If last successful check was less than one hour ago, we don't have to check again
+    if (popupsAllowedTimestamp < Date.now() - 60*60*1000)
+        return true;
+
+    // If not: Perform check by trying to open the test document popupcheck.html in a new tab
+
+    // First get url of test document from browser runtime
+    let popupTestUrl;
+    try {
+        popupTestUrl = browser.runtime.getURL("popupcheck.html");
+    } catch {
+        // use different url if browser.runtime did not work
+        try {
+            popupTestUrl = `chrome-extension://${chrome.runtime.id}/popupcheck.html`;
+        } catch {
+            popupTestUrl = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
+        }
+    } 
+    
+    // Test opening popup via setTimeout()
+    let popup_window_t;
+    let popup_t_test = new Promise(
+        (resolve) => setTimeout(() => {
+            popup_window_t = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
+            if (popup_window_t)
+                try { popup_window_t.close(); } catch {} // Close window again immediately
+            resolve();
+        }, 0)
+    );
+
+    // Test opening popup directly
+    let popup_window = window.open(popupTestUrl, "_blank", "popup=1, width=200,height=200"); 
+    if (popup_window)
+        try { popup_window.close(); } catch {} // Close window again immediately
+
+    // Wait until other popup test finished 
+    await popup_t_test;
+
+    // If both tests were successful, store popup test as successful 
+    if (popup_window && popup_window_t) {
+        //await setStatusTemp("Popup check successful", "yellow", 500);
+        upload(POPUP_FILE, Date.now()); 
+        return true;
+    }
+
+    return false;
 }
 
 function modifyBookButtons() {
@@ -514,16 +553,6 @@ async function updateUserdata(d) {
         updateChoice(choice);
 }
 
-// Confirm that the current site is a course site
-if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z][\w-]+/)) {
-    setStatus("Click ARM to book the marked courses", "white");
-    armButton.parentElement.removeAttribute("hidden");
-    hintElem.innerText = "Mark the " + currentCourse + " courses that you want to be booked automatically";
-} else {
-    hintElem.innerText = "HSA Booker alert: Not a course website";
-    document.getElementById("topbar").setAttribute("hidden", "");
-    throw new Error("HSA Booker called on a website that is not a course website");
-}
 
 async function loadInitialData() {
     await download(USERS_FILE).then(updateUserdata);
@@ -581,6 +610,24 @@ async function loadInitialData() {
     }, 500);
 }
 
+
+
+
+
+// Confirm that the current site is a course site
+if (currentUrl.match(/^\w*:\/\/anmeldung.sport.uni-augsburg.de\/angebote\/aktueller_zeitraum\/_[A-Z][\w-]+/)) {
+    setStatus("Click ARM to book the marked courses", "white");
+    armButton.parentElement.removeAttribute("hidden");
+    hintElem.innerText = "Mark the " + currentCourse + " courses that you want to be booked automatically";
+} else {
+    hintElem.innerText = "HSA Booker alert: Not a course website";
+    document.getElementById("topbar").setAttribute("hidden", "");
+    throw new Error("HSA Booker called on a website that is not a course website");
+}
+
+
+if (REFRESH_SELECT_ALWAYS_VISIBLE)
+    refreshSelectElem.parentElement.removeAttribute("hidden");
 loadInitialData();
 
 

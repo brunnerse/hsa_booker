@@ -26,9 +26,10 @@ topBar.innerHTML = '\
 				<div>Refresh:</div>\
 				<select id="refreshselect" name="refresh" size="1">\
 					<option selected value="auto">Auto</option>\
-					<option value="1">1 second</option>\
-					<option value="2"> 2 seconds</option>\
-					<option value="5"> 5 seconds</option>\
+					<option value="0.5">0.5 seconds</option>\
+					<option value="1">&nbsp;1 second</option>\
+					<option value="2">&nbsp;2 seconds</option>\
+					<option value="5">&nbsp;5 seconds</option>\
 					<option value="10">10 seconds</option>\
 					<option value="30">30 seconds</option>\
 				</select>\
