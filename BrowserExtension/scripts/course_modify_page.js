@@ -20,7 +20,7 @@ topBar.innerHTML = '\
 			</div>\
 			<div hidden align="center" class="bigboldfont" style="margin-left:7%; width:120px">\
 				<div id="armbuttontext" style="width:70px; padding-right:5%; text-align:right">ARM</div>\
-				<button id="armbutton" class="roundbutton" style="background-color:green;"></button>\
+				<button id="armbutton" class="roundbutton" style="background-color:limegreen;"></button>\
 			</div>\
 			<div id="refresh" hidden align="center">\
 				<div>Refresh:</div>\
@@ -67,7 +67,7 @@ button.type = "button";
 tdElem.appendChild(button);
 
 // Append new column to all table headers and table rows 
-document.querySelectorAll("thead tr").forEach((tRow) => tRow.appendChild(thElem.cloneNode(true)));
+document.querySelectorAll("table.bs_kurse>thead>tr").forEach((tRow) => tRow.appendChild(thElem.cloneNode(true)));
 //document.querySelectorAll("tbody tr").forEach((tRow) => tRow.appendChild(tdElem.cloneNode(true)));
-document.querySelectorAll("tbody tr").forEach((tRow) => tRow.querySelector("td") && tRow.appendChild(tdElem.cloneNode(true)));
+document.querySelectorAll("table.bs_kurse>tbody>tr").forEach((tRow) => tRow.querySelector("td") && tRow.appendChild(tdElem.cloneNode(true)));
 

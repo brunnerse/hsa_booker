@@ -61,14 +61,18 @@ function modifyTableRows() {
         let chosen = choice[elem.innerText] ? true : false;
         if (chosen && !isElemMarked) {
             elem.parentElement.classList.add("trstate-marked");
-            let spanElem = document.createElement("span");
+            let spanElem = elem.parentElement.querySelector("span"); 
+            if (!spanElem) {
+                let spanElem = document.createElement("span");
+                elem.parentElement.insertBefore(spanElem, elem);
+            }
             spanElem.setAttribute("style", "color:green; float:left");
             spanElem.innerText = "✔";
-            elem.parentElement.insertBefore(spanElem, elem);
         } else if (!chosen && isElemMarked) {
             elem.parentElement.classList.remove("trstate-marked");
-            let spanChildren = elem.parentElement.getElementsByTagName("span");
-            spanChildren.length > 0 && elem.parentElement.removeChild(spanChildren[0]);
+            elem.parentElement.querySelectorAll("span").forEach(
+                (e) => { e.removeAttribute("style"); e.innerText = "";}
+            );
         }
     }
 }

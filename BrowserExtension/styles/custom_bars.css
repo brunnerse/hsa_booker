@@ -188,6 +188,10 @@
   position: relative;
 }
 
+.bs_stzo {
+  width: 65px;
+}
+
 .bs_sknr .active_tag {
   position: absolute;
   top: 0px;
@@ -211,8 +215,10 @@
 
 .armed_tag {
   position: absolute;
+/*
   left: -35px;
   top: 20px;
+*/
   transform: rotate(-45deg);
   font-size: 12px;
   font-weight: bold;

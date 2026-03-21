@@ -114,7 +114,7 @@ function getCurrentCourse() {
     }
 }
 
-async function onAdd(button) {
+async function onAktionButton(button) {
     let user = getSelected(userSelectElem);
     if (!user) {
         alert("Create a user profile first by clicking on the HSA Booker extension icon in the upper right corner of your browser and selecting \"Add User\".")
@@ -122,9 +122,7 @@ async function onAdd(button) {
     }
 
     let trElem = button.closest("tr");
-    let nr = getCourseNr(trElem);
-    let date = getCourseDateStr(trElem); 
-    let courseID = nr + "_" + date;
+    let courseID = getCourseID(trElem);
     let course = currentCourse;
 
     setStatusTemp("Updating course data...", "white", 1000);
@@ -143,7 +141,7 @@ async function addCourse(user, courseID) {
     if (!choice[course][user].includes(courseID)) {
         choice[course][user].push(courseID);
         await upload(CHOICE_FILE, choice)
-        .then(() => setStatusTemp("Marked course " + courseID.split("_")[0] + " for booking", "green"))
+        .then(() => setStatusTemp("Marked course " + courseID.split("_")[0] + " for booking", "limegreen"))
         .catch((err) => {
             setStatusTemp( err.toString(), "red");
             throw err;
@@ -156,7 +154,7 @@ async function addCourse(user, courseID) {
 async function removeCourse(user, courseID) {
     // remove from choice
     removeCourseID(courseID, currentCourse, user, choice)
-    .then(() => setStatusTemp("Unmarked course " + courseID.split("_")[0], "green"))
+    .then(() => setStatusTemp("Unmarked course " + courseID.split("_")[0], "limegreen"))
     .catch((err) => {
         setStatusTemp( err.toString(), "red");
         throw err;
@@ -169,7 +167,7 @@ async function arm(updateStorage=true) {
     armed = true;
     armCounter += 1;
     armText.innerText = "UNARM";
-    let style = armButton.getAttribute("style").replace("green", "blue");
+    let style = armButton.getAttribute("style").replace("limegreen", "blue");
     armButton.setAttribute("style", style); 
     refreshSelectElem.parentElement.removeAttribute("hidden");
 
@@ -351,7 +349,7 @@ async function unarm(updateStorage=true) {
 
     // Update visuals
     armText.innerText = "ARM";
-    let style = armButton.getAttribute("style").replace("blue", "green");
+    let style = armButton.getAttribute("style").replace("blue", "limegreen");
     armButton.setAttribute("style", style); 
     if (!REFRESH_SELECT_ALWAYS_VISIBLE)
         refreshSelectElem.parentElement.setAttribute("hidden", "");
@@ -437,7 +435,7 @@ function modifyBookButtons() {
         let courseID;
 
         try {
-            courseID = getCourseNr(trElem)+"_"+getCourseDateStr(trElem);
+            courseID = getCourseID(trElem);
         } catch {
             button && button.parentElement.remove();
             continue;
@@ -448,7 +446,7 @@ function modifyBookButtons() {
         else 
             button.classList.remove("green_whitefont");
 
-        button.onclick = () => onAdd(button); 
+        button.onclick = () => onAktionButton(button); 
 
         // set booking state according to stored state and the booking button class
         let bookStateSite = "none" ;

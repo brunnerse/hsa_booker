@@ -355,8 +355,22 @@ function dateFromDDMMYY(s) {
     return new Date(nrs[2], nrs[1]-1, nrs[0])
 }
 
+
+/*
+* Course IDs: Stored as {nr}_{startdate}, e.g.  10017_10.02.2024
+*/
+
+function getNrAndDateFromCourseID(id) {
+    return id.split("_");
+}
+
+function getCourseID(tRowElem) {
+    return `${getCourseNr(tRowElem)}_${getCourseDateStr(tRowElem)}`;
+}
+
+
 function getCourseNr(tRowElem) {
-    return tRowElem.getElementsByClassName("bs_sknr")[0].innerText;
+    return tRowElem.querySelector(".bs_sknr").innerText;
 }
 
 function getFullDateStr(daymonth) {

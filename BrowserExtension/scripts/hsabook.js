@@ -20,9 +20,8 @@ let bookingState = {};
 
 let courselinks = {};
 
-
-const SORT_KEYS = {date: 'd', name: 'n', id: 'i'};
-let sortkey = SORT_KEYS.name; 
+const SORT_KEYS = {date: 'd', weekday : 'w', alphabetical: 'a', nr: 'n'};
+let sortkey = SORT_KEYS.alphabetical; 
 
 
 function getHref(course, short=false) {
@@ -30,36 +29,40 @@ function getHref(course, short=false) {
 	// if link not registered, create it according to heuristic 
 	if (!link)
 		link = "_" +
-			course.replaceAll(/[\s\.\/`,]/g, "_").replaceAll("&", "_und_").replaceAll("ß", "ss").
+			course.replaceAll(/[\s\.\/``,]/g, "_").replaceAll("&", "_und_").replaceAll("ß", "ss").
 				   replaceAll("ä", "ae").replaceAll("ö", "oe").replaceAll("ü", "ue") + ".html";
 	return short ? link : "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/" + link; 
 }
 
-function createEmptyCourseTable() {
+
+function createCourseTable(courseID, details, msg, error=false) {
 	const elem = emptyTableElem.cloneNode(true);
 	elem.removeAttribute("id");
 	elem.removeAttribute("hidden");
+	let [nr, date] = courseID.split("_");
+	elem.querySelector("tbody .bs_sknr").innerText = nr;
+	elem.querySelector("tbody .bs_sdet").innerText = details;
+	elem.querySelector("tbody .bs_szr").innerText = date; 
+	elem.querySelector("tbody .bs_sbuch *").value = msg;
+
+	if (error)
+		elem.querySelector("table>tbody>tr").classList.add("err");
+
 	return elem;
 }
 
-function getErrorTable(courseID, details, errorStr) {
-	let templateElem = createEmptyCourseTable(); 
-	let [nr, date] = courseID.split("_");
-	templateElem.querySelector("tbody .bs_sknr").innerText = nr;
-	templateElem.querySelector("tbody .bs_sdet").innerText = details;
-	templateElem.querySelector("tbody .bs_szr").innerText = date; 
-	templateElem.querySelector("tbody .bs_sbuch *").value = errorStr;
-	return templateElem;
-}
+
 
 // remove expired courses from choice and upload it 
 async function cleanupChoice(expiry_msec) {
 	for (let course of Object.keys(choice)) {
 		for (let user of Object.keys(choice[course])) {
 			for (let idx = choice[course][user].length-1; idx >= 0; idx--) {
+
 				let courseID = choice[course][user][idx];
-				let [nr, dateStr] = courseID.split("_");
+				let [nr, dateStr] = getNrAndDateFromCourseID(courseID); 
 				let date = dateFromDDMMYY(dateStr); 
+
 				// if start date is too long ago, remove the course from choice 
 				if (Date.now() - date > expiry_msec) {
 					console.log(`Removing course Nr. ${nr} (${course}, started on ${dateStr}) as it is in the past.`);
@@ -74,12 +77,11 @@ function removeObsoleteChoiceEntries() {
 	outer:
 	for (let i = choiceElem.children.length - 1; i>= 0; i--) {
 		let title = choiceElem.children[i].title;
-    	let [course, nr, date, user] = title.split("_");
-		let entryId = `${nr}_${date}`;
+    	let [course, elemID, user] = title.split(";");
 
 		if (choice[course] && choice[course][user]) {
 			for (let id of choice[course][user])
-				if (id == entryId) {
+				if (id == elemID) {
 					// Entry is in choice and therefore not obsolete; continue with next entry
 					continue outer;
 				}
@@ -90,115 +92,194 @@ function removeObsoleteChoiceEntries() {
 }
 
 
-function findIndexInChoice(course, nr, date, isBooked, maxIdx=null) {
+
+function sortCourseTableIntoChoiceElem(courseTable) {
+	const PRIORITIZE_BOOKED_COURSES = false;
 	// Find correct position: Sort by course and nr, booked courses first 
-	let nr_int = parseInt(nr);
+
+	let [course, id, __] = courseTable.getAttribute("title").split(";");
+	let [nr, date] = id.split("_");
+
 	let date_int = dateFromDDMMYY(date).getTime();
-	let i;
-	maxIdx = maxIdx ?? choiceElem.children.length-1;
-	for (i = 0; i <= maxIdx; i++) {
-		let [compCourse, compNr, compDate, __] = 
-			choiceElem.children[i].getAttribute("title").split("_");
-		let compIsBooked = (bookingState[compNr+"_"+compDate] ?? [null])[0] == "booked";
-		if (isBooked && !compIsBooked)
-			break;
-		else if (!isBooked && compIsBooked)
-			continue; 
-		else {
-			if (sortkey == SORT_KEYS.id) {
-				if (parseInt(compNr) > parseInt(nr)) // Nr is assumed unique, so no second check required
-					break; 
-			} else if (sortkey == SORT_KEYS.date) {
-				let compDate_int = dateFromDDMMYY(compDate).getTime();
-				if (compDate_int > date_int || (compDate_int == date_int && compCourse > course)
-					|| (compDate_int == date_int && compCourse == course && parseInt(compNr) > nr_int))
-					break; 
-			} else { // SORT_KEYS.name
-				if (compCourse > course || (compCourse == course && parseInt(compNr) > nr_int))
-					break; 
+
+	for (let compTable of choiceElem.children)
+	{
+		let [compCourse, compId, __] = compTable.getAttribute("title").split(";");
+		
+		if (PRIORITIZE_BOOKED_COURSES) {
+			let isBooked = (bookingState[id] ?? [null])[0] == "booked";
+			let compIsBooked = (bookingState[compId] ?? [null])[0] == "booked";
+			if (isBooked && !compIsBooked) {  // If course is booked but compared course is not: Return 
+				choiceElem.insertBefore(courseTable, compTable);
+				return;
 			}
+			else if (!isBooked && compIsBooked) // If course is not booked but compared course is: Go to next index
+				continue; 
+		}
+
+		let [compNr, compDate] = compId.split("_");
+
+		switch (sortkey) {
+			case SORT_KEYS.weekday:
+				try {
+					let weekday_time = courseTable.querySelector("tbody .bs_stzo").innerText;
+					let compWeekday_time = compTable.querySelector("tbody .bs_stzo").innerText;
+ 
+					let weekday = weekday_time.match(/\w+/).toString();
+					let compWeekday = compWeekday_time.match(/\w+/).toString();
+
+					console.log(weekday, compWeekday)
+					const weekdays = ['Mo', 'Di', 'Tue', 'Mi', 'Wed', 'Do', 'Thu', 'Fr', 'Sa', 'So', 'Su'];
+					if (weekdays.indexOf(weekday) < weekdays.indexOf(compWeekday) 
+						|| (weekday == compWeekday && weekday_time < compWeekday_time) )  
+					{
+						choiceElem.insertBefore(courseTable, compTable);
+						return;
+					}
+					else if (weekday != compWeekday) // If weekdays are equal, do not break but check date order next  
+						break;
+				} catch { /* Do not do anything: Fall back to date order */}
+
+			case SORT_KEYS.date:
+				let compDate_int = dateFromDDMMYY(compDate).getTime();
+
+				console.log(`${date} (${date_int}) vs ${dateFromDDMMYY(compDate)} (${compDate_int})`)
+				if (date_int < compDate_int) {
+					choiceElem.insertBefore(courseTable, compTable);
+					return;
+				}
+				else if (date_int != compDate_int) 
+					break;
+				// if date equal: Do not break to check the alphabetical order next
+			default:
+			case SORT_KEYS.alphabetical:
+				if (course < compCourse) {
+					choiceElem.insertBefore(courseTable, compTable);
+					return;
+				}
+				else if (compCourse != course) 
+					break;
+				// if name equal: Do not break to check the nr order
+			case SORT_KEYS.nr:
+				// Nr is assumed unique
+				// -> If numbers are equal, it must be the same element -> just call insertBefore and return
+				if (parseInt(nr) <= parseInt(compNr))  {
+					choiceElem.insertBefore(courseTable, compTable);
+					return;
+				}
+				break;
 		}
 	}
-	return i;
+	// Insert at the end
+	choiceElem.insertBefore(courseTable, null);
 }
 
-function sortEntriesInTable() {
-	// Takes i-th element and sort into the first 0:i elements 
-	// Start with second element
-	for (let i = 1; i < choiceElem.children.length; i++) {
-		let [course, nr, date, __] = choiceElem.children[i].getAttribute("title").split("_");
-		let id = [nr, date].join("_");
-		let isEntryBooked = bookingState[id] ? true : false; 
-		let idx = findIndexInChoice(course, nr, date, isEntryBooked, i);
 
-		// Move child from i to idx via insertBefore()
-		if (idx != i)
-			choiceElem.insertBefore(choiceElem.children[i], choiceElem.children[idx]);
-	}
-}
 
-async function updateEntryInTable(entryElem, course, id, user) {
-	const title = `${course}_${id}_${user}`;
-	const [nr, date] = id.split("_");
+async function updateCourseTable(newTable, course, id, user) {
+	const title = `${course};${id};${user}`;
 
 	// check if entry is already in table
-	let replaceEntry;
-	for (let tableEntry of choiceElem.children) {
-		if (tableEntry.getAttribute("title") == title) {
-			replaceEntry = tableEntry;
+	let courseTable;
+	for (let choiceTable of choiceElem.children) {
+		if (choiceTable.getAttribute("title") == title) {
+			courseTable = choiceTable;
 			break;
 		}
 	}
-	if (!replaceEntry) {
-		let isEntryBooked = (bookingState[id] ?? [null])[0] == "booked";
-		let idx = findIndexInChoice(course, nr, date, isEntryBooked);
-		choiceElem.insertBefore(entryElem.cloneNode(true), choiceElem.children[idx]);
-		replaceEntry = choiceElem.children[idx]; 
-		replaceEntry.setAttribute("title", title);
-	}
-	// replace the replaceEntry tableRow with entryElem
-	replaceEntry.replaceChildren(...entryElem.children);
-	// set close button listener
-	let closeButton = replaceEntry.getElementsByClassName("closebutton")[0];
-	closeButton.addEventListener("click", onCloseButton);
 
-	// set sort listeners
-	for (let sortHeaderElem of replaceEntry.getElementsByClassName("sortby"))
-		sortHeaderElem.addEventListener("click", onSortBy);
+	// If no entry exists yet: create one
+	if (!courseTable) {
+		courseTable = createCourseTable(id, course, "")
+		courseTable.setAttribute("title", title);
 
+		// Set sort listeners
+		courseTable.querySelectorAll(".sortby").forEach(
+			(sElem) => sElem.addEventListener("click", onSortBy) );
+		// Set close button listener
+		courseTable.querySelector(".closebutton").addEventListener("click", onCloseButton);
 
-	// Create href to course in the row if entry is not already a link or in error state
-	let newRowElem = replaceEntry.querySelector("tbody tr");
-	if (!newRowElem.className.match("\b(link|err)\b")) {
-		newRowElem.classList.add("link");
-		newRowElem.addEventListener("click", 
-			() => createTabIfNotExists(getHref(course)+"#K"+nr, true)
-			.then(window.close)
+		// Create href to course 
+		let trElem = courseTable.querySelector("table.bs_kurse>tbody>tr");
+		trElem.classList.add("link");
+		trElem.addEventListener("click", 
+			() => {
+				let nr = id.split("_")[0];
+				// Maybe: Only click if the row is not erroneous?
+				//if (!trElem.classList.contains("err"))
+					createTabIfNotExists(getHref(course)+"#K"+nr, true)
+					.then(window.close);
+			}
 		);
+
+		// Insert new courseTable into choiceElem
+		sortCourseTableIntoChoiceElem(courseTable);
 	}
+
+
+	let trElem = courseTable.querySelector("table.bs_kurse>tbody>tr");
+	let newTrElem = newTable.querySelector("table.bs_kurse>tbody>tr") ?? newTable;
+
+
+	console.assert(newTrElem.tagName.match(/tr/i));
+	// replace the replaceEntry tableRow with entryElem
+	for (let tdElem of trElem.querySelectorAll("tr>td")) {
+		let newTdElem = newTrElem.querySelector(`.${tdElem.className}`);
+		if (newTdElem) // && tdElem.className != "bs_sbuch")
+			tdElem.innerHTML = newTdElem.innerHTML;
+	}
+
+	// Clean up some cells in the table
+	trElem.querySelectorAll(".bs_sdet .dispmobile").forEach((d) => d.remove());
+	trElem.querySelectorAll(".bs_sdet div").forEach((d) => d.remove());
+	trElem.querySelectorAll(".bs_sort").forEach((d) => d.remove());
+
+	// Adapt text of some elements
+	trElem.querySelectorAll(".bs_sdet").forEach((d) => {
+		if (!d.innerText.includes(course))
+			d.innerText = `${course} - ${d.innerText}`
+	}
+	);
+	try {
+		trElem.querySelector(".bs_stzo").innerHTML = 
+			trElem.querySelector(".bs_stag").innerText + "<br>" + trElem.querySelector(".bs_szeit").innerText; 
+	} catch {};
+
+	// Remove time links
+	trElem.querySelectorAll(".bs_szr a").forEach((a) => a.removeAttribute("href"));
+
+	// Set err if newTable has err
+	if (newTrElem.classList.contains("err")) {
+		trElem.classList.add("err");
+		trElem.classList.remove("link");
+	} else {
+		trElem.classList.add("link");
+		trElem.classList.remove("err");
+	}
+
 
 	// If course is among active tabs, append active_tag  
 	if (active_courses_hrefs.includes(getHref(course, /*short=*/true))) {
 		let child = activeTagElem.cloneNode(true);
 		child.removeAttribute("id");
 		child.removeAttribute("hidden");
-		newRowElem.querySelector(".bs_sknr").appendChild(child);
+		trElem.querySelector(".bs_sknr").appendChild(child);
 	}
+
 	// Set armed tag according to whether the course is armed
-	setArmedTag(replaceEntry, course);
+	setArmedTag(courseTable, course);
 
 	// Set bookingState to full if course if full and bookingState is error or none
-	let bookButtonElems = newRowElem.getElementsByTagName("input");
-	let bookButton = (bookButtonElems.length > 0) ? bookButtonElems[0] : null; 
-	let bookButtonClass = (bookButtonElems.length > 0) ? bookButtonElems[0].className : ""; 
-    if (["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(bookButtonClass)) {
+	let bookButton = trElem.querySelector("input");
+    if (bookButton && ["bs_btn_ausgebucht", "bs_btn_warteliste"].includes(bookButton.className)) {
 		if (!bookingState[id] /*|| bookingState[id][0] == "error"*/) {
 			bookingState[id] = ["full", Infinity];
 		}	
 	}
+
 	// Color entry depending on the course's booking state
 	if (bookingState[id]) {
-		colorRow(newRowElem, bookingState[id][0]);
+		colorRow(trElem, bookingState[id][0]);
 		// change book button text for some states
 		if (bookButton) {
 			if (bookingState[id][0] == "booked") {
@@ -212,7 +293,7 @@ async function updateEntryInTable(entryElem, course, id, user) {
 	}
 }
 
-async function updateChoice(c, initElems=false) {
+async function updateChoice(c, showLoadingElement=false) {
 	let prevChoice = choice ?? {};
 	choice = c ?? {};
 
@@ -225,19 +306,35 @@ async function updateChoice(c, initElems=false) {
 		document.getElementById("openchoicesite").setAttribute("hidden", "");
 	}
 
-	// remove table entries not in choice anymore
-	removeObsoleteChoiceEntries();
-	// add/update table entires in choice
+	// First: Remove table entries not in choice anymore
+	outer:
+	for (let i = choiceElem.children.length - 1; i>= 0; i--) {
+		let title = choiceElem.children[i].title;
+    	let [course, elemID, user] = title.split(";");
+
+		if (choice[course] && choice[course][user]) {
+			for (let id of choice[course][user])
+				if (id == elemID) {
+					// Entry is in choice and therefore not obsolete; continue with next entry
+					continue outer;
+				}
+		}
+		// At this point, the entry has not been found and is therefore not in choice; remove it 
+		choiceElem.children[i].remove();
+	}
+
+	// Then: Add/update table entries in choice
 	for (let course of Object.keys(choice)) {
 		// Check if course did not change from previous choice to current choice
 		if (prevChoice[course] && JSON.stringify(prevChoice[course]) == JSON.stringify(choice[course])) {
 			continue;
 		}
-		if (initElems) {
+		// Course must be added/updated
+		if (showLoadingElement) {
 			for (let user of Object.keys(choice[course])) {
 				for (let courseID of choice[course][user]) {
-					let entryElem = getErrorTable(courseID, `${course}`, "Loading...");
-					updateEntryInTable(entryElem, course, courseID, user);
+					let table = createCourseTable(courseID, `${course}`, "Loading...", false);
+					updateCourseTable(table, course, courseID, user);
 				}
 			}
 		}
@@ -245,7 +342,7 @@ async function updateChoice(c, initElems=false) {
 		.then((courseDoc) => {
 			for (let user of Object.keys(choice[course])) {
 				for (let id of choice[course][user]) {
-					let [nr, date] = id.split("_");
+					let [nr, date] = getNrAndDateFromCourseID(id);
 					// find corresponding row element matching nr
 					let tRowElem = null; 
 					for (let nrElem of courseDoc.getElementsByClassName("bs_sknr")) {
@@ -257,50 +354,34 @@ async function updateChoice(c, initElems=false) {
 					}
 					if (!tRowElem) {
 						//console.warn(`Found no course nr matching course ${course}_${id}`)
-						let entryElem = getErrorTable(id, `${course}`, "Nr not found");
-						updateEntryInTable(entryElem, course, id, user); 
-						continue;
+						let courseTable = createCourseTable(id, `${course}`, "Nr not found", true);
+						updateCourseTable(courseTable, course, id, user); 
 					} else if (getCourseDateStr(tRowElem) != date) {
-						//console.warn(`Date for course ${course}_${id} does not match: ${date} != ${getCourseDateStr(tRowElem)}`)
 						// If course with same number lies at least one month in the future, remove that course as it expired
 						if (getCourseDate(tRowElem) > dateFromDDMMYY(date) + 1000*60*60*24*30) {
 							console.log(`Course ${id} (${course}) expired as a course with the same nr`+
 								` and a higher date exists, removing the course...`);
 							removeCourseID(id, course, user, choice);
 						} else { 
-							let entryElem = getErrorTable(id, `${course}`, "Wrong date");
-							updateEntryInTable(entryElem, course, id, user); 
+							console.warn(`Date for course ${course}_${id} does not match: ${date} != ${getCourseDateStr(tRowElem)}`)
+
+							let courseTable = createCourseTable(id, `${course}`, "Wrong date", true);
+							updateCourseTable(courseTable, course, id, user); 
 						}
-						continue;
+					} else {
+						// console.log(`Found date matching course ${course}_${id}: date ${date} == ${getCourseDateStr(tRowElem)}`)
+						updateCourseTable(tRowElem, course, id, user); 
 					}	
-					// console.log(`Found date matching course ${course}_${id}: date ${date} == ${getCourseDateStr(tRowElem)}`)
-
-					// create empty entry of table and insert course data
-					let entryElem = createEmptyCourseTable(); 
-					let bodyElem = entryElem.querySelector("tbody");
-					bodyElem.replaceChildren(tRowElem);
-					let newRowElem = bodyElem.lastChild;
-					// Remove some table cells from the row
-					for (let i = newRowElem.children.length-1; i >= 0; i--) {
-						let cellElem = newRowElem.children[i];
-						if (!cellElem.className.match(/\b(bs_sknr|bs_sbuch|bs_sdet|bs_stag|bs_szeit|bs_szr)\b/))
-							cellElem.remove();
-					}
-					// Remove time links
-					newRowElem.querySelectorAll(".bs_szr a").forEach((a) => a.removeAttribute("href"));
-					// Append course to details cell (i.e. bs_sdet)
-					newRowElem.querySelectorAll(".bs_sdet").forEach((d) => d.innerText = `${course} - ${d.innerText}`);
-
-					updateEntryInTable(entryElem, course, id, user); 
 				}
 			}
 		})
 		.catch((err) => {
+			console.log(`Failed to load site for course ${course}`, err);
 			if (choice[course]) {
 				for (let user of Object.keys(choice[course])) {
 					for (let id of choice[course][user]) {
-						let entryElem = getErrorTable(id, `${course}`, "Site load error");
-						updateEntryInTable(entryElem, course, id, user); 
+						let courseTable = getErrorTable(id, `${course}`, "Site load error");
+						updateCourseTable(courseTable, course, id, user); 
 					}
 				}
 			}	
@@ -333,12 +414,11 @@ async function updateBooked(courseID, statestampArr) {
 
 	// find element in table and change it
 	for (let tableEntry of choiceElem.children) {
-		let [course, nr, date, user] = tableEntry.getAttribute("title").split("_"); 
-		let id = nr+"_"+date;
+		let [course, id, user] = tableEntry.getAttribute("title").split(";"); 
 
 		if (id == courseID) {
 			if (state) {  // if state is not undefined, update it
-				updateEntryInTable(tableEntry, course, id, user);
+				updateCourseTable(tableEntry, course, id, user);
 			} else if (oldState) { // entry's booking state was removed
 				if (oldState.match(/booked|booking|error/)) {
 					// Revert the changes to the book button
@@ -409,7 +489,7 @@ async function updateArm(course, timestamp) {
 
 	// Display/hide the armed tag for each course 
 	for (let entry of choiceElem.children) {
-		let entryCourse = entry.getAttribute("title").split("_")[0]; 
+		let entryCourse = entry.getAttribute("title").split(";")[0]; 
 		if (entryCourse == course) 
 			setArmedTag(entry, course);
 	}
@@ -458,8 +538,7 @@ function onCloseButton(event) {
 	let button = event.currentTarget;
     let parent = button.closest(".item-page");
     let title = parent.title;
-    let [course, nr, date, user] = title.split("_");
-	let courseID = `${nr}_${date}`;
+    let [course, courseID, user] = title.split(";");
 
 	removeCourseID(courseID, course, user, choice)
 	.catch(() => console.error("Error when removing course " + nr));
@@ -470,15 +549,22 @@ function onSortBy(event) {
 	let elem = event.currentTarget;
 
 	let prevSortkey = sortkey;
+
 	if (elem.classList.contains("bs_sknr"))
-		sortkey = SORT_KEYS.id; 
-	else if (elem.classList.contains("bs_sdet")) 
-		sortkey = SORT_KEYS.name; 
-	else
+		sortkey = SORT_KEYS.nr; 
+	else if (elem.classList.contains("bs_stzo")) 
+		sortkey = SORT_KEYS.weekday; 
+	else if (elem.classList.contains("bs_szr")) 
 		sortkey = SORT_KEYS.date; 
+	else // (elem.classList.contains("bs_sdet"))  // Default
+		sortkey = SORT_KEYS.alphabetical; 
 	
-	if (sortkey != prevSortkey)
-		sortEntriesInTable();
+	if (sortkey != prevSortkey) {
+		// Insertion Sort strategy: Take i-th element and sort it into the first 0:i elements 
+		// sortCourseTableIntoChoiceElem() stops at the i-th element since this is an comparison to itself, which is always successflu
+		for (let courseTable of choiceElem.children)
+			sortCourseTableIntoChoiceElem(courseTable);
+	}
 }
 
 
@@ -570,6 +656,8 @@ async function loadInitialData() {
 	console.log(storageContent);
 
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
+
+
 	await updateUserdata(storageContent[USERS_FILE]);
 
 	// get armed and bookstate files and remove expired ones 
@@ -605,7 +693,7 @@ async function loadInitialData() {
 	});
 
 	// Load the choice data
-	await updateChoice(storageContent[CHOICE_FILE]);
+	await updateChoice(storageContent[CHOICE_FILE], true);
 
 	addStorageListener((changes) => {
 		//console.log("Storage change:", changes, Object.keys(changes)[0], changes[Object.keys(changes)[0]].newValue)

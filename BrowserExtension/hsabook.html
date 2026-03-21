@@ -25,11 +25,11 @@
     a {
         color: blue;
     }
+
     /* Overwrite trstate-full background-color */
     .trstate-full {
-      background-color: #FcFcFc!important;
+        background-color: #FcFcFc !important;
     }
-
 </style>
 
 <body style="width:500px">
@@ -45,14 +45,15 @@
     <div id="configuration">
         <div class="bs_form_row" style="margin-left:10px;">
             <div class="tooltip" style="float:inline-start;">
-                <label><input type="checkbox" name="fillform" id="fillform"/>
+                <label><input type="checkbox" name="fillform" id="fillform" />
                     Fill form</label>
                 <div class="tooltiptext">Fill out the booking form automatically</div>
             </div>
             <div class="tooltip" style="margin-left:100px;float:left">
                 <label><input type="checkbox" name="pwlogin" id="pwlogin" checked="false" />
                     Login with password</label>
-                <div class="tooltiptext">During booking, try to log in with the given user email and password. This allows a faster booking than filling the form.
+                <div class="tooltiptext">During booking, try to log in with the given user email and password. This
+                    allows a faster booking than filling the form.
                 </div>
             </div>
             <div style="float:inline-end;margin-right:10px;">
@@ -61,12 +62,13 @@
         </div>
         <div class="bs_form_row" style="margin-left:10px">
             <div class="tooltip" style="float:inline-start">
-                <label><input type="checkbox" name="submitimmediately" id="submitimmediately"/>
+                <label><input type="checkbox" name="submitimmediately" id="submitimmediately" />
                     Submit immediately</label>
-                <div class="tooltiptext">Submit the booking form automatically as soon as possible if the course was armed</div>
+                <div class="tooltiptext">Submit the booking form automatically as soon as possible if the course was
+                    armed</div>
             </div>
             <div hidden class="tooltip" style="margin-left:24px;float:left">
-                <label><input type="checkbox" name="bypasscountdown" id="bypasscountdown"/>
+                <label><input type="checkbox" name="bypasscountdown" id="bypasscountdown" />
                     Bypass countdown</label>
                 <div class="tooltiptext">Do not wait for the countdown in the booking form but use a workaround</div>
             </div>
@@ -75,11 +77,12 @@
             </div>
         </div>
         <ol hidden id="advice">
-            <li>First add a user (below here).</li> 
-            <li>To mark a course for booking, go to the corresponding course site and mark the course by clicking 
+            <li>First add a user (below here).</li>
+            <li>To mark a course for booking, go to the corresponding course site and mark the course by clicking
                 the button on the right of the table row.
             </li>
-            <li>When clicking the <b>ARM</b> button on the top of a course site, the site will refresh continuously until
+            <li>When clicking the <b>ARM</b> button on the top of a course site, the site will refresh continuously
+                until
                 the marked courses are bookable, and then the book buttons will be pressed automatically.</li>
             <li>If <b>Fill form</b> is checked, the booking form will be automatically filled with your user data.</li>
             <li>If <b>Login with password</b> is checked, the script will try to use the login in the booking form.
@@ -88,12 +91,12 @@
             </li>
             <li>If <b>Submit immediately</b> is checked, the filled booking form will be automatically submitted,
                 which is a lot faster than clicking the submit button by hand. <br>
-                <i>Careful:</i> It is recommended to keep this option off until you actually want to use it in order 
-                not to accidentally book something. As the booking is very fast (especially with password login), you 
+                <i>Careful:</i> It is recommended to keep this option off until you actually want to use it in order
+                not to accidentally book something. As the booking is very fast (especially with password login), you
                 might not be able to stop it once the booking form tab opens.<br>
                 <i>Note:</i> Sometimes there is a captcha on the final booking page, which must be filled out by hand.
             </li>
-<!--        <li>When arming a course, make sure the course site is open only once to prevent a possible double
+            <!--        <li>When arming a course, make sure the course site is open only once to prevent a possible double
             booking.</li>
 -->
             <li>As the javascript code slows down a lot when a tab is not visible,
@@ -132,13 +135,15 @@
             <tr>
                 <td><label style="font-size:85%" for="vornameinput">Vorname:</label>
                 </td>
-                <td> <input style="font-size:85%; width:200px;" inert type="text" name="vorname" autocomplete="off" id="vornameinput">
+                <td> <input style="font-size:85%; width:200px;" inert type="text" name="vorname" autocomplete="off"
+                        id="vornameinput">
                 </td>
             </tr>
             <tr>
                 <td> <label style="font-size:85%;margin-top:5px;margin-bottom:5px;margin-right:20px"
                         for="nameinput">Familienname:</label></td>
-                <td> <input style="font-size:85%; width:200px;" inert type="text" name="name" autocomplete="off" id="nameinput">
+                <td> <input style="font-size:85%; width:200px;" inert type="text" name="name" autocomplete="off"
+                        id="nameinput">
                 </td>
             </tr>
             <tr>
@@ -183,6 +188,10 @@
     <div id="choice" style="margin-left:3%;margin-top: 10px">
     </div>
 
+
+
+
+
     <div hidden id="template_table_entry" class="item-page" itemscope="itemscope" itemtype="https://schema.org/Article">
         <div id="bs_content">
             <div class="bs_kursangebot">
@@ -190,20 +199,17 @@
                     <thead>
                         <tr>
                             <th class="bs_sknr sortby">
-                                    <span class="bslang_de">Kursnr</span>
+                                <span class="bslang_de">Nr.</span>
                             </th>
                             <th class="bs_sdet sortby">
                                 <span class="bslang_de">Details</span>
                             </th>
-                            <th class="bs_stag sortby">
+                            <th class="bs_stzo sortby">
                                 <span class="bslang_de">Tag</span>
                                 <div hidden class="armed_tag">ARMED</div>
                             </th>
-                            <th class="bs_szeit" style="width:70px">
-                                <span class="bslang_de">Zeit</span>
-                            </th>
                             <th class="bs_szr sortby">
-                                <span class="bslang_de">Startdatum</span>
+                                <span class="bslang_de">Zeitraum</span>
                             </th>
                             <th class="bs_sbuch">
                                 <span class="bslang_de">Buchung</span>
@@ -214,13 +220,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="bs_odd err">
+                        <tr class="bs_odd">
                             <td class="bs_sknr">
                                 <div hidden id="template_active_tag" class="active_tag"><span>></span></div>
                             </td>
                             <td class="bs_sdet"></td>
-                            <td class="bs_stag"></td>
-                            <td class="bs_szeit"></td>
+                            <td class="bs_stzo"></td>
                             <td class="bs_szr"></td>
                             <td class="bs_sbuch">
                                 <input inert type="submit" value="Unavailable" title="booking" name="BS_Kursid_12566"
