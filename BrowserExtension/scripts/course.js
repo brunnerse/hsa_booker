@@ -379,16 +379,16 @@ async function checkPopupsEnabled() {
     if (popupsAllowedTimestamp < Date.now() - 60*60*1000)
         return true;
 
-    // If not: Perform check by trying to open the test document popupcheck.html in a new tab
+    // If not: Perform check by trying to open the test document checkpopupsallowed.html in a new tab
 
     // First get url of test document from browser runtime
     let popupTestUrl;
     try {
-        popupTestUrl = browser.runtime.getURL("popupcheck.html");
+        popupTestUrl = browser.runtime.getURL("checkpopupsallowed.html");
     } catch {
         // use different url if browser.runtime did not work
         try {
-            popupTestUrl = `chrome-extension://${chrome.runtime.id}/popupcheck.html`;
+            popupTestUrl = `chrome-extension://${chrome.runtime.id}/checkpopupsallowed.html`;
         } catch {
             popupTestUrl = "https://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/";
         }

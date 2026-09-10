@@ -1,9 +1,9 @@
 // insert custom css
 let link  = document.createElement('link');
-link.href = chrome.runtime.getURL('styles/custom_bars.css');
+link.href = chrome.runtime.getURL('styles/hsabooker.css');
 link.rel  = 'stylesheet';
 link.type = 'text/css';
-link.id   = 'custom_bars';
+link.id   = 'hsabooker';
 let head = document.querySelector('head');
 head.appendChild(link);
 

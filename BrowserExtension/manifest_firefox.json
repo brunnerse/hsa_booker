@@ -10,31 +10,35 @@
 
 	"content_scripts": [
 		{
-			"js": ["scripts/common.js", "scripts/users_common.js", 
-				"scripts/course_modify_page.js", "scripts/course_common.js", 
-				"scripts/course_overview.js"
-			],
 			"matches": [
 				"*://anmeldung.sport.uni-augsburg.de/angebote/*"
 			],
 			"exclude_matches": [
 				"*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"
+			],
+			"js": [
+				"scripts/course_modify_page.js",
+				"scripts/common.js", "scripts/common_users.js", "scripts/common_course.js", 
+				"scripts/course_overview.js"
 			]
 		},
 		{
-			"js": ["scripts/common.js", "scripts/users_common.js", 
-				"scripts/course_modify_page.js", "scripts/course_common.js", 
-				"scripts/course.js"
-			],
 			"matches": [
 				"*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"
+			],
+			"js": [
+				"scripts/course_modify_page.js", 
+				"scripts/common.js", "scripts/common_users.js", "scripts/common_course.js", 
+				"scripts/course.js"
 			]
 		},
 		{
-			"js": ["scripts/common.js", "scripts/users_common.js", 
-					"scripts/book.js"],
 			"matches": [
 				"*://anmeldung.sport.uni-augsburg.de/cgi/*"
+			],
+			"js": [
+				"scripts/common.js", "scripts/common_users.js", 
+				"scripts/anmeldung.js"
 			]
 		}
 	],
@@ -44,13 +48,13 @@
 	],
 
 	"web_accessible_resources": [
-		"styles/custom_bars.css", "Users.html", "popupcheck.html", "close.js"
+		"styles/hsabooker.css", "Users.html", "checkpopupsallowed.html", "scripts/close.js"
 	],
 
 	"browser_action": {
 		"default_icon": "img/favicon.png",
  		"default_title": "HSA Booker",
-		"default_popup": "hsabook.html"
+		"default_popup": "popup.html"
 	},
 
 	"options_ui": {
