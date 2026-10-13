@@ -21,8 +21,13 @@ Install as unpacked extension:
 - The Developer mode can now be disabled again in the top right corner.
 
 
+<br>
 
-<!-- ![Screenshot of extension](https://i.imgur.com/qs9WI07.png) -->
+## Screenshot
+
+<img src="BrowserExtension/img/screenshot.png" alt="Screenshot" width="600"/>
+
+<!-- ![Screenshot of extension](BrowserExtension/img/screenshot.png)  -->
 
 <br>
 

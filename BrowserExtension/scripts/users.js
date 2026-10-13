@@ -249,8 +249,8 @@ function setStatus(status, color="white") {
 
 function toggleInert() {
     //console.log("toggling inert...");
-    document.getElementById("btn_cancel").toggleAttribute("inert");
-    document.getElementById("bs_submit").toggleAttribute("inert");
+    document.getElementById("deletebutton").toggleAttribute("inert");
+    document.getElementById("savebutton").toggleAttribute("inert");
     document.getElementById("userselect").toggleAttribute("inert");
 
     for (let inputElem of formElem.getElementsByTagName("input")) {
@@ -261,7 +261,7 @@ function toggleInert() {
 
 document.getElementById("userselect").onchange = onSelectChange; 
 
-document.getElementById("bs_submit").onclick = () => {
+document.getElementById("savebutton").onclick = () => {
     let wrongInput = checkForm();
     if (wrongInput) {
         setStatus("Form invalid: " + wrongInput + " is wrong", "red");
@@ -285,7 +285,7 @@ document.getElementById("bs_submit").onclick = () => {
     addUser(selectedUser).then(() => setSelected(userSelectElem, selectedUser)).finally(toggleInert);
 };
 
-document.getElementById("btn_cancel").onclick = () => {
+document.getElementById("deletebutton").onclick = () => {
     let selectedUser = getSelected(userSelectElem);
     if (selectedUser == "")
         clearForm();

@@ -45,6 +45,8 @@ async function setBookingMessage(message, color="black") {
     }
     messageElem.setAttribute("style", `text-align:center;font-weight:bold;color:${color};background-color:none;`);
     messageElem.innerText =  message;
+
+    setTimeout(submitButton.focus, 100);
 }
 
 let countdownId; 
@@ -180,7 +182,7 @@ function getCourseID(docState) {
     if (docState == "fill" || docState == "check" || docState == "error") {
         for (let elem of document.querySelectorAll(".bs_form_sp2 *")) {
             let nrMatch = elem.innerText.match(/^\d+$/); 
-            let dateMatch = elem.innerText.match(/^(\d+\.){2}\d*/);
+            let dateMatch = elem.innerText.match(/^(\d+\.){2}/);
             if (!nr && nrMatch)
                 nr = nrMatch[0];
             if (!date && dateMatch)
@@ -270,8 +272,8 @@ async function processDocument() {
             setBookingMessage("ALERT: COURSE IS ALREADY MARKED AS BOOKED", "red");
             document.title = document.title + " - ALREADY BOOKED";
         } else if (prevBookingState == "booking") {
-            setBookingMessage("COURSE IS ALREADY BEING BOOKED, CLOSING...", "red");
-            sleep(1000).then(window.close);
+            setBookingMessage("CAUTION: COURSE BOOKING MIGHT BE OPEN IN ANOTHER TAB", "darkorange");
+            // Do nothing: return
             return;
         } else if (prevBookingState) {
             // if state was e.g. error, remove the state
@@ -338,7 +340,6 @@ async function processDocument() {
                 // Check if course is armed first
                 if (!await isArmed(await getCourseFromID(courseID)))  {
                     setBookingMessage("Please submit manually (automatic submit disabled as course is not armed)", "darkorange");
-                    setTimeout(submitButton.focus, 100);
                     return;
                 }
 
@@ -385,7 +386,6 @@ async function processDocument() {
                     // Display error if submit did not work after some time 
                     sleep(1500)
                     .then(() => setBookingMessage("Automatic submit failed. Check the form and submit again manually.", "red"))
-                    .then(submitButton.focus)
                     .then(stopCountdownMsg);
                 }
             } 
