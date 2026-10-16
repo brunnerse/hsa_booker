@@ -1,3 +1,4 @@
+
 const inputSubImm = document.getElementById("submitimmediately");
 const inputFill = document.getElementById("fillform");
 const armButton = document.getElementById("armallbutton"); 
@@ -226,7 +227,7 @@ async function updateCourseTable(newTable, course, id, user) {
 	for (let tdElem of trElem.querySelectorAll("tr>td")) {
 		let newTdElem = newTrElem.querySelector(`.${tdElem.className}`);
 		if (newTdElem) // && tdElem.className != "bs_sbuch")
-			tdElem.innerHTML = newTdElem.innerHTML;
+			tdElem.replaceChildren(...newTdElem.cloneNode(true).children)
 	}
 
 	// Clean up some cells in the table
@@ -241,8 +242,9 @@ async function updateCourseTable(newTable, course, id, user) {
 	}
 	);
 	try {
-		trElem.querySelector(".bs_stzo").innerHTML = 
-			trElem.querySelector(".bs_stag").innerText + "<br>" + trElem.querySelector(".bs_szeit").innerText; 
+		trElem.querySelector(".bs_stzo").innerText = 
+			trElem.querySelector(".bs_stag").innerText + "\n" +
+			trElem.querySelector(".bs_szeit").innerText; 
 	} catch {};
 
 	// Remove time links
@@ -656,7 +658,6 @@ async function loadInitialData() {
 	console.log(storageContent);
 
 	courselinks = storageContent[COURSELINKS_FILE] ?? {};
-
 
 	await updateUserdata(storageContent[USERS_FILE]);
 

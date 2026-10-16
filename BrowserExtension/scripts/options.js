@@ -107,7 +107,6 @@ async function loadInitialData() {
 	let storageContent = await downloadAll();
 	console.log(storageContent);
 
-	courselinks = storageContent[COURSELINKS_FILE] ?? {};
 	updateUserdata(storageContent[USERS_FILE]);
 
 
@@ -125,8 +124,6 @@ async function loadInitialData() {
 	}
 
 	addStorageListener((changes) => {
-		//console.log("[Storage Listener] Change:")
-		//console.log(changes);
 		for (let item of Object.keys(changes)) {
 			if (item == USERS_FILE) {
 				updateUserdata(changes[USERS_FILE].newValue);

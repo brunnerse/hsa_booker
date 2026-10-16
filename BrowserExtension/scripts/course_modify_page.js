@@ -1,8 +1,5 @@
 
 
-let head = document.querySelector('head');
-let body = document.querySelector("body");
-
 
 // insert custom css
 let link  = document.createElement('link');
@@ -10,52 +7,57 @@ link.href = base.runtime.getURL('styles/hsabooker.css');
 link.rel  = 'stylesheet';
 link.type = 'text/css';
 link.id   = 'hsabooker';
-head.appendChild(link);
+document.querySelector('head').appendChild(link);
 
 // insert top bar
 let topBar = document.createElement("div");
 topBar.id = "topbar";
-topBar.innerHTML = '\
-		<div align="center">\
-			<div align="center" class="bigboldfont" style="margin-left:3%;">User:</div>\
-			<div align="center" style="margin-left:1%; transform:translateY(-3px);">\
-				<select id="userselect" name="users" size="0">\
-					<option value="" style="background-color:gray" title="adder">Add user</option>\
-				</select>\
-			</div>\
-			<div hidden align="center" class="bigboldfont" style="margin-left:7%; width:120px">\
-				<div id="armbuttontext" style="width:70px; padding-right:5%; text-align:right">ARM</div>\
-				<button id="armbutton" class="roundbutton" style="background-color:limegreen;"></button>\
-			</div>\
-			<div id="refresh" hidden align="center">\
-				<div>Refresh:</div>\
-				<select id="refreshselect" name="refresh" size="1">\
-					<option selected value="auto">Auto</option>\
-					<option value="0.5">0.5 seconds</option>\
-					<option value="1">&nbsp;1 second</option>\
-					<option value="2">&nbsp;2 seconds</option>\
-					<option value="5">&nbsp;5 seconds</option>\
-					<option value="10">10 seconds</option>\
-					<option value="30">30 seconds</option>\
-				</select>\
-			</div>\
-			<div align="center" style="padding-right:3%; padding-left:5%; min-width:350px;">\
-				<div id="statustext" style="background-color:white;">&nbsp;</div>\
-			</div>\
-		</div>\
-';
+topBar.innerHTML = ` 
+		<div align="center">
+			<div align="center" class="bigboldfont" style="margin-left:3%;">User:</div>
+			<div align="center" style="margin-left:1%; transform:translateY(-3px);">
+				<select id="userselect" name="users" size="0">
+					<option value="" style="background-color:gray" title="adder">Add user</option>
+				</select>
+			</div>
+			<div hidden align="center" class="bigboldfont tooltip" style="margin-left:7%; width:120px">
+				<div id="armbuttontext" style="width:70px; padding-right:5%; text-align:right">ARM</div>
+				<button id="armbutton" class="roundbutton" style="background-color:limegreen;"></button>
+			   <div class="tooltiptext" style="font-size:10px;top:100%;margin-left:0px;">
+			 	  	When armed, website will refresh until marked courses are bookable and then book them
+				</div> 
+			</div>
+			<div id="refresh" hidden align="center">
+				<div>Refresh:</div>
+				<select id="refreshselect" name="refresh" size="1">
+					<option selected value="auto">Auto</option>
+					<option value="0.5">0.5 seconds</option>
+					<option value="1">&nbsp;1 second</option>
+					<option value="2">&nbsp;2 seconds</option>
+					<option value="5">&nbsp;5 seconds</option>
+					<option value="10">10 seconds</option>
+					<option value="30">30 seconds</option>
+				</select>
+			</div>
+			<div align="center" style="padding-right:3%; padding-left:5%; min-width:350px;">
+				<div id="statustext" style="background-color:white;">&nbsp;</div>
+			</div>
+		</div>
+`;
 
 let bottomBar = document.createElement("div");
 bottomBar.id = "bottombar";
-bottomBar.innerHTML = '\
-		<div id="hint"></div>\
-';
+bottomBar.innerHTML = ` 
+		<div id="hint"></div>
+`;
 
 
 // insert topbar and bottombar at the start and end of body
+{
 let body = document.querySelector("body");
 body.insertBefore(topBar, body.children[0]);
 body.appendChild(bottomBar);
+}
 
 
 // -------------------------

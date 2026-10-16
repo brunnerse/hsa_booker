@@ -24,6 +24,10 @@ function checkForm() {
 
         if (e.getAttribute("disabled") == "disabled" || g.classList.contains("hide"))
             continue;
+
+        if (e.getAttribute("type") == "text" && e.getAttribute("name") != "pw")
+            e.value = e.value.trim();
+
         var f = e.className.match(/\bbs_fval_(.+?)\b/);
         if (!chk_input(e, f ? f[1] : "")) {
             // g is row
@@ -49,7 +53,7 @@ function chk_input(a, b) {
                  F.elements[a.name][0].checked || F.elements[a.name][1].checked || F.elements[a.name][2] && F.elements[a.name][2].checked || F.elements[a.name][3] && F.elements[a.name][3].checked ?
                      1 
                      : "" 
-                : a.value.trim();
+                : a.value;
         
         // If bs_fval_name, then remove Dr|Prof
         // if bs_fval_iban or bs_fval_bic, transform to upper case and remove any characters not A-Z 0-9 
@@ -88,10 +92,9 @@ function chk_input(a, b) {
 
 // checks if string is valid, i.e. contains only characters is valid range, and is not empty or whitespace only 
 function EOK(a) { 
-    // replace ; with , replace newline \n and carriage return \r with space " "
-    a = String(a).replace(/;/g, ",").replace(/\r|\n/g, " ");
-    // return false if a is empty or only contains whitespace characters 
-    return !a || a.match(/^\s*$/) ?
+    a = String(a); //.replace(/;/g, ",").replace(/\r|\n/g, " ");
+    // return false if a is empty or starts/ends with a whitespace character
+    return a.match(/^$|^\s|\s$/) ?
          !1 
     // return false if any character is not in the range 0x20-0xff 
     // or if any character is in the list, i.e. *%$ etc. 
@@ -135,7 +138,7 @@ async function addUser(user) {
     let selectedUser = getSelected(userSelectElem);
     const isUpdate = selectedUser == data.vorname;
     if (!isFormModified()) {
-        setStatus("User " + user + " already saved: No changes in data", "green");
+        setStatus(`User ${user} already saved: No changes in data`, "limegreen");
         return;
     }
     // if prename changed, transfer choice data
@@ -156,11 +159,12 @@ async function addUser(user) {
         userdata = (d && await getOption("multipleusers")) ? d : {};
         userdata[user] = data;
         setStatus("Updating user data...");
-    }).then(() => upload(USERS_FILE, userdata))
-    .then((d) => userdata = d) 
-    .then(() => updateUserSelect(userSelectElem, userdata))
-    .then( () => {setStatus((isUpdate ? "Updated" : "Added") + " user " + user + ".", "green")})
-    .catch( (err) => setStatus("Failed to " + (isUpdate ? "update" : "add") + " user " + user + ": Error " + err, "red"));
+    })
+    .then( () => upload(USERS_FILE, userdata))
+    .then( (d) => userdata = d) 
+    .then( () => updateUserSelect(userSelectElem, userdata))
+    .then( () => setStatus(`${isUpdate ? "Updated" : "Added"} user ${user}.`, "limegreen"))
+    .catch((err) => setStatus(`Failed to ${isUpdate ? "update" : "add"} user ${user}: Error ${err}`, "red"));
 }
 
 async function deleteUser(user) {
@@ -173,8 +177,8 @@ async function deleteUser(user) {
     }).then(() => upload(USERS_FILE, userdata))
     .then((d) => userdata = d) 
     .then(() => updateUserSelect(userSelectElem, userdata))
-    .then(() => setStatus("Deleted user " + user + ".", "green"))
-    .catch( (err) => setStatus("Failed to delete user " + user + ": Error " + err, "red"));
+    .then(() => setStatus(`Deleted user ${user}.`, "limegreen"))
+    .catch( (err) => setStatus(`Failed to delete user ${user}: Error ${err}`, "red"));
 }
 
 
@@ -274,7 +278,7 @@ document.getElementById("userselect").onchange = onSelectChange;
 document.getElementById("savebutton").onclick = () => {
     let wrongInput = checkForm();
     if (wrongInput) {
-        setStatus("Form invalid: " + wrongInput + " is wrong", "red");
+        setStatus(`Form invalid: ${wrongInput} is wrong`, "red");
         return;
     }
     let selectedUser = ""; 

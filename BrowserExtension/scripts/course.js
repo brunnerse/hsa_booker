@@ -384,7 +384,7 @@ async function checkPopupsEnabled() {
     // First get url of test document from browser runtime
     let popupTestUrl;
     try {
-        popupTestUrl = browser.runtime.getURL("checkpopupsallowed.html");
+        popupTestUrl = base.runtime.getURL("html/checkpopupsallowed.html");
     } catch {
         // use different url if browser.runtime did not work
         try {
