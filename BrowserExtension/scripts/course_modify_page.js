@@ -1,10 +1,15 @@
+
+
+let head = document.querySelector('head');
+let body = document.querySelector("body");
+
+
 // insert custom css
 let link  = document.createElement('link');
-link.href = chrome.runtime.getURL('styles/hsabooker.css');
+link.href = base.runtime.getURL('styles/hsabooker.css');
 link.rel  = 'stylesheet';
 link.type = 'text/css';
 link.id   = 'hsabooker';
-let head = document.querySelector('head');
 head.appendChild(link);
 
 // insert top bar
@@ -53,6 +58,7 @@ body.insertBefore(topBar, body.children[0]);
 body.appendChild(bottomBar);
 
 
+// -------------------------
 // Create table header and cell element for aktion button
 let thElem = document.createElement("th");
 thElem.style = "text-align:center;";
@@ -67,7 +73,11 @@ button.type = "button";
 tdElem.appendChild(button);
 
 // Append new column to all table headers and table rows 
-document.querySelectorAll("table.bs_kurse>thead>tr").forEach((tRow) => tRow.appendChild(thElem.cloneNode(true)));
+document.querySelectorAll("table.bs_kurse>thead>tr").forEach(
+	(tRow) => tRow.appendChild(thElem.cloneNode(true))
+);
 //document.querySelectorAll("tbody tr").forEach((tRow) => tRow.appendChild(tdElem.cloneNode(true)));
-document.querySelectorAll("table.bs_kurse>tbody>tr").forEach((tRow) => tRow.querySelector("td") && tRow.appendChild(tdElem.cloneNode(true)));
+document.querySelectorAll("table.bs_kurse>tbody>tr").forEach(
+	(tRow) => tRow.querySelector("td") && tRow.appendChild(tdElem.cloneNode(true))
+);
 

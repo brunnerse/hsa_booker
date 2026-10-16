@@ -13,7 +13,13 @@ const currentUrl = window.location.href.split('#')[0];
 let statusId = 0;
 function setStatus(status, color="white") {
     statusId += 1;
-    statusElem.setAttribute("style", `font-weight:bold;background-color:${color};`);
+
+    statusElem.setAttribute("style", 
+        `font-weight:bold;background-color:${color};` + 
+        `color:${["white", "yellow", "limegreen", ""].includes(color) ? "black" : "white"};`);
+
+    statusElem.innerText = status;
+
     statusElem.replaceChildren();
     if (!status) { // If status is empty, use a space as placeholder
         statusElem.innerHTML = "&nbsp;";

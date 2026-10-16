@@ -2,7 +2,7 @@
 	"manifest_version": 3,
 	"name": "HSA Booker",
 	"description": "Automatically books and fills out booking form for booking sport courses of the HSA",
-	"version": "1.3.6",
+	"version": "1.3.7",
 
 	"icons": {
 		"16": "img/favicon.png"
@@ -17,8 +17,9 @@
 				"*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"
 			],
 			"js": [
+				"scripts/common.js",
 				"scripts/course_modify_page.js",
-				"scripts/common.js", "scripts/common_users.js", "scripts/common_course.js", 
+				"scripts/common_users.js", "scripts/common_course.js", 
 				"scripts/course_overview.js"
 			]
 		},
@@ -27,8 +28,9 @@
 				"*://anmeldung.sport.uni-augsburg.de/angebote/aktueller_zeitraum/_*"
 			],
 			"js": [
+				"scripts/common.js",
 				"scripts/course_modify_page.js", 
-				"scripts/common.js", "scripts/common_users.js", "scripts/common_course.js", 
+				"scripts/common_users.js", "scripts/common_course.js", 
 				"scripts/course.js"
 			]
 		},
@@ -53,7 +55,13 @@
 
 	"web_accessible_resources": [
 		{
-			"resources": ["styles/hsabooker.css", "Users.html", "checkpopupsallowed.html", "scripts/close.js"],
+			"resources": [
+				"styles/hsabooker.css", 
+				"Users.html", 
+				"html/customelements.html", 
+				"html/checkpopupsallowed.html", 
+				"scripts/close.js"
+			],
 			"matches": [ "*://*/*" ]
 		}
 	],

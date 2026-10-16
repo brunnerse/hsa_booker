@@ -241,8 +241,18 @@ async function clearForm() {
 
 function setStatus(status, color="white") {
     let style = statusElem.getAttribute("style") ?? "";
-    // background-color is at the end; replace it
-    style = style.split("background-color")[0] + "background-color:"+color;
+
+    // Replace background-color and color mentions in style 
+    style = style.replaceAll(/(^|;)\s*(background-color|color):[^;]*/g, "")
+    if (style != "" && !style.endsWith(";"))
+        style += ";";
+
+    style += `background-color:${color};`;
+    if (["white", "yellow", ""].includes(color))
+        style += "color:black;";
+    else
+        style += "color:white;";
+
     statusElem.setAttribute("style", style); 
     statusElem.innerText = status;
 }

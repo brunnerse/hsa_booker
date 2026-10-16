@@ -8,7 +8,7 @@ async function onSelectChange(updateVisuals=true) {
     if (optionElem.value == "") {
         // open user edit page in new tab
         try {
-            window.open(browser.runtime.getURL("Users.html"));
+            window.open(base.runtime.getURL("Users.html"));
         } catch {
             // try different way if browser.runtime did not work
             try {
